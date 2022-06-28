@@ -1,5 +1,7 @@
 mod datadir;
 
+pub use datadir::get;
+
 #[cfg(test)]
 mod tests {
     #[test]
