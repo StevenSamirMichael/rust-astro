@@ -99,7 +99,7 @@ lazy_static! {
         for ref dir in get_testdirs() {
             let p = PathBuf::from(&dir).join("tab5.2a.txt");
             if p.is_file() {
-                return Some(dir.to_path_buf());
+                return Some(dir.to_path_buf().clone());
             }
         }
         None
@@ -113,8 +113,8 @@ lazy_static! {
 ///   ${HOME}/share/astrodata///   <Library Directory>
 ///   <Library Directory>/share/astrodata
 ///
-pub fn get() -> &'static Option<PathBuf> {
-    &DATADIR
+pub fn get() -> Option<PathBuf> {
+    DATADIR.clone()
 }
 
 #[cfg(test)]
