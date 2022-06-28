@@ -30,12 +30,18 @@ fn get_dylib_path() -> Option<PathBuf> {
     }
 }
 
-fn find_datadir() -> Option<PathBuf> {
+fn get_testdirs() -> Vec<PathBuf> {
     fn testdir(dir: &str) {
         println!("dir = {}", dir);
     }
 
     let mut testdirs: Vec<PathBuf> = Vec::new();
+
+    // Look for paths in environment variable
+    match std::env::var(&"ASTROLIB_DATA") {
+        Ok(val) => testdirs.push(Path::new(&val).to_path_buf()),
+        Err(_) => (),
+    }
 
     // Look for paths under home directory
     match std::env::var(&"HOME") {
@@ -46,18 +52,12 @@ fn find_datadir() -> Option<PathBuf> {
             #[cfg(target_os = "macos")]
             testdirs.push(
                 Path::new(vstr)
-                    .join("Libaray")
+                    .join("Library")
                     .join("Application Support")
                     .join("astro-data"),
             );
         }
         Err(_e) => (),
-    }
-
-    // Look for paths in environment variable
-    match std::env::var(&"ASTROLIB_DATA") {
-        Ok(val) => testdirs.push(Path::new(&val).to_path_buf()),
-        Err(_) => (),
     }
 
     // Look for paths in current library directory
@@ -86,11 +86,43 @@ fn find_datadir() -> Option<PathBuf> {
         }
         Err(_e) => (),
     }
-    Some(testdirs[0].clone())
+    testdirs
 }
 
-static DATADIR: Option<PathBuf> = find_datadir();
+lazy_static! {
+    static ref DATADIR: Option<PathBuf> = {
+        /*
+        Go through possible data directories
+           and return if "tab5.2a.txt" is found
+           in directory
+        */
+        for ref dir in get_testdirs() {
+            let p = PathBuf::from(&dir).join("tab5.2a.txt");
+            if p.is_file() {
+                return Some(dir.to_path_buf());
+            }
+        }
+        None
+    };
+}
 
-pub fn get() -> Option<PathBuf> {
-    DATADIR.clone()
+/// Get directory where astronomy data is stored
+/// Tries the following paths
+///   "ASTROLIB_DATA" environment variable
+///   ${HOME}
+///   ${HOME}/share/astrodata///   <Library Directory>
+///   <Library Directory>/share/astrodata
+///
+pub fn get() -> &'static Option<PathBuf> {
+    &DATADIR
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn datadir() {
+        use crate::datadir;
+        let d = datadir::get();
+        assert_eq!(d.is_none(), false);
+    }
 }
