@@ -1,3 +1,4 @@
+pub mod astrotime;
 pub mod datadir;
 
 #[macro_use]
