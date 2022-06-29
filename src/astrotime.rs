@@ -36,9 +36,19 @@ const DELTAAT_OLD: [[f64; 4]; 15] = [
     [39887., 4.2131700, 39126., 0.002592],
 ];
 
+pub enum Scale {
+    INVALID = -1,
+    UTC = 1,
+    TT = 2,
+    UT1 = 3,
+    TAI = 4,
+    GPS = 5,
+    TBD = 6,
+}
+
 lazy_static! {
     #[derive(Debug)]
-    static ref DELTAAT_NEW: Vec<[u32; 2]> = {
+    static ref DELTAAT_NEW: Vec<[u64; 2]> = {
         let path = datadir::get()
             .unwrap_or(PathBuf::from("."))
             .join("leap-seconds.list");
@@ -51,7 +61,7 @@ lazy_static! {
             Ok(file) => file,
         };
 
-        let mut leapvec = Vec::<[u32; 2]>::new();
+        let mut leapvec = Vec::<[u64; 2]>::new();
         for line in io::BufReader::new(file).lines() {
             match &line {
                 Ok(s) => match &s {
@@ -59,8 +69,8 @@ lazy_static! {
                     v => {
                         let split = v.trim().split_whitespace().collect::<Vec<&str>>();
                         if split.len() >= 2 {
-                            let a: u32 = split[0].parse().unwrap_or(0);
-                            let b: u32 = split[1].parse().unwrap_or(0);
+                            let a: u64 = split[0].parse().unwrap_or(0);
+                            let b: u64 = split[1].parse().unwrap_or(0);
                             if a != 0 && b != 0 {
                                 leapvec.push([a, b]);
                             }
@@ -77,13 +87,58 @@ lazy_static! {
 
 impl AstroTime {
     #[inline]
-    pub fn from_mjd(mjd_tai: f64) -> AstroTime {
-        AstroTime { mjd_tai: mjd_tai }
-    }
-
-    #[inline]
     pub fn new() -> AstroTime {
         AstroTime { mjd_tai: JD2MJD }
+    }
+
+    pub fn from_mjd(val: f64, scale: &Scale) -> AstroTime {
+        match scale {
+            Scale::TAI => AstroTime {
+                mjd_tai: val.clone(),
+            },
+            Scale::UTC => AstroTime {
+                mjd_tai: val + mjd_utc2tai_seconds(val) / 86400.0,
+            },
+            Scale::TT => AstroTime {
+                mjd_tai: val - 32.184 / 86400.0,
+            },
+            Scale::GPS => AstroTime {
+                mjd_tai: {
+                    if val > UTCGPS0 {
+                        val + 19.0 / 86400.0
+                    } else {
+                        0.0
+                    }
+                },
+            },
+            Scale::TBD => AstroTime { mjd_tai: { 
+                let ttc = (val - (2451545.0 - 2400000.4))/36525.0
+                0.0 
+            } },
+            Scale::UT1 => AstroTime { mjd_tai: 0.0 },
+            Scale::INVALID => AstroTime { mjd_tai: JD2MJD },
+        }
+    }
+}
+
+/// (TAI - UTC) in seconds for an UTC input modified Julian date
+fn mjd_utc2tai_seconds(mjd_utc: f64) -> f64 {
+    if mjd_utc > UTC1972 {
+        let utc1900: u64 = (mjd_utc as u64 - 15020) * 86400;
+        let val = DELTAAT_NEW.iter().find(|&&x| x[0] >= utc1900);
+        val.unwrap_or(&[0, 0])[1] as f64
+    } else {
+        0.0
+    }
+}
+
+fn mjd_tai2utc_seconds(mjd_tai: f64) -> f64 {
+    if mjd_tai > UTC1972 {
+        let tai1900: u64 = (mjd_tai as u64 - 15020) * 86400;
+        let val = DELTAAT_NEW.iter().find(|&&x| (x[0] + x[1]) > tai1900);
+        -(val.unwrap_or(&[0, 0])[1] as f64)
+    } else {
+        0.0
     }
 }
 
