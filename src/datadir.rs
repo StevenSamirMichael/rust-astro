@@ -78,7 +78,6 @@ fn get_testdirs() -> Vec<PathBuf> {
     #[cfg(target_os = "macos")]
     testdirs.push(Path::new(&"/Library/Application Support/astro-data").to_path_buf());
 
-    println!("{:?}", testdirs);
     let dirname = "/Users/st16626";
     match metadata(dirname) {
         Ok(v) => {

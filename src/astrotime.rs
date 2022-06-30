@@ -5,6 +5,8 @@ pub struct AstroTime {
 
 use super::datadir;
 
+use super::earth_orientation_params as eop;
+
 use std::f64::consts::PI;
 
 use std::fs::File;
@@ -20,6 +22,7 @@ pub const TAIGPS0: f64 = UTCGPS0 + 19. / 86400.;
 pub const JD2MJD: f64 = -2400000.5;
 pub const MJD2JD: f64 = 2400000.5;
 
+/*
 const DELTAAT_OLD: [[f64; 4]; 15] = [
     [36204., 0., 36204., 0.],
     [36934., 1.4178180, 37300., 0.001296],
@@ -37,6 +40,7 @@ const DELTAAT_OLD: [[f64; 4]; 15] = [
     [39126., 4.3131700, 39126., 0.002592],
     [39887., 4.2131700, 39126., 0.002592],
 ];
+*/
 
 pub enum Scale {
     INVALID = -1,
@@ -92,7 +96,7 @@ impl AstroTime {
     pub fn new() -> AstroTime {
         AstroTime { mjd_tai: JD2MJD }
     }
-    pub fn from_mjd(val: f64, scale: &Scale) -> AstroTime {
+    pub fn from_mjd(val: f64, scale: Scale) -> AstroTime {
         match scale {
             Scale::TAI => AstroTime {
                 mjd_tai: val.clone(),
@@ -124,8 +128,35 @@ impl AstroTime {
         }
     }
 
-    pub fn to_mjd(&self, scale: Scale) -> f64 {
-        0.0
+    pub fn to_mjd(&self, ref scale: Scale) -> f64 {
+        match scale {
+            &Scale::TAI => self.mjd_tai,
+            &Scale::GPS => {
+                // GPS tracks TAI - 19 seconds
+                // after Jan 1 1980, & prior is
+                // undefined, but we'll just set it to UTC
+                if self.mjd_tai > TAIGPS0 {
+                    self.mjd_tai - 19.0 / 86400.0
+                } else {
+                    self.mjd_tai + mjd_tai2utc_seconds(self.mjd_tai) / 86400.0
+                }
+            }
+            &Scale::TT => self.mjd_tai + 32.184 / 86400.0,
+            &Scale::UT1 => {
+                let utc: f64 = self.mjd_tai + mjd_tai2utc_seconds(self.mjd_tai) / 86400.0;
+                // First earth-orientation parameter is dut1
+                // which is (UT1 - UTC) in seconds
+                utc + eop::get_from_mjd_utc(utc).unwrap()[0] / 86400.0
+            }
+
+            &Scale::UTC => self.mjd_tai + mjd_tai2utc_seconds(self.mjd_tai) / 86400.0,
+            &Scale::INVALID => -1.0,
+            &Scale::TDB => {
+                let tt: f64 = self.mjd_tai + 32.184 / 86400.0;
+                let ttc: f64 = (tt - (2451545.0 - 2400000.4)) / 36525.0;
+                tt + 0.001657 / 86400.0 * (PI / 180.0 * (628.3076 * ttc + 6.2401)).sin()
+            }
+        }
     }
 }
 
