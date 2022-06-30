@@ -96,6 +96,7 @@ impl AstroTime {
     pub fn new() -> AstroTime {
         AstroTime { mjd_tai: JD2MJD }
     }
+
     pub fn from_mjd(val: f64, scale: Scale) -> AstroTime {
         match scale {
             Scale::TAI => AstroTime {
@@ -128,6 +129,39 @@ impl AstroTime {
         }
     }
 
+    pub fn from_date(year: u32, month: u32, day: u32) -> AstroTime {
+        AstroTime::from_mjd(date2mjd_utc(year, month, day) as f64, Scale::UTC)
+    }
+
+    pub fn to_date(&self) -> (u32, u32, u32) {
+        mjd_utc2date(self.to_mjd(Scale::UTC))
+    }
+
+    pub fn to_datetime(&self) -> (u32, u32, u32, u32, u32, f64) {
+        let mjd_utc = self.to_mjd(Scale::UTC);
+        let (year, month, day) = mjd_utc2date(mjd_utc);
+        let fracofday: f64 = mjd_utc - mjd_utc.floor();
+        let mut sec: f64 = fracofday * 86400.0;
+        let hour: u32 = std::cmp::min((sec / 3600.0).floor() as u32, 23);
+        let min: u32 = std::cmp::min((sec / 60.0).floor() as u32, 59);
+        sec = sec - hour as f64 * 3600.0 - min as f64 * 60.0;
+
+        (year, month, day, hour, min, sec)
+    }
+
+    pub fn from_datetime(
+        year: u32,
+        month: u32,
+        day: u32,
+        hour: u32,
+        min: u32,
+        sec: f64,
+    ) -> AstroTime {
+        let mut mjd: f64 = date2mjd_utc(year, month, day) as f64;
+        mjd = mjd + (((min + (hour * 60)) * 60) as f64 + sec) / 86400.0;
+        AstroTime::from_mjd(mjd, Scale::UTC)
+    }
+
     pub fn to_mjd(&self, ref scale: Scale) -> f64 {
         match scale {
             &Scale::TAI => self.mjd_tai,
@@ -143,7 +177,10 @@ impl AstroTime {
             }
             &Scale::TT => self.mjd_tai + 32.184 / 86400.0,
             &Scale::UT1 => {
+                // First convert to UTC
                 let utc: f64 = self.mjd_tai + mjd_tai2utc_seconds(self.mjd_tai) / 86400.0;
+
+                // Then convert to UT1
                 // First earth-orientation parameter is dut1
                 // which is (UT1 - UTC) in seconds
                 utc + eop::get_from_mjd_utc(utc).unwrap()[0] / 86400.0
@@ -157,6 +194,14 @@ impl AstroTime {
                 tt + 0.001657 / 86400.0 * (PI / 180.0 * (628.3076 * ttc + 6.2401)).sin()
             }
         }
+    }
+
+    pub fn to_jd(&self, scale: Scale) -> f64 {
+        self.to_mjd(scale) + MJD2JD
+    }
+
+    pub fn from_jd(jd: f64, scale: Scale) -> AstroTime {
+        AstroTime::from_mjd(jd + JD2MJD, scale)
     }
 }
 
@@ -181,13 +226,80 @@ fn mjd_tai2utc_seconds(mjd_tai: f64) -> f64 {
     }
 }
 
+fn mjd_utc2date(mjd_utc: f64) -> (u32, u32, u32) {
+    // Chapter 15 "Calendars" section 15.11.3 of the
+    // Explanatory Suppliment to the Astronomical Almanac
+    const Y: i32 = 4716;
+    const J: i32 = 1401;
+    const M: i32 = 2;
+    const N: i32 = 12;
+    const R: i32 = 4;
+    const P: i32 = 1461;
+    const V: i32 = 3;
+    const U: i32 = 5;
+    const S: i32 = 153;
+    const W: i32 = 2;
+    const B: i32 = 274277;
+    const C: i32 = -38;
+
+    let jd: i32 = (mjd_utc + MJD2JD) as i32;
+    let mut f: i32 = jd + J;
+    f = f + (((4 * jd + B) / 146097) * 3) / 4 + C;
+    let e: i32 = R * f + V;
+    let g: i32 = (e % P) / R;
+    let h: i32 = U * g + W;
+
+    let day: i32 = (h % S) / U + 1;
+    let month: i32 = ((h / S + M) % N) + 1;
+    let year: i32 = e / P - Y + (N + M - month) / N;
+
+    (year as u32, month as u32, day as u32)
+}
+
+fn date2mjd_utc(year: u32, month: u32, day: u32) -> i32 {
+    // Chapter 15 "Calendars" section 15.11.3 of the
+    // Explanatory Suppliment to the Astronomical Almanac
+    const Y: i32 = 4716;
+    const J: i32 = 1401;
+    const M: i32 = 2;
+    const N: i32 = 12;
+    const R: i32 = 4;
+    const P: i32 = 1461;
+    const Q: i32 = 0;
+    const U: i32 = 5;
+    const S: i32 = 153;
+    const T: i32 = 2;
+    const A: i32 = 184;
+    const C: i32 = -38;
+
+    let h: i32 = month as i32 - M;
+    let g: i32 = year as i32 + Y - (N - h) / N;
+    let f: i32 = (h - 1 + N) % N;
+    let e: i32 = (P * g + Q) / R + day as i32 - 1 - J;
+
+    let mut jdn: i32 = e + (S * f + T) / U;
+    jdn = jdn - (3 * ((g + A) / 100)) / 4 - C;
+
+    (jdn - 2400001) as i32
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::astrotime::DELTAAT_NEW;
 
     #[test]
     fn datadir() {
         println!("deltaat = {:?}", DELTAAT_NEW[1]);
         assert_eq!(1, 1);
+    }
+
+    #[test]
+    fn date2mjd_test() {
+        // Truth is pulled from leap-seconds file
+        // for these examples
+        assert_eq!(59219, date2mjd_utc(2021, 1, 5));
+        // Try a "leap day"
+        assert_eq!(58908, date2mjd_utc(2020, 2, 29));
     }
 }
