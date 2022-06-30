@@ -3,6 +3,8 @@ use std::fs::metadata;
 use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
 
+use lazy_static;
+
 #[inline]
 fn get_dylib_path() -> Option<PathBuf> {
     let mut dl_info = libc::Dl_info {
@@ -89,7 +91,7 @@ fn get_testdirs() -> Vec<PathBuf> {
     testdirs
 }
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref DATADIR: Option<PathBuf> = {
         /*
         Go through possible data directories

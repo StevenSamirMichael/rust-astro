@@ -1,8 +1,6 @@
 pub mod astrotime;
 pub mod datadir;
-
-#[macro_use]
-extern crate lazy_static;
+pub mod earth_orientation_params;
 
 #[cfg(test)]
 mod tests {

@@ -5,6 +5,8 @@ pub struct AstroTime {
 
 use super::datadir;
 
+use std::f64::consts::PI;
+
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
@@ -43,10 +45,10 @@ pub enum Scale {
     UT1 = 3,
     TAI = 4,
     GPS = 5,
-    TBD = 6,
+    TDB = 6,
 }
 
-lazy_static! {
+lazy_static::lazy_static! {
     #[derive(Debug)]
     static ref DELTAAT_NEW: Vec<[u64; 2]> = {
         let path = datadir::get()
@@ -90,7 +92,6 @@ impl AstroTime {
     pub fn new() -> AstroTime {
         AstroTime { mjd_tai: JD2MJD }
     }
-
     pub fn from_mjd(val: f64, scale: &Scale) -> AstroTime {
         match scale {
             Scale::TAI => AstroTime {
@@ -111,13 +112,20 @@ impl AstroTime {
                     }
                 },
             },
-            Scale::TBD => AstroTime { mjd_tai: { 
-                let ttc = (val - (2451545.0 - 2400000.4))/36525.0
-                0.0 
-            } },
+            Scale::TDB => AstroTime {
+                mjd_tai: {
+                    let ttc: f64 = (val - (2451545.0 - 2400000.4)) / 36525.0;
+                    val - 0.01657 / 86400.0 * (PI / 180.0 * (628.3076 * ttc + 6.2401)).sin()
+                        - 32.184 / 86400.0
+                },
+            },
             Scale::UT1 => AstroTime { mjd_tai: 0.0 },
             Scale::INVALID => AstroTime { mjd_tai: JD2MJD },
         }
+    }
+
+    pub fn to_mjd(&self, scale: Scale) -> f64 {
+        0.0
     }
 }
 
