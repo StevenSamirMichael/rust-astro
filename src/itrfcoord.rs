@@ -4,12 +4,12 @@ use std::f64::consts::PI;
 const DEG2RAD: f64 = PI / 180.;
 const RAD2DEG: f64 = 180. / PI;
 
-const WGS84_A: f64 = 6378137.0;
-const WGS84_F: f64 = 0.003352810664747;
+pub const WGS84_A: f64 = 6378137.0;
+pub const WGS84_F: f64 = 0.003352810664747;
 
 use nalgebra as na;
-type Vec3 = na::Vector3<f64>;
-type Quat = na::UnitQuaternion<f64>;
+pub type Vec3 = na::Vector3<f64>;
+pub type Quat = na::UnitQuaternion<f64>;
 
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
 pub struct ITRFCoord {
@@ -54,6 +54,14 @@ impl std::ops::Sub<ITRFCoord> for ITRFCoord {
     }
 }
 
+impl std::convert::From<[f64; 3]> for ITRFCoord {
+    fn from(v: [f64; 3]) -> Self {
+        ITRFCoord {
+            itrf: Vec3::from(v),
+        }
+    }
+}
+
 impl std::convert::From<Vec3> for ITRFCoord {
     fn from(v: Vec3) -> Self {
         ITRFCoord { itrf: v }
@@ -69,6 +77,12 @@ impl std::convert::From<ITRFCoord> for Vec3 {
 impl ITRFCoord {
     pub fn from_geodetic_deg(lat: f64, lon: f64, hae: f64) -> ITRFCoord {
         ITRFCoord::from_geodetic_rad(lat * DEG2RAD, lon * DEG2RAD, hae)
+    }
+
+    pub fn from_vec(v: [f64; 3]) -> ITRFCoord {
+        ITRFCoord {
+            itrf: Vec3::from(v),
+        }
     }
 
     pub fn from_geodetic_rad(lat: f64, lon: f64, hae: f64) -> ITRFCoord {
