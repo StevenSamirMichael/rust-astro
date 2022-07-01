@@ -91,6 +91,48 @@ lazy_static::lazy_static! {
     };
 }
 
+impl std::fmt::Display for AstroTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let (year, mon, day, hour, min, sec) = self.to_datetime();
+
+        write!(
+            f,
+            "{}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+            year,
+            mon,
+            day,
+            hour,
+            min,
+            sec.floor()
+        )
+    }
+}
+
+impl std::ops::Add<f64> for AstroTime {
+    type Output = Self;
+    fn add(self, other: f64) -> Self::Output {
+        Self {
+            mjd_tai: self.mjd_tai + other,
+        }
+    }
+}
+
+impl std::ops::Sub<f64> for AstroTime {
+    type Output = Self;
+    fn sub(self, other: f64) -> Self::Output {
+        Self {
+            mjd_tai: self.mjd_tai - other,
+        }
+    }
+}
+
+impl std::ops::Sub for AstroTime {
+    type Output = f64;
+    fn sub(self, other: AstroTime) -> f64 {
+        self.mjd_tai - other.mjd_tai
+    }
+}
+
 impl AstroTime {
     #[inline]
     pub fn new() -> AstroTime {
@@ -143,7 +185,7 @@ impl AstroTime {
         let fracofday: f64 = mjd_utc - mjd_utc.floor();
         let mut sec: f64 = fracofday * 86400.0;
         let hour: u32 = std::cmp::min((sec / 3600.0).floor() as u32, 23);
-        let min: u32 = std::cmp::min((sec / 60.0).floor() as u32, 59);
+        let min: u32 = std::cmp::min((sec as u32 - hour * 3600) / 60 as u32, 59);
         sec = sec - hour as f64 * 3600.0 - min as f64 * 60.0;
 
         (year, month, day, hour, min, sec)
@@ -242,7 +284,7 @@ fn mjd_utc2date(mjd_utc: f64) -> (u32, u32, u32) {
     const B: i32 = 274277;
     const C: i32 = -38;
 
-    let jd: i32 = (mjd_utc + MJD2JD) as i32;
+    let jd: i32 = (0.5 + mjd_utc + MJD2JD) as i32;
     let mut f: i32 = jd + J;
     f = f + (((4 * jd + B) / 146097) * 3) / 4 + C;
     let e: i32 = R * f + V;
@@ -259,6 +301,7 @@ fn mjd_utc2date(mjd_utc: f64) -> (u32, u32, u32) {
 fn date2mjd_utc(year: u32, month: u32, day: u32) -> i32 {
     // Chapter 15 "Calendars" section 15.11.3 of the
     // Explanatory Suppliment to the Astronomical Almanac
+    // Algorithm 3
     const Y: i32 = 4716;
     const J: i32 = 1401;
     const M: i32 = 2;
@@ -275,7 +318,7 @@ fn date2mjd_utc(year: u32, month: u32, day: u32) -> i32 {
     let h: i32 = month as i32 - M;
     let g: i32 = year as i32 + Y - (N - h) / N;
     let f: i32 = (h - 1 + N) % N;
-    let e: i32 = (P * g + Q) / R + day as i32 - 1 - J;
+    let e: i32 = (P * g + Q) / R + (day as i32) - 1 - J;
 
     let mut jdn: i32 = e + (S * f + T) / U;
     jdn = jdn - (3 * ((g + A) / 100)) / 4 - C;
@@ -301,5 +344,47 @@ mod tests {
         assert_eq!(59219, date2mjd_utc(2021, 1, 5));
         // Try a "leap day"
         assert_eq!(58908, date2mjd_utc(2020, 2, 29));
+    }
+
+    #[test]
+    fn testdatetime() {
+        let tm: AstroTime = AstroTime::from_datetime(2021, 3, 4, 12, 45, 33.0);
+        let (year, mon, day, hour, min, sec) = tm.to_datetime();
+        assert_eq!(year, 2021);
+        assert_eq!(mon, 3);
+        assert_eq!(day, 4);
+        assert_eq!(hour, 12);
+        assert_eq!(min, 45);
+        assert!(((sec - 33.0) / 33.0).abs() < 1.0e-5);
+    }
+
+    #[test]
+    fn add_test() {
+        let tm = AstroTime::from_datetime(2021, 3, 4, 11, 20, 41.0);
+        let delta: f64 = 0.5;
+        let tm2 = tm + delta;
+        let (year, mon, day, hour, min, sec) = tm2.to_datetime();
+        assert_eq!(year, 2021);
+        assert_eq!(mon, 3);
+        assert_eq!(day, 4);
+        assert_eq!(hour, 23);
+        assert_eq!(min, 20);
+        assert!(((sec - 41.0) / 41.0).abs() < 1.0e-5);
+
+        let dcalc: f64 = tm2 - tm;
+        assert!(((dcalc - delta) / delta).abs() < 1.0e-5);
+    }
+
+    #[test]
+    fn mjd_utc2date_test() {
+        let (year, mon, day) = mjd_utc2date(59219.0);
+        assert_eq!(year, 2021);
+        assert_eq!(mon, 1);
+        assert_eq!(day, 5);
+
+        let (year2, mon2, day2) = mjd_utc2date(58908.0);
+        assert_eq!(year2, 2020);
+        assert_eq!(mon2, 2);
+        assert_eq!(day2, 29);
     }
 }

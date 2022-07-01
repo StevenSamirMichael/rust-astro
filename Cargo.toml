@@ -4,8 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib"]
+name="astro"
 
 [dependencies]
 nalgebra = "0.31.0"
 nix = "0.24.1"
 lazy_static = "1.4.0"
+# cpython = "0.7.0"
+
+# [features]
+# default = ["python3"]
+# python3 = ["cpython/python3-sys", "cpython/extension-module"]
