@@ -75,16 +75,52 @@ impl std::convert::From<ITRFCoord> for Vec3 {
 }
 
 impl ITRFCoord {
+    /// Returns an ITRF Coordinate given the geodetic inputs
+    ///   with degree units for latitude & longitude
+    ///
+    /// # Arguments:
+    ///
+    /// * `lat` - Geodetic latitude in degrees
+    /// * `lon` - Geodetic longitude in degrees
+    /// * `hae` - Height above ellipsoid, in meters
+    ///
+    /// # Examples:
+    /// ```
+    /// // Create coord for ~ Boston, MA
+    /// use astro::itrfcoord::ITRFCoord;
+    /// let itrf = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 150.0);
+    /// ```
+    ///
     pub fn from_geodetic_deg(lat: f64, lon: f64, hae: f64) -> ITRFCoord {
         ITRFCoord::from_geodetic_rad(lat * DEG2RAD, lon * DEG2RAD, hae)
     }
 
+    /// Returns an ITRF coordinate given input vector
+    /// representing Cartesian coordinates, in meters
+    ///
     pub fn from_vec(v: [f64; 3]) -> ITRFCoord {
         ITRFCoord {
             itrf: Vec3::from(v),
         }
     }
-
+    /// Returns an ITRF Coordinate given the geodetic inputs
+    ///   with radian units for latitude & longitude
+    ///
+    /// # Arguments:
+    ///
+    /// * `lat` - Geodetic latitude in radians
+    /// * `lon` - Geodetic longitude in radians
+    /// * `hae` - Height above ellipsoid, in meters
+    ///
+    /// # Examples:
+    /// ```
+    /// // Create coord for ~ Boston, MA
+    /// use astro::itrfcoord::ITRFCoord;
+    /// use std::f64::consts::PI;
+    /// const DEG2RAD: f64 = PI / 180.0;
+    /// let itrf = ITRFCoord::from_geodetic_deg(42.466*DEG2RAD, -71.1516*DEG2RAD, 150.0);
+    /// ```
+    ///
     pub fn from_geodetic_rad(lat: f64, lon: f64, hae: f64) -> ITRFCoord {
         let sinp: f64 = lat.sin();
         let cosp: f64 = lat.cos();
@@ -104,6 +140,14 @@ impl ITRFCoord {
         }
     }
 
+    /// Returns 3-element tuple representing geodetic coordinates
+    ///
+    /// # Tuple contents:
+    ///
+    /// * `.0` - latitude in radians
+    /// * `.1` - longitude in radians
+    /// * `.1` - height above ellipsoid, in meters
+    ///
     pub fn to_geodetic_rad(&self) -> (f64, f64, f64) {
         const B: f64 = WGS84_A * (1.0 - WGS84_F);
         const E2: f64 = 1.0 - (1.0 - WGS84_F) * (1.0 - WGS84_F);
