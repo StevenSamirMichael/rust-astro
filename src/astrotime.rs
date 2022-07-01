@@ -4,8 +4,9 @@ pub struct AstroTime {
 }
 
 use super::datadir;
-
 use super::earth_orientation_params as eop;
+
+extern crate chrono;
 
 use std::f64::consts::PI;
 
@@ -133,10 +134,53 @@ impl std::ops::Sub for AstroTime {
     }
 }
 
+impl<T: chrono::TimeZone> std::convert::From<chrono::DateTime<T>> for AstroTime {
+    fn from(c: chrono::DateTime<T>) -> Self {
+        let mut t = AstroTime::from_unixtime(c.timestamp());
+        t = t + c.timestamp_subsec_micros() as f64 / 86400.0e6;
+        t
+    }
+}
+
+impl std::convert::From<&chrono::NaiveDateTime> for AstroTime {
+    fn from(c: &chrono::NaiveDateTime) -> Self {
+        let mut t = AstroTime::from_unixtime(c.timestamp());
+        t = t + c.timestamp_subsec_micros() as f64 / 86400.0e6;
+        t
+    }
+}
+
+impl std::convert::From<AstroTime> for chrono::NaiveDateTime {
+    fn from(s: AstroTime) -> chrono::NaiveDateTime {
+        let secs: i64 = s.to_unixtime();
+        let nsecs: u32 = (((s.to_mjd(Scale::UTC) * 86400.0) % 1.0) * 1.0e9) as u32;
+        chrono::NaiveDateTime::from_timestamp(secs, nsecs)
+    }
+}
+
+impl TryFrom<std::time::SystemTime> for AstroTime {
+    type Error = &'static str;
+    fn try_from(st: std::time::SystemTime) -> Result<Self, Self::Error> {
+        let val = st.duration_since(std::time::SystemTime::UNIX_EPOCH);
+        match val {
+            Ok(v) => Ok(AstroTime::from_unixtime(v.as_secs() as i64)),
+            Err(_) => Err("Invalid system time"),
+        }
+    }
+}
+
 impl AstroTime {
     #[inline]
     pub fn new() -> AstroTime {
         AstroTime { mjd_tai: JD2MJD }
+    }
+
+    pub fn from_unixtime(t: i64) -> AstroTime {
+        AstroTime::from_mjd(t as f64 / 86400.0 + UTC1970, Scale::UTC)
+    }
+
+    pub fn to_unixtime(&self) -> i64 {
+        ((self.to_mjd(Scale::UTC) - UTC1970) * 86400.0) as i64
     }
 
     pub fn from_mjd(val: f64, scale: Scale) -> AstroTime {
@@ -344,6 +388,23 @@ mod tests {
         assert_eq!(59219, date2mjd_utc(2021, 1, 5));
         // Try a "leap day"
         assert_eq!(58908, date2mjd_utc(2020, 2, 29));
+    }
+
+    #[test]
+    fn testchrono() {
+        use chrono::prelude::*;
+        let dt = Utc.ymd(2014, 7, 8).and_hms(9, 10, 11); // `2014-07-08T09:10:11Z`
+        let ts = AstroTime::from(dt);
+        let (year, mon, day, hour, min, sec) = ts.to_datetime();
+        assert_eq!(year, 2014);
+        assert_eq!(mon, 7);
+        assert_eq!(day, 8);
+        assert_eq!(hour, 9);
+        assert_eq!(min, 10);
+        assert!(((sec - 11.0) / 11.0).abs() < 1.0e-5);
+        let dt2 = chrono::NaiveDateTime::from(ts);
+        println!("{}", dt2);
+        println!("{}", ts);
     }
 
     #[test]
