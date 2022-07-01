@@ -1,6 +1,7 @@
 pub mod astrotime;
 pub mod datadir;
 pub mod earth_orientation_params;
+pub mod itrfcoord;
 
 #[cfg(test)]
 mod tests {
