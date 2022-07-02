@@ -1,3 +1,34 @@
+//!
+//! # AstroTime
+//!
+//! A representation of time that allows for conversion between various scales or epochs.
+//! Epoch conversion is an often necessary for calculation of astronomic phenomenon, e.g.
+//! the exact rotation between Earth-centered inertial and fixed coordinate frames.
+//!
+//! ## Scales include:
+//!
+//! * **UTC** - Universal Time Coordinate. In common use.  Local times are generally
+//!   UTC time with a timezone offset
+//!
+//! * **TAI** - International Atomic Time.  A monotonically increasing epoch that differs
+//!   from UTC in that it does not include leap seconds.
+//!
+//! * **UT1** - Universal Time.  This is defined by the Earth's rotation, with
+//!   correction for polar wander
+//!
+//! * **TT** - Terrestrial Time.  Defined from 2001 on. Leads TAI by
+//!    a constant 32.184 seconds.
+//!
+//! * **GPS** - GPS Time.  Defined for global positining system. Trails TAI by a
+//!   constant 19 seconds after GPS epoch of Jan 6 1980.  Typically reported in
+//!   weeks since midnight Jan 1 1980 and seconds of week.
+//!
+//! * **TDB** - Barycentric Dynamical time.  Used as time scale when dealing with
+//!   solar system ephemerides in solar system barycentric coordinate system.
+//!
+//! ## Additional Info
+//!
+//! For a good description, see [here](https://www.stjarnhimlen.se/comp/time.html)
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
 pub struct AstroTime {
     mjd_tai: f64,
@@ -14,13 +45,16 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
 
-pub const UTC1970: f64 = 40587.;
-pub const UTC1972: f64 = 41317.;
-pub const TAI1972: f64 = UTC1972 + 10. / 86400.;
-pub const UTCGPS0: f64 = 44244.; // 1980-01-06
-pub const TAIGPS0: f64 = UTCGPS0 + 19. / 86400.;
+const UTC1970: f64 = 40587.;
+const UTC1972: f64 = 41317.;
+//const TAI1972: f64 = UTC1972 + 10. / 86400.;
+const UTCGPS0: f64 = 44244.; // 1980-01-06
+const TAIGPS0: f64 = UTCGPS0 + 19. / 86400.;
 
+/// Conversion from Julian Date to Modified Julian Date
 pub const JD2MJD: f64 = -2400000.5;
+
+/// Conversion from Modified Julian Date to Julian Date
 pub const MJD2JD: f64 = 2400000.5;
 
 /*
@@ -43,13 +77,22 @@ const DELTAAT_OLD: [[f64; 4]; 15] = [
 ];
 */
 
+/// Time Scales
+///
 pub enum Scale {
+    /// Invalid
     INVALID = -1,
+    /// Universal Time Coordinate
     UTC = 1,
+    /// Terrestrial Time
     TT = 2,
+    /// UT1
     UT1 = 3,
+    /// International Atomic Time
     TAI = 4,
+    /// Global Positioning System
     GPS = 5,
+    /// Barycentric Dynamical Time
     TDB = 6,
 }
 
@@ -109,6 +152,10 @@ impl std::fmt::Display for AstroTime {
     }
 }
 
+/// Add given floating-point number of days to AstroTime instance,
+/// and return new instance representing new time.
+///
+/// Days are defined in this case to have exactly 86400.0 seconds
 impl std::ops::Add<f64> for AstroTime {
     type Output = Self;
     fn add(self, other: f64) -> Self::Output {
@@ -118,6 +165,9 @@ impl std::ops::Add<f64> for AstroTime {
     }
 }
 
+/// Take the difference between two AstroTime time instances
+/// returning the floating-point number of days between
+/// the instances.
 impl std::ops::Sub<f64> for AstroTime {
     type Output = Self;
     fn sub(self, other: f64) -> Self::Output {
@@ -171,18 +221,37 @@ impl TryFrom<std::time::SystemTime> for AstroTime {
 
 impl AstroTime {
     #[inline]
+    /// Construct new astrotime object,
+    /// representing time at TAI epoch of modified Julian date
     pub fn new() -> AstroTime {
         AstroTime { mjd_tai: JD2MJD }
     }
 
+    /// Construct new AstroTime object, representing given unixtime
+    /// (seconds since midnight Jan 1 1970, UTC)
     pub fn from_unixtime(t: i64) -> AstroTime {
         AstroTime::from_mjd(t as f64 / 86400.0 + UTC1970, Scale::UTC)
     }
 
+    /// Convert to unixtime (seconds since midnight Jan 1 1970, UTC)
     pub fn to_unixtime(&self) -> i64 {
         ((self.to_mjd(Scale::UTC) - UTC1970) * 86400.0) as i64
     }
 
+    /// Construct new AstroTime object representing time at
+    /// given Modified Julian Day (MJD) and time scale
+    ///
+    /// Modified Julian Day is the days (including fractional) since
+    /// midnight on Nov 17, 1858.  The MJD can be computed by
+    /// subtracting 2400000.5 from the Julian day
+    /// # Arguments:
+    ///
+    /// * mjd - The modified Julian day
+    /// * scale - The time scale of the input date
+    ///
+    /// # Returns
+    ///
+    /// * AstroTime object
     pub fn from_mjd(val: f64, scale: Scale) -> AstroTime {
         match scale {
             Scale::TAI => AstroTime {
@@ -215,14 +284,45 @@ impl AstroTime {
         }
     }
 
+    /// Construct AstroTime object from given UTC Gregorian Date
+    ///
+    /// # Arguments
+    ///
+    /// * year - the year
+    /// * month - the month, 1 based (1=January, 2=February, ...)
+    /// * day - Day of month, starting from 1
+    ///
+    /// # Returns
+    ///
+    /// * AstroTime Object
     pub fn from_date(year: u32, month: u32, day: u32) -> AstroTime {
         AstroTime::from_mjd(date2mjd_utc(year, month, day) as f64, Scale::UTC)
     }
 
+    /// Convert AstroTime to UTC Gregorian date
+    ///
+    /// # Returns
+    ///
+    /// * Tuple with following values:
+    ///   * year - the year
+    ///   * month - the month, 1 based (1=January, 2=February, ...)
+    ///   * day - Day of month, starting from 1
     pub fn to_date(&self) -> (u32, u32, u32) {
         mjd_utc2date(self.to_mjd(Scale::UTC))
     }
 
+    /// Convert AstroTime to UTC Gregorian date and time
+    ///
+    /// # Returns
+    ///
+    /// * Tuple with following values:
+    ///   * year - the year
+    ///   * month - the month, 1 based (1=January, 2=February, ...)
+    ///   * day - Day of month, starting from 1
+    ///   * hour - Hour of day, in range [0,23]
+    ///   * min - Minute of hour, in range [0,59]
+    ///   * sec - Second of minute, including fractions for subsecond, in range [0,1)
+    ///
     pub fn to_datetime(&self) -> (u32, u32, u32, u32, u32, f64) {
         let mjd_utc = self.to_mjd(Scale::UTC);
         let (year, month, day) = mjd_utc2date(mjd_utc);
@@ -235,6 +335,21 @@ impl AstroTime {
         (year, month, day, hour, min, sec)
     }
 
+    /// Convert UTC Gregorian date and time to AstroTime
+    ///
+    /// # Arguments
+    ///
+    /// * year - the year (u32)
+    /// * month - the month, 1 based (1=January, 2=February, ...) (u32)
+    /// * day - Day of month, starting from 1 (u32)
+    /// * hour - Hour of day, in range [0,23] (u32)
+    /// * min - Minute of hour, in range [0,59] (u32)
+    /// * sec - Second of minute, including fractions for subsecond, in range [0,1) (f64)
+    ///
+    /// # Return
+    ///
+    /// * AstroTime object
+    ///
     pub fn from_datetime(
         year: u32,
         month: u32,
@@ -248,6 +363,12 @@ impl AstroTime {
         AstroTime::from_mjd(mjd, Scale::UTC)
     }
 
+    /// Convert to modified Julian day (MJD), with given scale
+    ///
+    /// Modified Julian Day is the days (including fractional) since
+    /// midnight on Nov 17, 1858.  The MJD can be computed by
+    /// subtracting 2400000.5 from the Julian day
+    ///
     pub fn to_mjd(&self, ref scale: Scale) -> f64 {
         match scale {
             &Scale::TAI => self.mjd_tai,
@@ -282,10 +403,20 @@ impl AstroTime {
         }
     }
 
+    /// Convert to Julian day, with given scale
+    /// Julian day is total number of days (including fraction)
+    /// since given epoch
+    ///
+    /// Jan 1 2000, 12pm is defined as Julian day 2451545.0
     pub fn to_jd(&self, scale: Scale) -> f64 {
         self.to_mjd(scale) + MJD2JD
     }
 
+    /// Convert from Julian day, with given scale
+    /// Julian day is total number of days (including fraction)
+    /// since given epoch
+    ///
+    /// Jan 1 2000, 12pm is defined as Julian day 2451545.0
     pub fn from_jd(jd: f64, scale: Scale) -> AstroTime {
         AstroTime::from_mjd(jd + JD2MJD, scale)
     }

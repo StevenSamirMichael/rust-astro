@@ -146,7 +146,7 @@ impl ITRFCoord {
     ///
     /// * `.0` - latitude in radians
     /// * `.1` - longitude in radians
-    /// * `.1` - height above ellipsoid, in meters
+    /// * `.2` - height above ellipsoid, in meters
     ///
     pub fn to_geodetic_rad(&self) -> (f64, f64, f64) {
         const B: f64 = WGS84_A * (1.0 - WGS84_F);
@@ -180,38 +180,55 @@ impl ITRFCoord {
         (lat, lon, h)
     }
 
+    /// Returns 3-element tuple representing geodetic coordinates
+    ///
+    /// # Tuple contents:
+    ///
+    /// * `.0` - latitude in degrees
+    /// * `.1` - longitude in degrees
+    /// * `.2` - height above ellipsoid, in meters
+    ///
     pub fn to_geodetic_deg(&self) -> (f64, f64, f64) {
         let (lat_rad, lon_rad, hae) = self.to_geodetic_rad();
         (lat_rad * RAD2DEG, lon_rad * RAD2DEG, hae)
     }
 
+    /// Return geodetic longitude in radians, [-pi, pi]
+    ///
     #[inline]
     pub fn longitude_rad(&self) -> f64 {
         f64::atan2(self.itrf[1], self.itrf[0])
     }
 
+    /// Return geodetic longitude in degrees, [-180, 180]
     #[inline]
     pub fn longitude_deg(&self) -> f64 {
         self.longitude_rad() * RAD2DEG
     }
 
+    /// return geodetic latitude in radians, [-pi/2, pi/2]
     #[inline]
     pub fn latitude_rad(&self) -> f64 {
         let (lat, _a, _b) = self.to_geodetic_rad();
         lat
     }
 
+    /// Return height above ellipsoid in meters
     #[inline]
     pub fn hae(&self) -> f64 {
         let (_a, _b, hae) = self.to_geodetic_rad();
         hae
     }
 
+    /// Return geodetic latitude in degrees, [-pi/2, pi/2]
     #[inline]
     pub fn latitude_deg(&self) -> f64 {
         self.latitude_rad() * RAD2DEG
     }
 
+    /// Return quaternion representing rotation from the
+    /// North-East-Down (NED) coordinate frame to the
+    /// ITRF coordinate frame
     #[inline]
     pub fn q_ned2itrf(&self) -> Quat {
         let (lat, lon, _) = self.to_geodetic_rad();
@@ -219,16 +236,69 @@ impl ITRFCoord {
             * Quat::from_axis_angle(&Vec3::y_axis(), -lat - PI / 2.0)
     }
 
-    pub fn to_ned(&self, other: &ITRFCoord) -> Vec3 {
-        self.q_ned2itrf().conjugate() * (self.itrf - other.itrf)
+    /// Convert coordinate to a North-East-Down (NED)
+    /// coordinate relative to a reference coordinate
+    ///
+    /// # Arguemnts
+    ///
+    /// * ref_coord - &ITRFCoord representing reference
+    ///
+    /// # Return
+    ///
+    /// * nalgebra::Vector3<f64> representing NED position
+    ///   relative to reference.  Units are meters
+    ///
+    /// # Examples:
+    /// ```
+    /// use astro::itrfcoord::ITRFCoord;
+    /// // Create coord
+    /// let itrf1 = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 150.0);
+    /// // Crate 2nd coord 100 meters above
+    /// let itrf2 = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 250.0);
+    ///
+    /// // Get NED of itrf1 relative to itrf2
+    /// let ned = itrf1.to_ned(&itrf2);
+    /// // Should return [0.0, 0.0, 100.0]
+    /// ```
+    ///
+    pub fn to_ned(&self, ref_coord: &ITRFCoord) -> Vec3 {
+        self.q_ned2itrf().conjugate() * (self.itrf - ref_coord.itrf)
     }
 
+    /// Return quaternion representing rotation from the
+    /// East-North-Up (ENU) coordinate frame to the
+    /// ITRF coordinate frame
     pub fn q_enu2itrf(&self) -> Quat {
         let (lat, lon, _) = self.to_geodetic_rad();
         Quat::from_axis_angle(&Vec3::z_axis(), lon + PI / 2.0)
             * Quat::from_axis_angle(&Vec3::x_axis(), PI / 2.0 - lat)
     }
 
+    /// Convert coordinate to a East-North-Up (ENU)
+    /// coordinate relative to a reference coordinate
+    ///
+    /// # Arguemnts
+    ///
+    /// * ref_coord - &ITRFCoord representing reference
+    ///
+    /// # Return
+    ///
+    /// * nalgebra::Vector3<f64> representing ENU position
+    ///   relative to reference.  Units are meters
+    ///
+    /// # Examples:
+    /// ```
+    /// use astro::itrfcoord::ITRFCoord;
+    /// // Create coord
+    /// let itrf1 = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 150.0);
+    /// // Crate 2nd coord 100 meters above
+    /// let itrf2 = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 250.0);
+    ///
+    /// // Get ENU of itrf1 relative to itrf2
+    /// let enu = itrf1.to_ned(&itrf2);
+    /// // Should return [0.0, 0.0, -100.0]
+    /// ```
+    ///
     pub fn to_enu(&self, other: &ITRFCoord) -> Vec3 {
         self.q_enu2itrf().conjugate() * (self.itrf - other.itrf)
     }

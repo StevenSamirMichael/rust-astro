@@ -108,11 +108,21 @@ lazy_static::lazy_static! {
 }
 
 /// Get directory where astronomy data is stored
-/// Tries the following paths
-///   "ASTROLIB_DATA" environment variable
-///   ${HOME}
-///   ${HOME}/share/astrodata///   <Library Directory>
-///   <Library Directory>/share/astrodata
+///
+/// Tries the following paths in order, and stops when the
+/// files are found
+/// *  "ASTROLIB_DATA" environment variable
+/// *  ${HOME}
+/// *  ${HOME}/share/astro-data
+/// *  /usr/share/astro-data
+/// *  On Mac Only:
+///    * /Library/Application Support/astro-data
+///    * ${Home}/Library/Application Support/astro-data
+///
+/// Returns:
+///
+///  * Option<<std::path::PathBuf>> representing directory
+///    where files are stored
 ///
 pub fn get() -> Option<PathBuf> {
     DATADIR.clone()
