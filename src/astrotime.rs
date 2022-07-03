@@ -29,7 +29,7 @@
 //! ## Additional Info
 //!
 //! For a good description, see [here](https://www.stjarnhimlen.se/comp/time.html)
-#[derive(PartialEq, PartialOrd, Copy, Clone)]
+#[derive(PartialEq, PartialOrd, Copy, Clone, Debug)]
 pub struct AstroTime {
     mjd_tai: f64,
 }
@@ -141,13 +141,8 @@ impl std::fmt::Display for AstroTime {
 
         write!(
             f,
-            "{}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-            year,
-            mon,
-            day,
-            hour,
-            min,
-            sec.floor()
+            "{}-{:02}-{:02} {:02}:{:02}:{:02.3}Z",
+            year, mon, day, hour, min, sec
         )
     }
 }
@@ -156,12 +151,19 @@ impl std::fmt::Display for AstroTime {
 /// and return new instance representing new time.
 ///
 /// Days are defined in this case to have exactly 86400.0 seconds
+/// In other words, this will ignore leap seconds and the integer
+/// part of the floating point will increment the number of days and
+/// the decimal part will increment the fractions of a day.
+///
+/// So, for example, adding 1.0 to a day with a leap second will
+/// increment by a full day
+///
 impl std::ops::Add<f64> for AstroTime {
     type Output = Self;
     fn add(self, other: f64) -> Self::Output {
-        Self {
-            mjd_tai: self.mjd_tai + other,
-        }
+        let mut utc = self.to_mjd(Scale::UTC);
+        utc = utc + other;
+        AstroTime::from_mjd(utc, Scale::UTC)
     }
 }
 
