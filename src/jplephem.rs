@@ -12,6 +12,7 @@ use super::astrotime::{AstroTime, Scale};
 /// Coordinates origin is the solar system barycenter
 ///
 /// EMB (2) is the Earth-Moon barycenter
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EphBody {
     MERCURY = 0,
     VENUS = 1,
@@ -50,15 +51,27 @@ struct JPLEphem {
     jd_start: f64,
     jd_stop: f64,
     jd_step: f64,
-    n_con: i32,
     au: f64,
     emrat: f64,
-    kernel_size: u32,
-    record_size: u32,
-    ncoeff: u32,
     ipt: [[u32; 3]; 15],
     consts: std::collections::HashMap<String, f64>,
     cheby: DMatrix<f64>,
+}
+
+pub fn emrat() -> f64 {
+    JPLEPHEM.emrat
+}
+
+pub fn au() -> f64 {
+    JPLEPHEM.au
+}
+
+pub fn consts(s: &String) -> Option<&f64> {
+    JPLEPHEM.consts.get(s)
+}
+
+pub fn de_version() -> i32 {
+    JPLEPHEM.de_version
 }
 
 fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Error>> {
@@ -90,8 +103,12 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
     // Get version
     let de_version: i32 = title[26..29].parse()?;
 
-    // Get number of constants
+    let jd_start = f64::from_le_bytes(raw[2652..2660].try_into()?);
+    let jd_stop: f64 = f64::from_le_bytes(raw[2660..2668].try_into()?);
+    let jd_step: f64 = f64::from_le_bytes(raw[2668..2676].try_into()?);
     let n_con: i32 = i32::from_le_bytes(raw[2676..2680].try_into()?);
+    let au: f64 = f64::from_le_bytes(raw[2680..2688].try_into()?);
+    let emrat: f64 = f64::from_le_bytes(raw[2688..2696].try_into()?);
 
     // Get table
     let ipt: [[u32; 3]; 15] = {
@@ -116,16 +133,21 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
                 ipt[13][0] = 1 as u32;
             }
         }
+        println!("{:?}", ipt);
+
         // Check for garbage data not populated in earlier files
-        if ipt[13][0] != (ipt[12][0] + ipt[12][1] + ipt[12][2]) * 3
-            || ipt[14][0] != (ipt[13][0] + ipt[13][1] + ipt[13][2]) * 3
+        if ipt[13][0] != (ipt[12][0] + ipt[12][1] * ipt[12][2] * 3)
+            || ipt[14][0] != (ipt[13][0] + ipt[13][1] * ipt[13][2] * 3)
         {
+            println!("zeroing");
             for ix in 13..15 {
                 for iy in 0..3 {
                     ipt[ix][iy] = 0;
                 }
             }
         }
+        println!("{:?}", ipt);
+
         ipt
     };
 
@@ -138,23 +160,14 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
         ks
     };
 
-    // Julian date start, stop, & step size
-    let jd_start = f64::from_le_bytes(raw[2652..2660].try_into()?);
-    let jd_stop: f64 = f64::from_le_bytes(raw[2660..2668].try_into()?);
-    let jd_step: f64 = f64::from_le_bytes(raw[2668..2676].try_into()?);
-
     Ok(JPLEphem {
         de_version: de_version,
         jd_start: jd_start,
         jd_stop: jd_stop,
         jd_step: jd_step,
-        n_con: n_con,
-        au: f64::from_le_bytes(raw[2680..2688].try_into()?),
-        emrat: f64::from_le_bytes(raw[2688..2696].try_into()?),
+        au: au,
+        emrat: emrat,
         ipt: ipt,
-        kernel_size: kernel_size,
-        record_size: kernel_size * 4,
-        ncoeff: kernel_size / 2,
         consts: {
             let mut hm = HashMap::new();
 
@@ -203,24 +216,31 @@ lazy_static::lazy_static! {
         load_ephemeris_file(&"jpleph.440").unwrap_or_else(|e| {panic!("Error: {}", e);});
 }
 
-pub fn body_pos<const N: usize>(
+pub fn body_pos_optimized<const N: usize>(
     body: EphBody,
-    tm: AstroTime,
+    tm: &AstroTime,
 ) -> Result<Vec3, Box<dyn std::error::Error>> {
+    // Terrestrial time
     let tt = tm.to_jd(Scale::TT);
     if (JPLEPHEM.jd_start > tt) || (JPLEPHEM.jd_stop < tt) {
         return Err(Box::new(InvalidTime));
     }
 
+    // Get record intex
     let t_int: f64 = (tt - JPLEPHEM.jd_start) / JPLEPHEM.jd_step;
     let int_num = t_int.floor() as i32;
+
+    // Body index
     let bidx = body as usize;
 
+    // # of coefficients and subintervals for this body
     let ncoeff = JPLEPHEM.ipt[bidx][1];
     let nsubint = JPLEPHEM.ipt[bidx][2];
 
+    // Fractional way into step
     let t_int_2 = (t_int - int_num as f64) * nsubint as f64;
     let sub_int_num: u32 = t_int_2.floor() as u32;
+    // Scale from -1 to 1
     let t_seg = 2.0 * (t_int_2 - sub_int_num as f64) - 1.0;
 
     let offset0 = JPLEPHEM.ipt[bidx][0] - 1 + sub_int_num * ncoeff * 3;
@@ -228,23 +248,47 @@ pub fn body_pos<const N: usize>(
     let mut t = na::Vector::<f64, na::Const<N>, na::ArrayStorage<f64, N, 1>>::zeros();
     t[0] = 1.0;
     t[1] = t_seg;
-    println!("ncoeff = {}", ncoeff);
     for j in 2..ncoeff as usize {
         t[j] = 2.0 * t_seg + t[j - 1] - t[j - 2];
     }
 
-    println!("t_sg = {}", t_seg);
-    println!("offset0 = {}", offset0);
-    println!("int_num = {}", int_num);
-
-    let v: Vec3 = JPLEPHEM
+    let v = JPLEPHEM
         .cheby
-        .fixed_columns::<3>(offset0 as usize)
-        .fixed_rows::<N>(int_num as usize)
+        .fixed_rows::<N>(offset0 as usize)
+        .fixed_columns::<3>(int_num as usize)
         .transpose()
-        * t;
+        * t
+        * 1.0e3;
 
     Ok(v)
+}
+
+pub fn body_pos(body: EphBody, tm: &AstroTime) -> Result<Vec3, Box<dyn std::error::Error>> {
+    match JPLEPHEM.ipt[body as usize][1] {
+        6 => body_pos_optimized::<6>(body, tm),
+        7 => body_pos_optimized::<7>(body, tm),
+        8 => body_pos_optimized::<8>(body, tm),
+        10 => body_pos_optimized::<10>(body, tm),
+        11 => body_pos_optimized::<11>(body, tm),
+        12 => body_pos_optimized::<12>(body, tm),
+        13 => body_pos_optimized::<13>(body, tm),
+        _ => panic!("Invalid body"),
+    }
+}
+
+pub fn geocentric_body_pos(
+    body: EphBody,
+    tm: &AstroTime,
+) -> Result<Vec3, Box<dyn std::error::Error>> {
+    if body == EphBody::MOON {
+        return body_pos(body, tm);
+    } else {
+        let emb: Vec3 = body_pos(EphBody::EMB, tm).unwrap();
+        let moon: Vec3 = body_pos(EphBody::MOON, tm).unwrap();
+        let b: Vec3 = body_pos(body, tm).unwrap();
+
+        Ok(b - emb + JPLEPHEM.emrat * moon)
+    }
 }
 
 #[cfg(test)]
@@ -255,10 +299,9 @@ mod tests {
     fn load_test() {
         //let s = load_ephemeris_file("jpleph.440");
         //println!("s = {:?}", s.unwrap().cheby);
-        println!(
-            "s = {:?}",
-            body_pos::<13>(EphBody::EMB, AstroTime::from_jd(2451545.0, Scale::TT))
-        );
+        let s = body_pos(EphBody::MOON, &AstroTime::from_jd(2451545.0, Scale::TT)).unwrap();
+        println!("s = {:?}", s);
+        println!("snorm = {} km", s.norm() / 1.0e3);
         assert!(1 == 1);
     }
 }
