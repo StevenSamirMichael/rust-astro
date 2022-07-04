@@ -88,12 +88,7 @@ impl TLE {
             Err(_) => return Err("Could not parse day of year".to_string()),
         };
 
-        //let i_day_of_year: u32 = day_of_year.floor() as u32;
-        //let frac_of_day: f64 = day_of_year - (i_day_of_year as f64);
-        //println!("day_of_year = {}", i_day_of_year);
-        //println!("frac of day = {}", frac_of_day);
-        //let epoch: AstroTime =
-        //    AstroTime::from_datetime(year, 1, i_day_of_year, 0, 0, frac_of_day * 86400.0);
+        // Note: day_of_year starts from 1, not zero, hence the "-1" at end
         let epoch = AstroTime::from_date(year, 1, 1) + day_of_year - 1.0;
 
         Ok(TLE {
@@ -229,6 +224,28 @@ impl TLE {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn testref() {
+        struct TS<'a> {
+            c: &'a f64,
+        }
+
+        fn chnge(a: &mut f64) {
+            *a = *a + 1.0;
+            ()
+        }
+
+        let mut s: TS = TS { c: &32.0 };
+        println!("s = {:?}", s.c);
+        chnge(mut s.c);
+        println!("s = {:?}", s.c);
+
+        let mut b: f64 = 3.0;
+        println!("b = {}", b);
+        chnge(&mut b);
+        println!("b = {}", b);
+    }
 
     #[test]
     fn testload() {
