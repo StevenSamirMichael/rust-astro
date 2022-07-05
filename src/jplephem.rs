@@ -157,6 +157,7 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
         for ix in 0..15 {
             ks = ks + 2 * ipt[ix][1] * ipt[ix][2] * dimension(ix)
         }
+        println!("kernel_size = {}", ks);
         ks
     };
 
@@ -192,19 +193,31 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
             // we are going to do this unsafe since I can't find a
             // fast way to do it otherwise
             let ncoeff: usize = (kernel_size / 2) as usize;
+            println!("ncoeff = {}", ncoeff);
             let nrecords = ((jd_stop - jd_start) / jd_step) as usize;
             let record_size = (kernel_size * 4) as usize;
             let mut v: DMatrix<f64> = DMatrix::from_element(ncoeff, nrecords, 0.0);
             if raw.len() < record_size * 2 + ncoeff * nrecords * 8 {
                 return Err(Box::new(InvalidSize));
             }
+
             unsafe {
-                std::ptr::copy(
-                    raw.as_ptr().offset((record_size * 2) as isize) as *mut f64,
-                    v.as_mut_ptr(),
-                    ncoeff * nrecords,
-                )
+                std::ptr::copy_nonoverlapping(
+                    raw.as_ptr().offset((record_size * 2) as isize),
+                    v.as_mut_ptr() as *mut u8,
+                    ncoeff * nrecords * 8,
+                );
             }
+            /*
+            let mut sidx = record_size * 2;
+            for i1 in 0..nrecords {
+                for i2 in 0..ncoeff {
+                    v[(i2, i1)] = f64::from_le_bytes(raw[sidx..(sidx + 8)].try_into()?);
+                    sidx = sidx + 8;
+                }
+            }
+            */
+            println!("v = {} :: {}", v.nrows(), v.ncols());
             v
         },
     })
@@ -229,7 +242,7 @@ pub fn body_pos_optimized<const N: usize>(
     // Get record intex
     let t_int: f64 = (tt - JPLEPHEM.jd_start) / JPLEPHEM.jd_step;
     let int_num = t_int.floor() as i32;
-
+    println!("t_int = {}", t_int);
     // Body index
     let bidx = body as usize;
 
@@ -242,23 +255,26 @@ pub fn body_pos_optimized<const N: usize>(
     let sub_int_num: u32 = t_int_2.floor() as u32;
     // Scale from -1 to 1
     let t_seg = 2.0 * (t_int_2 - sub_int_num as f64) - 1.0;
+    println!("t_seg = {}", t_seg);
 
     let offset0 = JPLEPHEM.ipt[bidx][0] - 1 + sub_int_num * ncoeff * 3;
+    println!("offset0 = {}", offset0);
+    println!("int_num = {}", int_num);
 
     let mut t = na::Vector::<f64, na::Const<N>, na::ArrayStorage<f64, N, 1>>::zeros();
     t[0] = 1.0;
     t[1] = t_seg;
     for j in 2..ncoeff as usize {
-        t[j] = 2.0 * t_seg + t[j - 1] - t[j - 2];
+        t[j] = 2.0 * t_seg * t[j - 1] - t[j - 2];
     }
+    println!("t = {:?}", t);
 
-    let v = JPLEPHEM
+    let m = JPLEPHEM
         .cheby
-        .fixed_rows::<N>(offset0 as usize)
-        .fixed_columns::<3>(int_num as usize)
-        .transpose()
-        * t
-        * 1.0e3;
+        .fixed_slice::<N, 3>(offset0 as usize, int_num as usize);
+
+    println!("m = {:?}", m);
+    let v = m.transpose() * t;
 
     Ok(v)
 }
@@ -299,9 +315,9 @@ mod tests {
     fn load_test() {
         //let s = load_ephemeris_file("jpleph.440");
         //println!("s = {:?}", s.unwrap().cheby);
-        let s = body_pos(EphBody::MOON, &AstroTime::from_jd(2451545.0, Scale::TT)).unwrap();
-        println!("s = {:?}", s);
-        println!("snorm = {} km", s.norm() / 1.0e3);
+        let s = body_pos(EphBody::MOON, &AstroTime::from_jd(2451545.0, Scale::UTC)).unwrap();
+        println!("s = {} {} {}", s[0], s[1], s[2]);
+        println!("snorm = {} km", s.norm());
         assert!(1 == 1);
     }
 }
