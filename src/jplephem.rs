@@ -53,7 +53,7 @@ struct JPLEphem {
     jd_step: f64,
     au: f64,
     emrat: f64,
-    ipt: [[u32; 3]; 15],
+    ipt: [[usize; 3]; 15],
     consts: std::collections::HashMap<String, f64>,
     cheby: DMatrix<f64>,
 }
@@ -80,7 +80,7 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
     use std::path::PathBuf;
 
     // Dimensions of ephemeris for given index
-    fn dimension(idx: usize) -> u32 {
+    fn dimension(idx: usize) -> usize {
         if idx == 11 {
             2
         } else if idx == 14 {
@@ -111,12 +111,12 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
     let emrat: f64 = f64::from_le_bytes(raw[2688..2696].try_into()?);
 
     // Get table
-    let ipt: [[u32; 3]; 15] = {
-        let mut ipt: [[u32; 3]; 15] = [[0, 0, 0]; 15];
+    let ipt: [[usize; 3]; 15] = {
+        let mut ipt: [[usize; 3]; 15] = [[0, 0, 0]; 15];
         let mut idx = 2696;
         for ix in 0..15 {
             for iy in 0..3 {
-                ipt[ix][iy] = u32::from_le_bytes(raw[idx..(idx + 4)].try_into()?);
+                ipt[ix][iy] = u32::from_le_bytes(raw[idx..(idx + 4)].try_into()?) as usize;
                 idx = idx + 4;
             }
         }
@@ -128,36 +128,31 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
         if de_version > 430 && n_con != 400 {
             if n_con > 400 {
                 let idx = ((n_con - 400) * 6) as usize;
-                ipt[13][0] = u32::from_le_bytes(raw[idx..(idx + 4)].try_into()?);
+                ipt[13][0] = u32::from_le_bytes(raw[idx..(idx + 4)].try_into()?) as usize;
             } else {
-                ipt[13][0] = 1 as u32;
+                ipt[13][0] = 1 as usize;
             }
         }
-        println!("{:?}", ipt);
 
         // Check for garbage data not populated in earlier files
         if ipt[13][0] != (ipt[12][0] + ipt[12][1] * ipt[12][2] * 3)
             || ipt[14][0] != (ipt[13][0] + ipt[13][1] * ipt[13][2] * 3)
         {
-            println!("zeroing");
             for ix in 13..15 {
                 for iy in 0..3 {
                     ipt[ix][iy] = 0;
                 }
             }
         }
-        println!("{:?}", ipt);
-
         ipt
     };
 
     // Kernel size
-    let kernel_size: u32 = {
-        let mut ks: u32 = 4;
+    let kernel_size: usize = {
+        let mut ks: usize = 4;
         for ix in 0..15 {
             ks = ks + 2 * ipt[ix][1] * ipt[ix][2] * dimension(ix)
         }
-        println!("kernel_size = {}", ks);
         ks
     };
 
@@ -174,7 +169,7 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
 
             // Read in constants defined in file
             for ix in 0..n_con {
-                let sidx: usize = (kernel_size * 4 + ix as u32 * 8) as usize;
+                let sidx: usize = kernel_size * 4 + ix as usize * 8;
                 let eidx: usize = sidx + 8;
                 let val: f64 = f64::from_le_bytes(raw[sidx..eidx].try_into()?);
 
@@ -193,7 +188,6 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
             // we are going to do this unsafe since I can't find a
             // fast way to do it otherwise
             let ncoeff: usize = (kernel_size / 2) as usize;
-            println!("ncoeff = {}", ncoeff);
             let nrecords = ((jd_stop - jd_start) / jd_step) as usize;
             let record_size = (kernel_size * 4) as usize;
             let mut v: DMatrix<f64> = DMatrix::from_element(ncoeff, nrecords, 0.0);
@@ -203,21 +197,11 @@ fn load_ephemeris_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Erro
 
             unsafe {
                 std::ptr::copy_nonoverlapping(
-                    raw.as_ptr().offset((record_size * 2) as isize),
-                    v.as_mut_ptr() as *mut u8,
-                    ncoeff * nrecords * 8,
+                    raw.as_ptr().offset((record_size * 2) as isize) as *const f64,
+                    v.as_mut_ptr() as *mut f64,
+                    ncoeff * nrecords,
                 );
             }
-            /*
-            let mut sidx = record_size * 2;
-            for i1 in 0..nrecords {
-                for i2 in 0..ncoeff {
-                    v[(i2, i1)] = f64::from_le_bytes(raw[sidx..(sidx + 8)].try_into()?);
-                    sidx = sidx + 8;
-                }
-            }
-            */
-            println!("v = {} :: {}", v.nrows(), v.ncols());
             v
         },
     })
@@ -242,7 +226,6 @@ pub fn body_pos_optimized<const N: usize>(
     // Get record intex
     let t_int: f64 = (tt - JPLEPHEM.jd_start) / JPLEPHEM.jd_step;
     let int_num = t_int.floor() as i32;
-    println!("t_int = {}", t_int);
     // Body index
     let bidx = body as usize;
 
@@ -252,31 +235,28 @@ pub fn body_pos_optimized<const N: usize>(
 
     // Fractional way into step
     let t_int_2 = (t_int - int_num as f64) * nsubint as f64;
-    let sub_int_num: u32 = t_int_2.floor() as u32;
+    let sub_int_num: usize = t_int_2.floor() as usize;
     // Scale from -1 to 1
     let t_seg = 2.0 * (t_int_2 - sub_int_num as f64) - 1.0;
-    println!("t_seg = {}", t_seg);
 
     let offset0 = JPLEPHEM.ipt[bidx][0] - 1 + sub_int_num * ncoeff * 3;
-    println!("offset0 = {}", offset0);
-    println!("int_num = {}", int_num);
 
     let mut t = na::Vector::<f64, na::Const<N>, na::ArrayStorage<f64, N, 1>>::zeros();
     t[0] = 1.0;
     t[1] = t_seg;
-    for j in 2..ncoeff as usize {
+    for j in 2..ncoeff {
         t[j] = 2.0 * t_seg * t[j - 1] - t[j - 2];
     }
-    println!("t = {:?}", t);
 
-    let m = JPLEPHEM
-        .cheby
-        .fixed_slice::<N, 3>(offset0 as usize, int_num as usize);
+    let mut pos: Vec3 = Vec3::zeros();
+    for ix in 0..3 {
+        let m = JPLEPHEM
+            .cheby
+            .fixed_slice::<N, 1>(offset0 + N * ix, int_num as usize);
+        pos[ix] = (m.transpose() * t)[(0, 0)];
+    }
 
-    println!("m = {:?}", m);
-    let v = m.transpose() * t;
-
-    Ok(v)
+    Ok(pos)
 }
 
 pub fn body_pos(body: EphBody, tm: &AstroTime) -> Result<Vec3, Box<dyn std::error::Error>> {
@@ -318,6 +298,7 @@ mod tests {
         let s = body_pos(EphBody::MOON, &AstroTime::from_jd(2451545.0, Scale::UTC)).unwrap();
         println!("s = {} {} {}", s[0], s[1], s[2]);
         println!("snorm = {} km", s.norm());
+
         assert!(1 == 1);
     }
 }
