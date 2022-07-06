@@ -433,9 +433,9 @@ mod tests {
             if tar <= 10 && src <= 10 && coord <= 3 {
                 println!("tar = {} ;; coord = {}", tar, coord);
                 println!("tm = {}", tm);
-                let target = jpl.body_pos(EphBody::try_from(tar).unwrap(), &tm).unwrap();
-                let src = jpl.body_pos(EphBody::try_from(src).unwrap(), &tm).unwrap();
-                let d = target - src;
+                let target: Vec3 = jpl.body_pos(EphBody::try_from(tar).unwrap(), &tm).unwrap();
+                let src: Vec3 = jpl.body_pos(EphBody::try_from(src).unwrap(), &tm).unwrap();
+                let d: Vec3 = target - src;
                 println!("{} {}", d[coord - 1] / jpl.au / 1.0e3, val);
             }
         }
