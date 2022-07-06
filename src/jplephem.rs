@@ -11,6 +11,7 @@
 //! found at:
 //! https://ssd.jpl.nasa.gov/ftp/eph/planets/
 //!
+//!
 //! ## Notes
 //!
 //! for little-endian systems, download from the "Linux" subdirectory
@@ -61,6 +62,26 @@ pub enum EphBody {
     MOON = 9,
     // Sun
     SUN = 10,
+}
+
+impl TryFrom<i32> for EphBody {
+    type Error = ();
+    fn try_from(v: i32) -> Result<Self, Self::Error> {
+        match v {
+            x if x == EphBody::MERCURY as i32 => Ok(EphBody::MERCURY),
+            x if x == EphBody::VENUS as i32 => Ok(EphBody::VENUS),
+            x if x == EphBody::EMB as i32 => Ok(EphBody::EMB),
+            x if x == EphBody::MARS as i32 => Ok(EphBody::MARS),
+            x if x == EphBody::JUPITER as i32 => Ok(EphBody::JUPITER),
+            x if x == EphBody::SATURN as i32 => Ok(EphBody::SATURN),
+            x if x == EphBody::URANUS as i32 => Ok(EphBody::URANUS),
+            x if x == EphBody::NEPTUNE as i32 => Ok(EphBody::NEPTUNE),
+            x if x == EphBody::PLUTO as i32 => Ok(EphBody::PLUTO),
+            x if x == EphBody::MOON as i32 => Ok(EphBody::MOON),
+            x if x == EphBody::SUN as i32 => Ok(EphBody::SUN),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -385,30 +406,39 @@ mod tests {
 
     #[test]
     fn testvecs() {
-        use super::super::datadir;
-        use reqwest;
+        let jpl = JPLEphem::from_file("jpleph.440").unwrap();
 
-        async fn download_file() -> Option<()> {
-            let target = "https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/testpo.440";
-            let response = reqwest::get(target).await.unwrap();
-
-            let mut dest = {
-                let fname = response
-                    .url()
-                    .path_segments()
-                    .and_then(|segments| segments.last())
-                    .and_then(|name| if name.is_empty() { None } else { Some(name) })
-                    .unwrap_or("testpo.dat");
-
-                println!("file to download: '{}'", fname);
-                let fname = datadir::get().unwrap().join(fname);
-                std::fs::File::create(fname).unwrap()
+        use super::super::utils::dev::*;
+        let lines =
+            match lines_from_url("https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/testpo.440")
+            {
+                Ok(v) => (v),
+                Err(e) => {
+                    panic!("Cannot download test points: {}", e.to_string());
+                }
             };
-            let content = response.text().await.unwrap();
-            std::io::copy(&mut content.as_bytes(), &mut dest).unwrap();
-            Some(())
+        for rline in lines.skip(14) {
+            let line = match rline {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+            let s: Vec<&str> = line.split_whitespace().collect();
+            assert!(s.len() >= 7);
+            let jd: f64 = s[2].parse().unwrap();
+            let tar: i32 = s[3].parse().unwrap();
+            let src: i32 = s[4].parse().unwrap();
+            let coord: usize = s[5].parse().unwrap();
+            let val: f64 = s[6].parse().unwrap();
+            let tm = AstroTime::from_jd(jd, Scale::TAI);
+            if tar <= 10 && src <= 10 && coord <= 3 {
+                println!("tar = {} ;; coord = {}", tar, coord);
+                println!("tm = {}", tm);
+                let target = jpl.body_pos(EphBody::try_from(tar).unwrap(), &tm).unwrap();
+                let src = jpl.body_pos(EphBody::try_from(src).unwrap(), &tm).unwrap();
+                let d = target - src;
+                println!("{} {}", d[coord - 1] / jpl.au / 1.0e3, val);
+            }
         }
-        async { download_file().await };
         println!("done");
     }
 

@@ -10,6 +10,7 @@ pub mod itrfcoord;
 pub mod jplephem;
 //mod sgp4unit;
 // pub mod tle;
+mod utils;
 
 #[cfg(test)]
 mod tests {

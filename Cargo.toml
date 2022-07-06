@@ -13,9 +13,9 @@ nalgebra = "0.31.0"
 nix = "0.24.1"
 lazy_static = "1.4.0"
 chrono = "0.4.19"
+reqwest =  {version="0.11.11", features = ["blocking"]}
 
 [dev-dependencies]
-reqwest = "0.11.11"
 
 # [features]
 # default = ["python3"]
