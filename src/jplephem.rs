@@ -1,3 +1,23 @@
+//!
+//! # Introduction
+//!
+//! This module provides high-precision ephemerides
+//! for bodies in the solar system, calculated from the
+//! Jet Propulsion Laboratory (JPL) ephemeris data files
+//!
+//! ## Links
+//!
+//! Ephemerides verions along with associated file lenghts can be
+//! found at:
+//! https://ssd.jpl.nasa.gov/ftp/eph/planets/
+//!
+//! ## Notes
+//!
+//! for little-endian systems, download from the "Linux" subdirectory
+//! For big-endian systems, download from the "SunOS" subdirectory
+//!
+
+extern crate nalgebra;
 use nalgebra::DMatrix;
 
 use nalgebra as na;
@@ -7,23 +27,39 @@ pub type Quat = na::UnitQuaternion<f64>;
 use super::astrotime::{AstroTime, Scale};
 
 /// Solar system bodies for which
-/// JPL ephemeris can be queried
+/// JPL high-precision ephemeris can be queried
 ///
 /// Coordinates origin is the solar system barycenter
 ///
-/// EMB (2) is the Earth-Moon barycenter
+/// ## Notes:
+///  * Positions for all bodies are natively relative to solar system barycenter,
+///    with exception of moon, which is computed in Geocentric system
+///  * EMB (2) is the Earth-Moon barycenter
+///  * The sun position is relative to the solar system barycenter
+///    (it will be close to origin)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EphBody {
+    // Mercury
     MERCURY = 0,
+    // Venus
     VENUS = 1,
+    // Earth-Moon Barycenter
     EMB = 2,
+    // Mars
     MARS = 3,
+    // Jupiter
     JUPITER = 4,
+    // Saturn
     SATURN = 5,
+    // Uranus
     URANUS = 6,
+    // Neptune
     NEPTUNE = 7,
+    // Pluto
     PLUTO = 8,
+    // Moon (Geocentric)
     MOON = 9,
+    // Sun
     SUN = 10,
 }
 
@@ -45,14 +81,28 @@ impl std::fmt::Display for InvalidTime {
     }
 }
 
+/// JPL Ephemeris Structure
+///
+/// included ephemerides and solar system constants loaded from the
+/// JPL ephemerides file.
+///
+/// Also includes functions to compute heliocentric and geocentric
+/// positions and velocities of solar system bodies as a function
+/// of time
 #[derive(Debug)]
 pub struct JPLEphem {
     pub de_version: i32,
+    /// Julian date of start of ephemerides database
     pub jd_start: f64,
+    /// Julian date of end of ephemerides database
     pub jd_stop: f64,
-    pub jd_step: f64,
+    jd_step: f64,
+    /// Length of 1 astronomical unit, km
     pub au: f64,
+    /// Earth/Moon Ratio
     pub emrat: f64,
+
+    // Offset lookup table
     ipt: [[usize; 3]; 15],
     consts: std::collections::HashMap<String, f64>,
     cheby: DMatrix<f64>,
@@ -63,6 +113,24 @@ impl JPLEphem {
         self.consts.get(s)
     }
 
+    /// Construct a JPL Ephemerides object from the provided binary data file
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///  // Note: filename can be full path. If not, file is
+    ///  // assumed to be in the "datadir" directory holding
+    ///  // data files for the rest of the library
+    ///  let jplephem = JPLEphem::from_file("jplephem.440");
+    ///
+    /// // Construct time: March 1 2021 12:00pm UTC
+    /// let t = AstroTime::from_datetime(2021, 3, 1, 12, 0, 0)
+    ///
+    /// // Find geocentric moon position at this time
+    /// let p = jplephem.geocentric_body_pos(EphBody::Moon, t)
+    /// ```
+    ///
     pub fn from_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Error>> {
         use super::datadir;
         use std::collections::HashMap;
@@ -179,7 +247,7 @@ impl JPLEphem {
                 let ncoeff: usize = (kernel_size / 2) as usize;
                 let nrecords = ((jd_stop - jd_start) / jd_step) as usize;
                 let record_size = (kernel_size * 4) as usize;
-                let mut v: DMatrix<f64> = DMatrix::from_element(ncoeff, nrecords, 0.0);
+                let mut v: DMatrix<f64> = DMatrix::repeat(ncoeff, nrecords, 0.0);
                 if raw.len() < record_size * 2 + ncoeff * nrecords * 8 {
                     return Err(Box::new(InvalidSize));
                 }
@@ -196,7 +264,9 @@ impl JPLEphem {
         })
     }
 
-    pub fn body_pos_optimized<const N: usize>(
+    // Optimized function for computing body position
+    // (Matrix is allocated on stack, not heap)
+    fn body_pos_optimized<const N: usize>(
         &self,
         body: EphBody,
         tm: &AstroTime,
@@ -243,6 +313,24 @@ impl JPLEphem {
         Ok(pos * 1.0e3)
     }
 
+    /// Return the position of the given body in the Heliocentric coordinate system
+    ///
+    /// # Inputs
+    ///
+    ///  * body - the solar system body for which to return position
+    ///  * tm - The time at which to return position
+    ///
+    /// # Return
+    ///
+    ///    3-vector of cartesian Heliocentric position
+    ///
+    ///
+    /// # Notes:
+    ///  * Positions for all bodies are natively relative to solar system barycenter,
+    ///    with exception of moon, which is computed in Geocentric system
+    ///  * EMB (2) is the Earth-Moon barycenter
+    ///  * The sun position is relative to the solar system barycenter
+    ///    (it will be close to origin)
     pub fn body_pos(
         &self,
         body: EphBody,
@@ -260,6 +348,17 @@ impl JPLEphem {
         }
     }
 
+    /// Return the position of the given body in the Geocentric coordinate system
+    ///
+    /// # Inputs
+    ///
+    ///  * body - the solar system body for which to return position
+    ///  * tm - The time at which to return position
+    ///
+    /// # Return
+    ///
+    ///    3-vector of cartesian Geocentric position
+    ///
     pub fn geocentric_body_pos(
         &self,
         body: EphBody,
@@ -273,6 +372,8 @@ impl JPLEphem {
             let moon: Vec3 = self.body_pos(EphBody::MOON, tm).unwrap();
             let b: Vec3 = self.body_pos(body, tm).unwrap();
 
+            // Compute the position of the body relative to the Earth-moon barycenter, then
+            // "correct" to Earth-center by accounting for moon position and Earth/moon mass ratio
             Ok(b - emb + emrat1 * moon)
         }
     }
@@ -283,16 +384,43 @@ mod tests {
     use super::*;
 
     #[test]
+    fn testvecs() {
+        use super::super::datadir;
+        use reqwest;
+
+        async fn download_file() -> Option<()> {
+            let target = "https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/testpo.440";
+            let response = reqwest::get(target).await.unwrap();
+
+            let mut dest = {
+                let fname = response
+                    .url()
+                    .path_segments()
+                    .and_then(|segments| segments.last())
+                    .and_then(|name| if name.is_empty() { None } else { Some(name) })
+                    .unwrap_or("testpo.dat");
+
+                println!("file to download: '{}'", fname);
+                let fname = datadir::get().unwrap().join(fname);
+                std::fs::File::create(fname).unwrap()
+            };
+            let content = response.text().await.unwrap();
+            std::io::copy(&mut content.as_bytes(), &mut dest).unwrap();
+            Some(())
+        }
+        async { download_file().await };
+        println!("done");
+    }
+
+    #[test]
     fn load_test() {
-        //let s = load_ephemeris_file("jpleph.440");
-        //println!("s = {:?}", s.unwrap().cheby);
         let jpl = JPLEphem::from_file("jpleph.440").unwrap();
 
         let tm = &AstroTime::from_date(2010, 3, 1);
         println!("tm = {}", tm);
         println!("jd = {}", tm.to_jd(Scale::UTC));
         //let tm = &AstroTime::from_jd(2451545.0, Scale::UTC);
-        let s = jpl.geocentric_body_pos(EphBody::MARS, tm).unwrap();
+        let s = jpl.geocentric_body_pos(EphBody::MOON, tm).unwrap();
         println!("s = {} {} {}", s[0], s[1], s[2]);
         println!("snorm = {} km", s.norm());
 
