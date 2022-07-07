@@ -365,6 +365,7 @@ impl JPLEphem {
             11 => self.body_pos_optimized::<11>(body, tm),
             12 => self.body_pos_optimized::<12>(body, tm),
             13 => self.body_pos_optimized::<13>(body, tm),
+            14 => self.body_pos_optimized::<14>(body, tm),
             _ => panic!("Invalid body"),
         }
     }
@@ -388,14 +389,14 @@ impl JPLEphem {
         if body == EphBody::MOON {
             return self.body_pos(body, tm);
         } else {
-            let emrat1 = 1.0 / (1.0 + self.emrat);
             let emb: Vec3 = self.body_pos(EphBody::EMB, tm).unwrap();
             let moon: Vec3 = self.body_pos(EphBody::MOON, tm).unwrap();
             let b: Vec3 = self.body_pos(body, tm).unwrap();
 
-            // Compute the position of the body relative to the Earth-moon barycenter, then
-            // "correct" to Earth-center by accounting for moon position and Earth/moon mass ratio
-            Ok(b - emb + emrat1 * moon)
+            // Compute the position of the body relative to the Earth-moon
+            // barycenter, then "correct" to Earth-center by accounting
+            // for moon position and Earth/moon mass ratio
+            Ok(b - emb + moon / (1.0 + self.emrat))
         }
     }
 }
@@ -428,18 +429,32 @@ mod tests {
             let tar: i32 = s[3].parse().unwrap();
             let src: i32 = s[4].parse().unwrap();
             let coord: usize = s[5].parse().unwrap();
-            let val: f64 = s[6].parse().unwrap();
-            let tm = AstroTime::from_jd(jd, Scale::TAI);
+            let truth: f64 = s[6].parse().unwrap();
+            let tm = AstroTime::from_jd(jd, Scale::TT);
             if tar <= 10 && src <= 10 && coord <= 3 {
-                println!("tar = {} ;; coord = {}", tar, coord);
-                println!("tm = {}", tm);
-                let target: Vec3 = jpl.body_pos(EphBody::try_from(tar).unwrap(), &tm).unwrap();
-                let src: Vec3 = jpl.body_pos(EphBody::try_from(src).unwrap(), &tm).unwrap();
-                let d: Vec3 = target - src;
-                println!("{} {}", d[coord - 1] / jpl.au / 1.0e3, val);
+                let mut tvec: Vec3 = jpl
+                    .geocentric_body_pos(EphBody::try_from(tar - 1).unwrap(), &tm)
+                    .unwrap();
+                let mut svec: Vec3 = jpl
+                    .geocentric_body_pos(EphBody::try_from(src - 1).unwrap(), &tm)
+                    .unwrap();
+
+                // in test vectors, index 3 is not EMB, but rather Earth
+                // (this took me a long time to figure out...)
+                if tar == 3 {
+                    tvec = Vec3::zeros();
+                }
+                if src == 3 {
+                    svec = Vec3::zeros();
+                }
+                let calc = (tvec - svec)[coord - 1] / jpl.au / 1.0e3;
+                // These should be very exact
+                // Allow for errors of only ~ 1e-12
+                let maxerr = 1.0e-12;
+                let err = ((truth - calc) / truth).abs();
+                assert!(err < maxerr);
             }
         }
-        println!("done");
     }
 
     #[test]
