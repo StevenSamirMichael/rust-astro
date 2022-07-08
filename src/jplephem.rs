@@ -391,8 +391,8 @@ impl JPLEphem {
     /// # Return
     ///
     ///  * Tuple with following values:
-    ///  ** 3-vector of cartesian Heliocentric position in meters
-    ///  ** 3-vector of cartesian Heliocentric velocity in meters / second
+    ///    * 3-vector of cartesian Heliocentric position in meters
+    ///    * 3-vector of cartesian Heliocentric velocity in meters / second
     ///
     ///
     /// # Notes:
@@ -515,8 +515,8 @@ impl JPLEphem {
     /// # Return
     ///
     ///   * Tuple with following elements:
-    ///   ** 3-vector of cartesian Geocentric position in meters
-    ///   ** 3-vector of cartesian Geocentric velocity in meters / second
+    ///     * 3-vector of cartesian Geocentric position in meters
+    ///     * 3-vector of cartesian Geocentric velocity in meters / second
     ///
     pub fn geocentric_body_state(
         &self,
