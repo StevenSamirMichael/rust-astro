@@ -1,4 +1,6 @@
 //!
+//! JPL Solar System Ephemerides
+//!
 //! # Introduction
 //!
 //! This module provides high-precision ephemerides
@@ -7,12 +9,11 @@
 //!
 //! ## Links
 //!
-//! Ephemerides verions along with associated file lenghts can be
-//! found at:
+//! Ephemerides filess can be found at:
 //! <https://ssd.jpl.nasa.gov/ftp/eph/planets//>
 //!
 //!
-//! ## Notes
+//! ### Notes
 //!
 //! for little-endian systems, download from the "Linux" subdirectory
 //! For big-endian systems, download from the "SunOS" subdirectory
@@ -354,7 +355,7 @@ impl JPLEphem {
     ///
     /// # Return
     ///
-    ///    3-vector of cartesian Heliocentric position
+    ///    3-vector of cartesian Heliocentric position in meters
     ///
     ///
     /// # Notes:
@@ -380,7 +381,26 @@ impl JPLEphem {
             _ => panic!("Invalid body"),
         }
     }
-
+    /// Return the position & velocity the given body in the Heliocentric coordinate system
+    ///
+    /// # Inputs
+    ///
+    ///  * body - the solar system body for which to return position
+    ///  * tm - The time at which to return position
+    ///
+    /// # Return
+    ///
+    ///  * Tuple with following values:
+    ///  ** 3-vector of cartesian Heliocentric position in meters
+    ///  ** 3-vector of cartesian Heliocentric velocity in meters / second
+    ///
+    ///
+    /// # Notes:
+    ///  * Positions for all bodies are natively relative to solar system barycenter,
+    ///    with exception of moon, which is computed in Geocentric system
+    ///  * EMB (2) is the Earth-Moon barycenter
+    ///  * The sun position is relative to the solar system barycenter
+    ///    (it will be close to origin)
     pub fn body_state(
         &self,
         body: EphBody,
@@ -449,7 +469,10 @@ impl JPLEphem {
             vel[ix] = (m.transpose() * v)[(0, 0)];
         }
 
-        Ok((pos * 1.0e3, vel * 1.0e3))
+        Ok((
+            pos * 1.0e3,
+            vel * 2.0e3 * nsubint as f64 / self.jd_step / 86400.0,
+        ))
     }
 
     /// Return the position of the given body in the Geocentric coordinate system
@@ -461,7 +484,7 @@ impl JPLEphem {
     ///
     /// # Return
     ///
-    ///    3-vector of cartesian Geocentric position
+    ///    3-vector of cartesian Geocentric position in meters
     ///
     pub fn geocentric_body_pos(
         &self,
@@ -482,6 +505,19 @@ impl JPLEphem {
         }
     }
 
+    /// Return the position and velocity of the given body in the Geocentric coordinate system
+    ///
+    /// # Inputs
+    ///
+    ///  * body - the solar system body for which to return position
+    ///  * tm - The time at which to return position
+    ///
+    /// # Return
+    ///
+    ///   * Tuple with following elements:
+    ///   ** 3-vector of cartesian Geocentric position in meters
+    ///   ** 3-vector of cartesian Geocentric velocity in meters / second
+    ///
     pub fn geocentric_body_state(
         &self,
         body: EphBody,
@@ -537,28 +573,59 @@ mod tests {
             let coord: usize = s[5].parse().unwrap();
             let truth: f64 = s[6].parse().unwrap();
             let tm = AstroTime::from_jd(jd, Scale::TT);
-            if tar <= 10 && src <= 10 && coord <= 3 {
-                let mut tvec: Vec3 = jpl
-                    .geocentric_body_pos(EphBody::try_from(tar - 1).unwrap(), &tm)
+            if tar <= 10 && src <= 10 && coord <= 6 {
+                let (mut tpos, mut tvel) = jpl
+                    .geocentric_body_state(EphBody::try_from(tar - 1).unwrap(), &tm)
                     .unwrap();
-                let mut svec: Vec3 = jpl
-                    .geocentric_body_pos(EphBody::try_from(src - 1).unwrap(), &tm)
+                let (mut spos, mut svel) = jpl
+                    .geocentric_body_state(EphBody::try_from(src - 1).unwrap(), &tm)
                     .unwrap();
 
                 // in test vectors, index 3 is not EMB, but rather Earth
                 // (this took me a long time to figure out...)
                 if tar == 3 {
-                    tvec = Vec3::zeros();
+                    tpos = Vec3::zeros();
+                    let (_mpos, mvel): (Vec3, Vec3) =
+                        jpl.geocentric_body_state(EphBody::MOON, &tm).unwrap();
+                    // Scale Earth velocity
+                    tvel = tvel - mvel / (1.0 + jpl.emrat);
                 }
                 if src == 3 {
-                    svec = Vec3::zeros();
+                    spos = Vec3::zeros();
+                    let (_mpos, mvel): (Vec3, Vec3) =
+                        jpl.geocentric_body_state(EphBody::MOON, &tm).unwrap();
+                    //Scale Earth velocity
+                    svel = svel - mvel / (1.0 + jpl.emrat);
                 }
-                let calc = (tvec - svec)[coord - 1] / jpl.au / 1.0e3;
-                // These should be very exact
-                // Allow for errors of only ~ 1e-12
-                let maxerr = 1.0e-12;
-                let err = ((truth - calc) / truth).abs();
-                assert!(err < maxerr);
+                if src == 10 {
+                    // Compute moon velocity in heliocentric frame (not relative to Earth)
+                    let (_embpos, embvel): (Vec3, Vec3) =
+                        jpl.geocentric_body_state(EphBody::EMB, &tm).unwrap();
+                    svel = svel + (embvel - svel / (1.0 + jpl.emrat));
+                }
+                if tar == 10 {
+                    // Comput moon velocity in heliocentric frame (not relative to Earth)
+                    let (_embpos, embvel): (Vec3, Vec3) =
+                        jpl.geocentric_body_state(EphBody::EMB, &tm).unwrap();
+                    tvel = tvel + (embvel - tvel / (1.0 + jpl.emrat));
+                }
+
+                // Comparing positions
+                if coord <= 3 {
+                    let calc = (tpos - spos)[coord - 1] / jpl.au / 1.0e3;
+                    // These should be very exact
+                    // Allow for errors of only ~ 1e-12
+                    let maxerr = 1.0e-12;
+                    let err = ((truth - calc) / truth).abs();
+                    assert!(err < maxerr);
+                }
+                // Comparing velocities
+                else {
+                    let calc = (tvel - svel)[coord - 4] / jpl.au / 1.0e3 * 86400.0;
+                    let maxerr: f64 = 1.0e-12;
+                    let err: f64 = ((truth - calc) / truth).abs();
+                    assert!(err < maxerr);
+                }
             }
         }
     }
@@ -567,14 +634,13 @@ mod tests {
     fn load_test() {
         let jpl = JPLEphem::from_file("jpleph.440").unwrap();
 
-        let tm = &AstroTime::from_date(2010, 3, 1);
+        //let tm = &AstroTime::from_date(2010, 3, 1);
+        let tm = AstroTime::from_jd(2451545.0, Scale::TT);
         println!("tm = {}", tm);
         println!("jd = {}", tm.to_jd(Scale::UTC));
         //let tm = &AstroTime::from_jd(2451545.0, Scale::UTC);
-        let s = jpl.geocentric_body_pos(EphBody::MOON, tm).unwrap();
-        println!("s = {} {} {}", s[0], s[1], s[2]);
-        println!("snorm = {} km", s.norm());
-
-        assert!(1 == 1);
+        let (pos, vel) = jpl.geocentric_body_state(EphBody::MOON, &tm).unwrap();
+        println!("pos = {}", pos);
+        println!("vel = {}", vel);
     }
 }
