@@ -9,7 +9,7 @@
 //!
 //! Ephemerides verions along with associated file lenghts can be
 //! found at:
-//! https://ssd.jpl.nasa.gov/ftp/eph/planets/
+//! <https://ssd.jpl.nasa.gov/ftp/eph/planets//>
 //!
 //!
 //! ## Notes
@@ -137,19 +137,29 @@ impl JPLEphem {
     /// Construct a JPL Ephemerides object from the provided binary data file
     ///
     ///
+    /// # Return
+    ///
+    /// * Object holding all of the JPL ephemerides in memory that can be
+    /// queried to find solar system body position in heliocentric or
+    /// geocentric coordinate system as function of time
+    ///
     /// # Example
     ///
     /// ```
     ///  // Note: filename can be full path. If not, file is
-    ///  // assumed to be in the "datadir" directory holding
-    ///  // data files for the rest of the library
-    ///  let jplephem = JPLEphem::from_file("jplephem.440");
+    ///  // assumed to be in the "datadir" directory
+    ///  // (see submodule) that holds all the data files
+    ///  // for the rest of the library
+    ///
+    /// use astro::jplephem::{JPLEphem, EphBody};
+    /// use astro::astrotime::AstroTime;
+    /// let jpl = JPLEphem::from_file("jplephem.440").unwrap();
     ///
     /// // Construct time: March 1 2021 12:00pm UTC
-    /// let t = AstroTime::from_datetime(2021, 3, 1, 12, 0, 0)
+    /// let t = AstroTime::from_datetime(2021, 3, 1, 12, 0, 0.0);
     ///
     /// // Find geocentric moon position at this time
-    /// let p = jplephem.geocentric_body_pos(EphBody::Moon, t)
+    /// let p = jpl.geocentric_body_pos(EphBody::MOON, &t).unwrap();
     /// ```
     ///
     pub fn from_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Error>> {
@@ -269,6 +279,7 @@ impl JPLEphem {
                 let nrecords = ((jd_stop - jd_start) / jd_step) as usize;
                 let record_size = (kernel_size * 4) as usize;
                 let mut v: DMatrix<f64> = DMatrix::repeat(ncoeff, nrecords, 0.0);
+
                 if raw.len() < record_size * 2 + ncoeff * nrecords * 8 {
                     return Err(Box::new(InvalidSize));
                 }
@@ -298,7 +309,7 @@ impl JPLEphem {
             return Err(Box::new(InvalidTime));
         }
 
-        // Get record intex
+        // Get record index
         let t_int: f64 = (tt - self.jd_start) / self.jd_step;
         let int_num = t_int.floor() as i32;
         // Body index
@@ -405,10 +416,15 @@ impl JPLEphem {
 mod tests {
     use super::*;
 
+    /// Load the test vectors that come with the JPL ephemeris files
+    /// and compare calculated positions to test vectors.
     #[test]
     fn testvecs() {
         let jpl = JPLEphem::from_file("jpleph.440").unwrap();
 
+        // Read in test vectors from the NASA JPL web site
+        // Note: this file will be stored in the "datadir" directory
+        // permanently.
         use super::super::utils::dev::*;
         let lines =
             match lines_from_url("https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/testpo.440")

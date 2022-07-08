@@ -321,9 +321,9 @@ impl AstroTime {
     ///   * year - the year
     ///   * month - the month, 1 based (1=January, 2=February, ...)
     ///   * day - Day of month, starting from 1
-    ///   * hour - Hour of day, in range [0,23]
-    ///   * min - Minute of hour, in range [0,59]
-    ///   * sec - Second of minute, including fractions for subsecond, in range [0,1)
+    ///   * hour - Hour of day, in range \[0,23\]
+    ///   * min - Minute of hour, in range \[0,59\]
+    ///   * sec - Second of minute, including fractions for subsecond, in range \[0,1)
     ///
     pub fn to_datetime(&self) -> (u32, u32, u32, u32, u32, f64) {
         let mjd_utc = self.to_mjd(Scale::UTC);
@@ -342,11 +342,11 @@ impl AstroTime {
     /// # Arguments
     ///
     /// * year - the year (u32)
-    /// * month - the month, 1 based (1=January, 2=February, ...) (u32)
-    /// * day - Day of month, starting from 1 (u32)
-    /// * hour - Hour of day, in range [0,23] (u32)
-    /// * min - Minute of hour, in range [0,59] (u32)
-    /// * sec - Second of minute, including fractions for subsecond, in range [0,1) (f64)
+    /// * month - the month, 1 based (1=January, 2=February, ...)
+    /// * day - Day of month, starting from 1
+    /// * hour - Hour of day, in range \[0,23\]
+    /// * min - Minute of hour, in range \[0,59\]
+    /// * sec - Second of minute, including fractions for subsecond, in range \[0,1)
     ///
     /// # Return
     ///
