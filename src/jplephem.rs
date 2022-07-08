@@ -381,6 +381,77 @@ impl JPLEphem {
         }
     }
 
+    pub fn body_state(
+        &self,
+        body: EphBody,
+        tm: &AstroTime,
+    ) -> Result<(Vec3, Vec3), Box<dyn std::error::Error>> {
+        match self.ipt[body as usize][1] {
+            6 => self.body_state_optimized::<6>(body, tm),
+            7 => self.body_state_optimized::<7>(body, tm),
+            8 => self.body_state_optimized::<8>(body, tm),
+            10 => self.body_state_optimized::<10>(body, tm),
+            11 => self.body_state_optimized::<11>(body, tm),
+            12 => self.body_state_optimized::<12>(body, tm),
+            13 => self.body_state_optimized::<13>(body, tm),
+            14 => self.body_state_optimized::<14>(body, tm),
+            _ => panic!("Invalid body"),
+        }
+    }
+
+    fn body_state_optimized<const N: usize>(
+        &self,
+        body: EphBody,
+        tm: &AstroTime,
+    ) -> Result<(Vec3, Vec3), Box<dyn std::error::Error>> {
+        // Terrestrial time
+        let tt = tm.to_jd(Scale::TT);
+        if (self.jd_start > tt) || (self.jd_stop < tt) {
+            return Err(Box::new(InvalidTime));
+        }
+
+        // Get record index
+        let t_int: f64 = (tt - self.jd_start) / self.jd_step;
+        let int_num = t_int.floor() as i32;
+        // Body index
+        let bidx = body as usize;
+
+        // # of coefficients and subintervals for this body
+        let ncoeff = self.ipt[bidx][1];
+        let nsubint = self.ipt[bidx][2];
+
+        // Fractional way into step
+        let t_int_2 = (t_int - int_num as f64) * nsubint as f64;
+        let sub_int_num: usize = t_int_2.floor() as usize;
+        // Scale from -1 to 1
+        let t_seg = 2.0 * (t_int_2 - sub_int_num as f64) - 1.0;
+
+        let offset0 = self.ipt[bidx][0] - 1 + sub_int_num * ncoeff * 3;
+
+        let mut t = na::Vector::<f64, na::Const<N>, na::ArrayStorage<f64, N, 1>>::zeros();
+        let mut v = na::Vector::<f64, na::Const<N>, na::ArrayStorage<f64, N, 1>>::zeros();
+        t[0] = 1.0;
+        t[1] = t_seg;
+        v[0] = 0.0;
+        v[1] = 1.0;
+        for j in 2..ncoeff {
+            t[j] = 2.0 * t_seg * t[j - 1] - t[j - 2];
+            v[j] = 2.0 * t_seg * v[j - 1] - v[j - 2] + 2.0 * t[j - 1];
+        }
+
+        let mut pos: Vec3 = Vec3::zeros();
+        let mut vel: Vec3 = Vec3::zeros();
+        for ix in 0..3 {
+            let m = self
+                .cheby
+                .fixed_slice::<N, 1>(offset0 + N * ix, int_num as usize);
+            pos[ix] = (m.transpose() * t)[(0, 0)];
+            vel[ix] = (m.transpose() * v)[(0, 0)];
+        }
+
+        Ok((pos * 1.0e3, vel * 1.0e3))
+    }
+
     /// Return the position of the given body in the Geocentric coordinate system
     ///
     /// # Inputs
@@ -408,6 +479,25 @@ impl JPLEphem {
             // barycenter, then "correct" to Earth-center by accounting
             // for moon position and Earth/moon mass ratio
             Ok(b - emb + moon / (1.0 + self.emrat))
+        }
+    }
+
+    pub fn geocentric_body_state(
+        &self,
+        body: EphBody,
+        tm: &AstroTime,
+    ) -> Result<(Vec3, Vec3), Box<dyn std::error::Error>> {
+        if body == EphBody::MOON {
+            return self.body_state(body, tm);
+        } else {
+            let emb: Vec3 = self.body_pos(EphBody::EMB, tm).unwrap();
+            let moon: Vec3 = self.body_pos(EphBody::MOON, tm).unwrap();
+            let b: (Vec3, Vec3) = self.body_state(body, tm).unwrap();
+
+            // Compute the position of the body relative to the Earth-moon
+            // barycenter, then "correct" to Earth-center by accounting
+            // for moon position and Earth/moon mass ratio
+            Ok((b.0 - emb + moon / (1.0 + self.emrat), b.1))
         }
     }
 }
