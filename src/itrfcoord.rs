@@ -13,7 +13,7 @@ pub type Quat = na::UnitQuaternion<f64>;
 
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
 pub struct ITRFCoord {
-    itrf: Vec3,
+    pub itrf: Vec3,
 }
 
 impl std::fmt::Display for ITRFCoord {
