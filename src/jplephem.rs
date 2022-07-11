@@ -542,6 +542,16 @@ impl JPLEphem {
 mod tests {
     use super::*;
 
+    #[test]
+    fn load_test() {
+        let jpl = JPLEphem::from_file("jpleph.440").unwrap();
+
+        //let tm = &AstroTime::from_date(2010, 3, 1);
+        let tm = AstroTime::from_jd(2451545.0, Scale::TT);
+        //let tm = &AstroTime::from_jd(2451545.0, Scale::UTC);
+        let (_, _): (Vec3, Vec3) = jpl.geocentric_body_state(EphBody::MOON, &tm).unwrap();
+    }
+
     /// Load the test vectors that come with the JPL ephemeris files
     /// and compare calculated positions to test vectors.
     #[test]
@@ -628,19 +638,5 @@ mod tests {
                 }
             }
         }
-    }
-
-    #[test]
-    fn load_test() {
-        let jpl = JPLEphem::from_file("jpleph.440").unwrap();
-
-        //let tm = &AstroTime::from_date(2010, 3, 1);
-        let tm = AstroTime::from_jd(2451545.0, Scale::TT);
-        println!("tm = {}", tm);
-        println!("jd = {}", tm.to_jd(Scale::UTC));
-        //let tm = &AstroTime::from_jd(2451545.0, Scale::UTC);
-        let (pos, vel) = jpl.geocentric_body_state(EphBody::MOON, &tm).unwrap();
-        println!("pos = {}", pos);
-        println!("vel = {}", vel);
     }
 }

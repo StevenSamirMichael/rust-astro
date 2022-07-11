@@ -6,6 +6,7 @@
 pub mod astrotime;
 pub mod datadir;
 pub mod earth_orientation_params;
+pub mod gravity;
 pub mod itrfcoord;
 pub mod jplephem;
 //mod sgp4unit;
