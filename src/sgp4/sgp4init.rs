@@ -1,5 +1,6 @@
 use super::satrec::SatRec;
 use super::initl::{initl, InitlStruct};
+use std::f64::consts::PI;
 
 fn getgravconst(whichconst: &str, satrec: &mut SatRec) {
     match whichconst {
@@ -157,9 +158,7 @@ pub fn sgp4init(
 
     // sgp4fix remove satn as it is not needed in initl
     let ir =
-        initl(satrec.xke, satrec.j2, satrec.ecco, epoch, satrec.inclo, satrec.no_kozai, satrec.operationmode,
-            satrec.method, ainv, ao, satrec.con41, con42, cosio, cosio2, eccsq, omeosq,
-            posq, rp, rteosq, sinio, satrec.gsto, satrec.no_unkozai)
+        initl(satrec.xke, satrec.j2, satrec.ecco, epoch, satrec.inclo, satrec.no_kozai, satrec.operationmode);
     satrec.method = ir.method;
     let ainv = ir.ainv;
     let ao = ir.ao;
@@ -173,11 +172,11 @@ pub fn sgp4init(
     let rp = ir.rp;
     let rteosq = ir.rteosq;
     let sinio = ir.sinio;
-    let satrec.gsto = ir.gsto;
-    let satrec.no_unkozai = ir.no_unkozai;
+    satrec.gsto = ir.gsto;
+    satrec.no_unkozai = ir.no_unkozai;
 
 
-    satrec.a = pow(satrec.no_unkozai * satrec.tumin, (-2.0 / 3.0));
+    satrec.a = f64::powf(satrec.no_unkozai * satrec.tumin, (-2.0 / 3.0));
     satrec.alta = satrec.a * (1.0 + satrec.ecco) - 1.0;
     satrec.altp = satrec.a * (1.0 - satrec.ecco) - 1.0;
     satrec.error = 0;
@@ -191,70 +190,74 @@ pub fn sgp4init(
     //         satrec.error = 5;
     //       }
 
-    if ((omeosq >= 0.0) || (satrec.no_unkozai >= 0.0)) {
+    if (omeosq >= 0.0) || (satrec.no_unkozai >= 0.0) {
         satrec.isimp = 0;
-        if (rp < (220.0 / satrec.radiusearthkm + 1.0))
+        if rp < (220.0 / satrec.radiusearthkm + 1.0) {
             satrec.isimp = 1;
-        sfour = ss;
-        qzms24 = qzms2t;
-        perige = (rp - 1.0) * satrec.radiusearthkm;
+        }
+        let mut sfour = ss;
+        let qzms24 = qzms2t;
+        let perige = (rp - 1.0) * satrec.radiusearthkm;
 
         /* - for perigees below 156 km, s and qoms2t are altered - */
-        if (perige < 156.0) {
+        if perige < 156.0 {
             sfour = perige - 78.0;
-            if (perige < 98.0)
+            if perige < 98.0 {
                 sfour = 20.0;
+            }
             // sgp4fix use multiply for speed instead of pow
-            qzms24temp = (120.0 - sfour) / satrec.radiusearthkm;
-            qzms24 = qzms24temp * qzms24temp * qzms24temp * qzms24temp;
+            let qzms24temp = (120.0 - sfour) / satrec.radiusearthkm;
+            let qzms24 = qzms24temp * qzms24temp * qzms24temp * qzms24temp;
             sfour = sfour / satrec.radiusearthkm + 1.0;
         }
-        pinvsq = 1.0 / posq;
+        let pinvsq = 1.0 / posq;
 
-        tsi = 1.0 / (ao - sfour);
+        let tsi = 1.0 / (ao - sfour);
         satrec.eta = ao * satrec.ecco * tsi;
-        etasq = satrec.eta * satrec.eta;
-        eeta = satrec.ecco * satrec.eta;
-        psisq = fabs(1.0 - etasq);
-        coef = qzms24 * pow(tsi, 4.0);
-        coef1 = coef / pow(psisq, 3.5);
-        cc2 = coef1 * satrec.no_unkozai * (ao * (1.0 + 1.5 * etasq + eeta *
+        let etasq = satrec.eta * satrec.eta;
+        let eeta = satrec.ecco * satrec.eta;
+        let psisq = f64::abs(1.0 - etasq);
+        let coef = qzms24 * f64::powf(tsi, 4.0);
+        let coef1 = coef / f64::powf(psisq, 3.5);
+        let cc2 = coef1 * satrec.no_unkozai * (ao * (1.0 + 1.5 * etasq + eeta *
             (4.0 + etasq)) + 0.375 * satrec.j2 * tsi / psisq * satrec.con41 *
             (8.0 + 3.0 * etasq * (8.0 + etasq)));
         satrec.cc1 = satrec.bstar * cc2;
-        cc3 = 0.0;
-        if (satrec.ecco > 1.0e-4)
+        let mut cc3 = 0.0;
+        if satrec.ecco > 1.0e-4 {
             cc3 = -2.0 * coef * tsi * satrec.j3oj2 * satrec.no_unkozai * sinio / satrec.ecco;
+        }
         satrec.x1mth2 = 1.0 - cosio2;
         satrec.cc4 = 2.0 * satrec.no_unkozai * coef1 * ao * omeosq *
             (satrec.eta * (2.0 + 0.5 * etasq) + satrec.ecco *
                 (0.5 + 2.0 * etasq) - satrec.j2 * tsi / (ao * psisq) *
                 (-3.0 * satrec.con41 * (1.0 - 2.0 * eeta + etasq *
                     (1.5 - 0.5 * eeta)) + 0.75 * satrec.x1mth2 *
-                    (2.0 * etasq - eeta * (1.0 + etasq)) * cos(2.0 * satrec.argpo)));
+                    (2.0 * etasq - eeta * (1.0 + etasq)) * f64::cos(2.0 * satrec.argpo)));
         satrec.cc5 = 2.0 * coef1 * ao * omeosq * (1.0 + 2.75 *
             (etasq + eeta) + eeta * etasq);
-        cosio4 = cosio2 * cosio2;
-        temp1 = 1.5 * satrec.j2 * pinvsq * satrec.no_unkozai;
-        temp2 = 0.5 * temp1 * satrec.j2 * pinvsq;
-        temp3 = -0.46875 * satrec.j4 * pinvsq * pinvsq * satrec.no_unkozai;
+        let cosio4 = cosio2 * cosio2;
+        let temp1 = 1.5 * satrec.j2 * pinvsq * satrec.no_unkozai;
+        let temp2 = 0.5 * temp1 * satrec.j2 * pinvsq;
+        let temp3 = -0.46875 * satrec.j4 * pinvsq * pinvsq * satrec.no_unkozai;
         satrec.mdot = satrec.no_unkozai + 0.5 * temp1 * rteosq * satrec.con41 + 0.0625 *
             temp2 * rteosq * (13.0 - 78.0 * cosio2 + 137.0 * cosio4);
         satrec.argpdot = -0.5 * temp1 * con42 + 0.0625 * temp2 *
             (7.0 - 114.0 * cosio2 + 395.0 * cosio4) +
             temp3 * (3.0 - 36.0 * cosio2 + 49.0 * cosio4);
-        xhdot1 = -temp1 * cosio;
+        let xhdot1 = -temp1 * cosio;
         satrec.nodedot = xhdot1 + (0.5 * temp2 * (4.0 - 19.0 * cosio2) +
             2.0 * temp3 * (3.0 - 7.0 * cosio2)) * cosio;
-        xpidot = satrec.argpdot + satrec.nodedot;
-        satrec.omgcof = satrec.bstar * cc3 * cos(satrec.argpo);
+        let xpidot = satrec.argpdot + satrec.nodedot;
+        satrec.omgcof = satrec.bstar * cc3 * f64::cos(satrec.argpo);
         satrec.xmcof = 0.0;
-        if (satrec.ecco > 1.0e-4)
+        if satrec.ecco > 1.0e-4 {
             satrec.xmcof = -x2o3 * coef * satrec.bstar / eeta;
+        }
         satrec.nodecf = 3.5 * omeosq * xhdot1 * satrec.cc1;
         satrec.t2cof = 1.5 * satrec.cc1;
         // sgp4fix for divide by zero with xinco = 180 deg
-        if (fabs(cosio + 1.0) > 1.5e-12) {
+        if f64::abs(cosio + 1.0) > 1.5e-12 {
             satrec.xlcof = -0.25 * satrec.j3oj2 * sinio * (3.0 + 5.0 * cosio) / (1.0 + cosio);
         }
         else {
@@ -262,17 +265,17 @@ pub fn sgp4init(
         }
         satrec.aycof = -0.5 * satrec.j3oj2 * sinio;
         // sgp4fix use multiply for speed instead of pow
-        delmotemp = 1.0 + satrec.eta * cos(satrec.mo);
+        let delmotemp = 1.0 + satrec.eta * f64::cos(satrec.mo);
         satrec.delmo = delmotemp * delmotemp * delmotemp;
         satrec.sinmao = f64::sin(satrec.mo);
         satrec.x7thm1 = 7.0 * cosio2 - 1.0;
 
         /* --------------- deep space initialization ------------- */
-        if ((2 * pi / satrec.no_unkozai) >= 225.0) {
+        if (2.0 * PI / satrec.no_unkozai) >= 225.0 {
             satrec.method = 'd';
             satrec.isimp = 1;
-            tc = 0.0;
-            inclm = satrec.inclo;
+            let tc = 0.0;
+            let inclm = satrec.inclo;
 
             /*
             let snodm = 0
@@ -487,7 +490,7 @@ pub fn sgp4init(
 
     //#include "debug6.cpp"
     //sgp4fix return boolean. satrec.error contains any error codes
-    return true;
+    // return true;
     
     satrec
 } // sgp4init

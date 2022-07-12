@@ -142,21 +142,6 @@ pub fn initl(
     inclo: f64,
     no_kozai: f64,
     opsmode: char,
-    method: char,
-    ainv: f64,
-    ao: f64,
-    con41: f64,
-    con42: f64,
-    cosio: f64,
-    cosio2: f64,
-    eccsq: f64,
-    omeosq: f64,
-    posq: f64,
-    rp: f64,
-    rteosq: f64,
-    sinio: f64,
-    gsto: f64,
-    no_unkozai: f64,
 ) -> InitlStruct {
     /* --------------------- local variables ------------------------ */
     /* c++ comment out
@@ -218,7 +203,7 @@ pub fn initl(
     }
     //    }
     //    else
-    gsto = gstime_SGP4(epoch + 2433281.5);
+    let gsto = gstime_SGP4(epoch + 2433281.5);
 
     InitlStruct {
         method: method,

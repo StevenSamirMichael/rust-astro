@@ -28,7 +28,7 @@ pub struct SatRec {
     pub t4cof: f64,
     pub t5cof: f64,
     pub x1mth2: f64,
-    pub xythm1: f64,
+    pub x7thm1: f64,
     pub mdot: f64,
     pub nodedot: f64,
     pub xlcof: f64,
@@ -160,13 +160,12 @@ impl SatRec {
             t4cof: 0.0,
             t5cof: 0.0,
             x1mth2: 0.0,
-            xythm1: 0.0,
+            x7thm1: 0.0,
             mdot: 0.0,
             nodedot: 0.0,
             xlcof: 0.0,
             xmcof: 0.0,
             nodecf: 0.0,
-
             /* Deep Space */
             irez: 0,
             d2201: 0.0,
