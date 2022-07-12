@@ -105,6 +105,94 @@ impl Gravity {
         accel * self.gravity_constant / self.radius / self.radius
     }
 
+    // Equations 8-25 through 8-27, Vallado, page 550.
+    fn accel_vallado<const N: usize>(&self, pos: &Vec3) -> Vec3 {
+        let r: f64 = (pos[0] * pos[0] + pos[1] * pos[1] + pos[2] * pos[2]).sqrt();
+        let phi: f64 = f64::asin(pos[2] / r);
+        let lambda: f64 = f64::atan2(pos[1], pos[0]);
+        let p = Gravity::associated_legendre::<N>(phi);
+        let tanphi: f64 = f64::tan(phi);
+
+        let reoverr = self.radius / r;
+
+        let mut dudr: f64 = 0.0;
+        let mut dudphi: f64 = 0.0;
+        let mut dudlambda: f64 = 0.0;
+
+        for l in 0..(N - 1) {
+            let reoverr_l = f64::powf(reoverr, l as f64);
+            let mut dudr_sum = 0.0;
+            let mut dudphi_sum = 0.0;
+            let mut dudlambda_sum = 0.0;
+
+            for m in 2..(l + 1) {
+                let cosmtheta = f64::cos(m as f64 * lambda);
+                let sinmtheta = f64::sin(m as f64 * lambda);
+                let clm = self.coeffs[(l, m)];
+                let mut slm = 0.0;
+                if m > 0 {
+                    slm = self.coeffs[(m - 1, l)];
+                }
+                let m1 = clm * cosmtheta + slm * sinmtheta;
+                let m2 = slm * cosmtheta - clm * sinmtheta;
+
+                dudr_sum += p[(l, m)] * m1;
+                dudphi_sum += (p[(l, m + 1)] - m as f64 * tanphi * p[(l, m)]) * m1;
+                dudlambda_sum += m as f64 * p[(l, m)] * m2;
+            }
+            dudr_sum *= reoverr_l * (l + 1) as f64;
+            dudphi_sum *= reoverr_l;
+            dudlambda_sum *= reoverr_l;
+
+            dudr += dudr_sum;
+            dudphi += dudphi_sum;
+            dudlambda += dudlambda_sum;
+        }
+        dudr *= -1.0 * self.gravity_constant / r / r;
+        dudphi *= self.gravity_constant / r;
+        dudlambda *= self.gravity_constant / r;
+
+        //return Vec3::from([dudr, dudphi / r, dudlambda / r]);
+
+        let rho = f64::sqrt(pos[0] * pos[0] + pos[1] * pos[1]);
+        let term1 = dudr / r - pos[2] / r / r / rho * dudphi;
+        let term2 = dudlambda / rho / rho;
+        let a1 = term1 * pos[0] - term2 * pos[1];
+        let a2 = term1 * pos[1] + term2 * pos[0];
+        let a3 = dudr / r * pos[2] + rho / r / r * dudphi;
+
+        Vec3::from([a1, a2, a3]) - pos * self.gravity_constant / r / r / r
+    }
+
+    fn associated_legendre<const N: usize>(v: f64) -> na::SMatrix<f64, N, N> {
+        let mut p = na::SMatrix::<f64, N, N>::zeros();
+        let sinv = v.sin();
+        let cosv = v.cos();
+
+        // Set initial values
+        p[(0, 0)] = 1.0;
+        p[(1, 0)] = sinv;
+        p[(1, 1)] = cosv;
+
+        // Walk through to get subsequent values
+        // Vallado equation 8-57
+        for l in 2..N {
+            for m in 0..(l + 1) {
+                if m == 0 {
+                    p[(l, m)] = ((2 * l - 1) as f64 * p[(l - 1, m)]
+                        - (l - 1) as f64 * p[(l - 2, 0)])
+                        / (l as f64);
+                } else if m < l {
+                    p[(l, m)] = p[(l - 2, m)] + (2 * l - 1) as f64 * cosv * p[(l - 1, m - 1)];
+                } else {
+                    p[(l, l)] = (2 * l - 1) as f64 * cosv * p[(l - 1, l - 1)];
+                }
+            }
+        }
+
+        p
+    }
+
     fn compute_legendre<const NP4: usize>(&self, pos: &Vec3) -> (Legendre<NP4>, Legendre<NP4>) {
         let rsq = pos.norm_squared();
         let xfac = pos[0] * self.radius / rsq;
@@ -273,12 +361,20 @@ mod tests {
         use std::f64::consts::PI;
         let g = Gravity::from_file("jgm3.gfc").unwrap();
         let itrf = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 0.0);
-        let accel = g.accel(&itrf.into(), 4);
+        let accel = g.accel_t::<4, 8>(&itrf.into());
         let truth = [2.34440183, 6.86790166, -6.1888031];
         let accel_ned = itrf.q_ned2itrf().conjugate() * accel;
         println!("ned accel = {}", accel_ned);
         let ew_deflection = f64::atan2(accel_ned[1], accel_ned[2]) * 180.0 / PI * 3600.0;
         let nw_deflection = f64::atan2(accel_ned[0], accel_ned[2]) * 180.0 / PI * 3600.0;
         println!("Deflections = {} :: {}", ew_deflection, nw_deflection);
+        let a2 = g.accel_vallado::<8>(&itrf.into());
+        println!("accel = {}", accel);
+        println!("annorm = {}", accel.norm());
+
+        //println!("a2 = {}", a2);
+        //let a2_ned = itrf.q_ned2itrf().conjugate() * a2;
+        println!("a2 ned = {}", a2);
+        println!("itrf = {}", itrf.itrf);
     }
 }
