@@ -1,4 +1,5 @@
+pub use self::errors::GravityError;
 pub use self::gravity::Gravity;
 
-pub mod errors;
-pub mod gravity;
+mod errors;
+mod gravity;

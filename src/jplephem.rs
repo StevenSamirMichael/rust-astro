@@ -164,7 +164,7 @@ impl JPLEphem {
     /// ```
     ///
     pub fn from_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Error>> {
-        use super::datadir;
+        use super::utils::datadir;
         use std::collections::HashMap;
         use std::path::PathBuf;
 

@@ -132,7 +132,7 @@ pub fn get() -> Option<PathBuf> {
 mod tests {
     #[test]
     fn datadir() {
-        use crate::datadir;
+        use crate::utils::datadir;
         let d = datadir::get();
         assert_eq!(d.is_none(), false);
     }

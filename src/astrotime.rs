@@ -34,8 +34,8 @@ pub struct AstroTime {
     mjd_tai: f64,
 }
 
-use super::datadir;
 use super::earth_orientation_params as eop;
+use super::utils::datadir;
 
 extern crate chrono;
 

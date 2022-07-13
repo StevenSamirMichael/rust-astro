@@ -4,7 +4,7 @@ extern crate reqwest;
 type ErrResult = Box<dyn std::error::Error + Send + Sync>;
 
 #[cfg(test)]
-use super::super::datadir;
+use super::datadir;
 
 #[cfg(test)]
 use std::io::{self, BufRead};

@@ -3,7 +3,7 @@ use std::io::{self, BufRead};
 use std::path::PathBuf;
 
 use super::astrotime;
-use super::datadir;
+use crate::utils::datadir;
 use lazy_static;
 
 #[derive(Debug)]

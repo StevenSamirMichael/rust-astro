@@ -1,4 +1,4 @@
-use super::super::datadir;
+use super::super::utils::datadir;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
 
@@ -106,7 +106,7 @@ impl Gravity {
     }
 
     // Equations 8-25 through 8-27, Vallado, page 550.
-    fn accel_vallado<const N: usize>(&self, pos: &Vec3) -> Vec3 {
+    pub fn accel_vallado<const N: usize>(&self, pos: &Vec3) -> Vec3 {
         let r: f64 = (pos[0] * pos[0] + pos[1] * pos[1] + pos[2] * pos[2]).sqrt();
         let phi: f64 = f64::asin(pos[2] / r);
         let lambda: f64 = f64::atan2(pos[1], pos[0]);
@@ -362,7 +362,7 @@ mod tests {
         let g = Gravity::from_file("jgm3.gfc").unwrap();
         let itrf = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 0.0);
         let accel = g.accel_t::<4, 8>(&itrf.into());
-        let truth = [2.34440183, 6.86790166, -6.1888031];
+        //let truth = [2.34440183, 6.86790166, -6.1888031];
         let accel_ned = itrf.q_ned2itrf().conjugate() * accel;
         println!("ned accel = {}", accel_ned);
         let ew_deflection = f64::atan2(accel_ned[1], accel_ned[2]) * 180.0 / PI * 3600.0;
