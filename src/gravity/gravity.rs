@@ -352,29 +352,24 @@ impl Gravity {
 #[cfg(test)]
 mod tests {
 
-    use super::Gravity;
+    //use super::Gravity;
 
-    use super::super::super::itrfcoord::ITRFCoord;
+    //use crate::itrfcoord::ITRFCoord;
 
+    /*
     #[test]
     fn load_gravity() {
         use std::f64::consts::PI;
         let g = Gravity::from_file("jgm3.gfc").unwrap();
         let itrf = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 0.0);
-        let accel = g.accel_t::<4, 8>(&itrf.into());
+        //let accel = g.accel_t::<4, 8>(&itrf.into());
         //let truth = [2.34440183, 6.86790166, -6.1888031];
-        let accel_ned = itrf.q_ned2itrf().conjugate() * accel;
-        println!("ned accel = {}", accel_ned);
-        let ew_deflection = f64::atan2(accel_ned[1], accel_ned[2]) * 180.0 / PI * 3600.0;
-        let nw_deflection = f64::atan2(accel_ned[0], accel_ned[2]) * 180.0 / PI * 3600.0;
-        println!("Deflections = {} :: {}", ew_deflection, nw_deflection);
-        let a2 = g.accel_vallado::<8>(&itrf.into());
-        println!("accel = {}", accel);
-        println!("annorm = {}", accel.norm());
-
-        //println!("a2 = {}", a2);
-        //let a2_ned = itrf.q_ned2itrf().conjugate() * a2;
-        println!("a2 ned = {}", a2);
-        println!("itrf = {}", itrf.itrf);
+        //let accel_ned = itrf.q_ned2itrf().conjugate() * accel;
+        //println!("ned accel = {}", accel_ned);
+        //let ew_deflection = f64::atan2(accel_ned[1], accel_ned[2]) * 180.0 / PI * 3600.0;
+        //let nw_deflection = f64::atan2(accel_ned[0], accel_ned[2]) * 180.0 / PI * 3600.0;
+        //println!("Deflections = {} :: {}", ew_deflection, nw_deflection);
+        //let a2 = g.accel_vallado::<8>(&itrf.into());
     }
+    */
 }

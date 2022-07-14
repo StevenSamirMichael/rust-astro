@@ -6,23 +6,33 @@ use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct IERSTable {
-    data: [Option<na::DMatrix<f64>>; 6],
+    data: [na::DMatrix<f64>; 6],
 }
 
 impl IERSTable {
     pub fn from_file(fname: &str) -> Result<IERSTable, Box<dyn Error + Send + Sync>> {
         let mut table = IERSTable {
-            data: [None, None, None, None, None, None],
+            data: [
+                na::DMatrix::<f64>::zeros(0, 0),
+                na::DMatrix::<f64>::zeros(0, 0),
+                na::DMatrix::<f64>::zeros(0, 0),
+                na::DMatrix::<f64>::zeros(0, 0),
+                na::DMatrix::<f64>::zeros(0, 0),
+                na::DMatrix::<f64>::zeros(0, 0),
+            ],
         };
 
         let path = utils::datadir::get()
             .unwrap_or(PathBuf::from("."))
             .join(fname);
         if !path.is_file() {
-            return Err(utils::AstroErr::new("Could not open file").into());
+            return Err(
+                utils::AstroErr::new(format!("Could not open file: {}", fname).as_str()).into(),
+            );
         }
 
         let mut tnum: i32 = -1;
+        let mut rowcnt: usize = 0;
         let file = std::fs::File::open(&path)?;
         let lines = io::BufReader::new(file).lines();
 
@@ -35,17 +45,55 @@ impl IERSTable {
                     }
                     if tline[..4].eq("j =") {
                         tnum = tline[5..6].parse()?;
-                        if tnum < 0 || tnum > 5 {
-                            return Err(utils::AstroErr::new("Error parsing file").into());
+                        let s: Vec<&str> = tline.split_whitespace().collect();
+                        let tsize: usize = s[s.len() - 1].parse().unwrap_or(0);
+                        if tnum < 0 || tnum > 5 || tsize == 0 {
+                            return Err(utils::AstroErr::new(
+                                format!(
+                                    "Error parsing file {}, invalid table definition line",
+                                    fname
+                                )
+                                .as_str(),
+                            )
+                            .into());
                         }
-                        table.data[tnum as usize] = Some(na::DMatrix::<f64>::zeros(100, 100));
+                        table.data[tnum as usize - 1] = na::DMatrix::<f64>::zeros(tsize, 17);
+                        rowcnt = 0;
                         continue;
+                    } else if tnum >= 0 {
+                        if table.data[tnum as usize - 1].nrows() < 17 {
+                            return Err(utils::AstroErr::new(
+                                format!("Error parsing file {}, table not initialized", fname)
+                                    .as_str(),
+                            )
+                            .into());
+                        }
+                        table.data[tnum as usize - 1].set_row(
+                            rowcnt,
+                            &na::SMatrix::<f64, 1, 17>::from_iterator(
+                                tline
+                                    .split_whitespace()
+                                    .into_iter()
+                                    .map(|x| x.parse().unwrap()),
+                            ),
+                        );
+                        rowcnt = rowcnt + 1;
                     }
-                    (&table.data[0].unwrap())[(0, 0)] = 1.0;
                 }
                 Err(_) => continue,
             }
         }
         Ok(table)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::IERSTable;
+
+    #[test]
+    fn load_table() {
+        let t = IERSTable::from_file("tab5.2a.txt");
+        println!("got t: {}", t.is_ok());
     }
 }
