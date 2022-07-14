@@ -1,6 +1,5 @@
-use crate::utils;
+use crate::utils::{self, AstroErr, AstroResult};
 use nalgebra as na;
-use std::error::Error;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
 
@@ -10,7 +9,7 @@ pub struct IERSTable {
 }
 
 impl IERSTable {
-    pub fn from_file(fname: &str) -> Result<IERSTable, Box<dyn Error + Send + Sync>> {
+    pub fn from_file(fname: &str) -> AstroResult<IERSTable> {
         let mut table = IERSTable {
             data: [
                 na::DMatrix::<f64>::zeros(0, 0),
@@ -26,9 +25,7 @@ impl IERSTable {
             .unwrap_or(PathBuf::from("."))
             .join(fname);
         if !path.is_file() {
-            return Err(
-                utils::AstroErr::new(format!("Could not open file: {}", fname).as_str()).into(),
-            );
+            return utils::astroerr!("Could not open file: {}", fname);
         }
 
         let mut tnum: i32 = -1;
@@ -48,14 +45,10 @@ impl IERSTable {
                         let s: Vec<&str> = tline.split_whitespace().collect();
                         let tsize: usize = s[s.len() - 1].parse().unwrap_or(0);
                         if tnum < 0 || tnum > 5 || tsize == 0 {
-                            return Err(utils::AstroErr::new(
-                                format!(
-                                    "Error parsing file {}, invalid table definition line",
-                                    fname
-                                )
-                                .as_str(),
-                            )
-                            .into());
+                            return utils::astroerr!(
+                                "Error parsing file {}, invalid table definition line",
+                                fname
+                            );
                         }
                         table.data[tnum as usize - 1] = na::DMatrix::<f64>::zeros(tsize, 17);
                         rowcnt = 0;
@@ -94,6 +87,9 @@ mod tests {
     #[test]
     fn load_table() {
         let t = IERSTable::from_file("tab5.2a.txt");
+        if t.is_err() {
+            panic!("{}", t.unwrap_err());
+        }
         println!("got t: {}", t.is_ok());
     }
 }

@@ -1,9 +1,21 @@
+use std::error::Error;
 use std::fmt;
+
+pub type AstroResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
 #[derive(Debug)]
 pub struct AstroErr {
     details: String,
 }
+
+#[macro_export]
+macro_rules! astroerr {
+    ($($args:tt),*) => {{
+        Err(AstroErr::new(format!($($args),*).as_str()).into())
+    }};
+}
+
+pub(crate) use astroerr;
 
 impl AstroErr {
     pub fn new(msg: &str) -> AstroErr {
