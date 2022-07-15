@@ -1,6 +1,3 @@
-const TWOPI: f64 = std::f64::consts::PI * 2.0;
-const DEG2RAD: f64 = std::f64::consts::PI / 180.0;
-
 /* -----------------------------------------------------------------------------
 *
 *                           function gstime_SGP4
@@ -30,10 +27,13 @@ const DEG2RAD: f64 = std::f64::consts::PI / 180.0;
 /* c++ comment out
 double  gstime_SGP4
 (
-    double jdut1
+double jdut1
 )
 */
-fn gstime_SGP4(jdut1: f64) -> f64 {
+const TWOPI: f64 = std::f64::consts::PI * 2.0;
+const DEG2RAD: f64 = std::f64::consts::PI / 180.0;
+
+fn gstime_sgp4(jdut1: f64) -> f64 {
     let tut1 = (jdut1 - 2451545.0) / 36525.0;
     let mut temp = -6.2e-6 * tut1 * tut1 * tut1
         + 0.093104 * tut1 * tut1
@@ -101,127 +101,108 @@ fn gstime_SGP4(jdut1: f64) -> f64 {
 *    hoots, schumacher and glover 2004
 *    vallado, crawford, hujsak, kelso  2006
 ----------------------------------------------------------------------------*/
-/* c++ comment out
-    static void initl
-    (
-        // sgp4fix satn not needed. include in satrec in case needed later
-        // int satn,
-        // sgp4fix just pass in xke and j2
-        // gravconsttype whichconst,
-        double xke, double j2,
-        double ecco, double epoch, double inclo, double no_kozai, char opsmode,
-        char & method, double & ainv, double & ao, double & con41, double & con42, double & cosio,
-        double & cosio2, double & eccsq, double & omeosq, double & posq,
-        double & rp, double & rteosq, double & sinio, double & gsto, double & no_unkozai
-    )
-*/
-
-pub struct InitlStruct {
-    pub method: char,
-    pub ainv: f64,
-    pub ao: f64,
-    pub con41: f64,
-    pub con42: f64,
-    pub cosio: f64,
-    pub cosio2: f64,
-    pub eccsq: f64,
-    pub omeosq: f64,
-    pub posq: f64,
-    pub rp: f64,
-    pub rteosq: f64,
-    pub sinio: f64,
-    pub gsto: f64,
-    pub no_unkozai: f64,
-}
 
 pub fn initl(
+    // sgp4fix satn not needed. include in satrec in case needed later
+    // int satn,
+    // sgp4fix just pass in xke and j2
+    // gravconsttype whichconst,
     xke: f64,
     j2: f64,
     ecco: f64,
     epoch: f64,
     inclo: f64,
     no_kozai: f64,
-    opsmode: char,
-) -> InitlStruct {
+    _opsmode: char,
+    method: &mut char,
+    ainv: &mut f64,
+    ao: &mut f64,
+    con41: &mut f64,
+    con42: &mut f64,
+    cosio: &mut f64,
+    cosio2: &mut f64,
+    eccsq: &mut f64,
+    omeosq: &mut f64,
+    posq: &mut f64,
+    rp: &mut f64,
+    rteosq: &mut f64,
+    sinio: &mut f64,
+    gsto: &mut f64,
+    no_unkozai: &mut f64,
+) {
     /* --------------------- local variables ------------------------ */
-    /* c++ comment out
-    ak, d1, del, adel, po, x2o3;
+    //double ak, d1, del, adel, po, x2o3;
+    let ak: f64;
+    let d1: f64;
+    let mut del: f64;
+    let adel: f64;
+    let po: f64;
+    let x2o3: f64;
 
-        // sgp4fix use old way of finding gst
-        double ds70;
-        double ts70, tfrac, c1, thgr70, fk5r, c1p2p;
-    const double twopi = 2.0 * pi;
+    /*
+    // sgp4fix use old way of finding gst
+    let ds70: f64;
+    //double ts70, tfrac, c1, thgr70, fk5r, c1p2p;
+    let ts70: f64;
+    let tfrac: f64;
+    let c1: f64;
+    let thgr70: f64;
+    let fk5r: f64;
+    let c1p2p: f64;
     */
+
+    //const TWOPI: f64 = std::f64::consts::PI * 2.0;
 
     /* ----------------------- earth constants ---------------------- */
     // sgp4fix identify constants and allow alternate values
     // only xke and j2 are used here so pass them in directly
     // getgravconst( whichconst, tumin, mu, radiusearthkm, xke, j2, j3, j4, j3oj2 );
-    const x2o3: f64 = 2.0 / 3.0;
+    x2o3 = 2.0 / 3.0;
 
     /* ------------- calculate auxillary epoch quantities ---------- */
-    let eccsq = ecco * ecco;
-    let omeosq = 1.0 - eccsq;
-    let rteosq = f64::sqrt(omeosq);
-    let cosio = f64::cos(inclo);
-    let cosio2 = cosio * cosio;
+    *eccsq = ecco * ecco;
+    *omeosq = 1.0 - *eccsq;
+    *rteosq = f64::sqrt(*omeosq);
+    *cosio = f64::cos(inclo);
+    *cosio2 = *cosio * *cosio;
 
     /* ------------------ un-kozai the mean motion ----------------- */
-    let ak = f64::powf(xke / no_kozai, x2o3);
-    let d1 = 0.75 * j2 * (3.0 * cosio2 - 1.0) / (rteosq * omeosq);
-    let del = d1 / (ak * ak);
-    let adel = ak * (1.0 - del * del - del * (1.0 / 3.0 + 134.0 * del * del / 81.0));
-    let del = d1 / (adel * adel);
-    let no_unkozai = no_kozai / (1.0 + del);
+    ak = f64::powf(xke / no_kozai, x2o3);
+    d1 = 0.75 * j2 * (3.0 * *cosio2 - 1.0) / (*rteosq * *omeosq);
+    del = d1 / (ak * ak);
+    adel = ak * (1.0 - del * del - del * (1.0 / 3.0 + 134.0 * del * del / 81.0));
+    del = d1 / (adel * adel);
+    *no_unkozai = no_kozai / (1.0 + del);
 
-    let ao = f64::powf(xke / (no_unkozai), x2o3);
-    let sinio = f64::sin(inclo);
-    let po = ao * omeosq;
-    let con42 = 1.0 - 5.0 * cosio2;
-    let con41 = -con42 - cosio2 - cosio2;
-    let ainv = 1.0 / ao;
-    let posq = po * po;
-    let rp = ao * (1.0 - ecco);
-    let method = 'n';
+    *ao = f64::powf(xke / *no_unkozai, x2o3);
+    *sinio = f64::sin(inclo);
+    po = *ao * *omeosq;
+    *con42 = 1.0 - 5.0 * *cosio2;
+    *con41 = -*con42 - *cosio2 - *cosio2;
+    *ainv = 1.0 / *ao;
+    *posq = po * po;
+    *rp = *ao * (1.0 - ecco);
+    *method = 'n';
 
     // sgp4fix modern approach to finding sidereal time
     //   if (opsmode == 'a')
     //      {
     // sgp4fix use old way of finding gst
     // count integer number of days from 0 jan 1970
-    let ts70 = epoch - 7305.0;
-    let ds70 = f64::floor(ts70 + 1.0e-8);
-    let tfrac = ts70 - ds70;
+    //ts70 = epoch - 7305.0;
+    //ds70 = f64::floor(ts70 + 1.0e-8);
+    //tfrac = ts70 - ds70;
     // find greenwich location at epoch
-    let c1 = 1.72027916940703639e-2;
-    let thgr70 = 1.7321343856509374;
-    let fk5r = 5.07551419432269442e-15;
-    let c1p2p = c1 + TWOPI;
-    let mut gsto1 = (thgr70 + c1 * ds70 + c1p2p * tfrac + ts70 * ts70 * fk5r) % TWOPI;
-    if gsto1 < 0.0 {
-        gsto1 = gsto1 + TWOPI;
-    }
-    //    }
+    //c1 = 1.72027916940703639e-2;
+    //thgr70 = 1.7321343856509374;
+    //fk5r = 5.07551419432269442e-15;
+    //c1p2p = c1 + TWOPI;
+    //let mut gsto1: f64 = (thgr70 + c1 * ds70 + c1p2p * tfrac + ts70 * ts70 * fk5r) % TWOPI;
+    //if gsto1 < 0.0 {
+    //    gsto1 = gsto1 + TWOPI;
+    //}
     //    else
-    let gsto = gstime_SGP4(epoch + 2433281.5);
-
-    InitlStruct {
-        method: method,
-        ainv: ainv,
-        ao: ao,
-        con41: con41,
-        con42: con42,
-        cosio: cosio,
-        cosio2: cosio2,
-        eccsq: eccsq,
-        omeosq: omeosq,
-        posq: posq,
-        rp: rp,
-        rteosq: rteosq,
-        sinio: sinio,
-        gsto: gsto,
-        no_unkozai: no_unkozai,
-    }
+    *gsto = gstime_sgp4(epoch + 2433281.5);
 
     //#include "debug5.cpp"
 } // initl

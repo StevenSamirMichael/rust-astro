@@ -7,7 +7,6 @@ use super::errors::GravityError;
 use nalgebra as na;
 type CoeffTable = na::DMatrix<f64>;
 
-const MAX_ORDER: usize = 16;
 type DivisorTable = na::SMatrix<f64, 20, 20>;
 
 pub struct Gravity {
@@ -100,8 +99,6 @@ impl Gravity {
                 }
             }
         }
-
-        for m in 0..19 {}
 
         Ok(Gravity {
             name: String::from(name),

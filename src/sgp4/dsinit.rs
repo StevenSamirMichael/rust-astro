@@ -200,18 +200,18 @@ pub fn dsinit(
         root52, x2o3, znl, emo, zns, emsqo;
     */
 
-    const q22: f64 = 1.7891679e-6;
-    const q31: f64 = 2.1460748e-6;
-    const q33: f64 = 2.2123015e-7;
-    const root22: f64 = 1.7891679e-6;
-    const root44: f64 = 7.3636953e-9;
-    const root54: f64 = 2.1765803e-9;
-    const rptim: f64 = 4.37526908801129966e-3; // this equates to 7.29211514668855e-5 rad/sec
-    const root32: f64 = 3.7393792e-7;
-    const root52: f64 = 1.1428639e-7;
-    const x2o3: f64 = 2.0 / 3.0;
-    const znl: f64 = 1.5835218e-4;
-    const zns: f64 = 1.19459e-5;
+    const Q22: f64 = 1.7891679e-6;
+    const Q31: f64 = 2.1460748e-6;
+    const Q33: f64 = 2.2123015e-7;
+    const ROOT22: f64 = 1.7891679e-6;
+    const ROOT44: f64 = 7.3636953e-9;
+    const ROOT54: f64 = 2.1765803e-9;
+    const RPTIM: f64 = 4.37526908801129966e-3; // this equates to 7.29211514668855e-5 rad/sec
+    const ROOT32: f64 = 3.7393792e-7;
+    const ROOT52: f64 = 1.1428639e-7;
+    const X2O3: f64 = 2.0 / 3.0;
+    const ZNL: f64 = 1.5835218e-4;
+    const ZNS: f64 = 1.19459e-5;
 
     // sgp4fix identify constants and allow alternate values
     // just xke is used here so pass it in rather than have multiple calls
@@ -227,11 +227,11 @@ pub fn dsinit(
     }
 
     /* ------------------------ do solar terms ------------------- */
-    let ses = ss1 * zns * ss5;
-    let sis = ss2 * zns * (sz11 + sz13);
-    let sls = -zns * ss3 * (sz1 + sz3 - 14.0 - 6.0 * emsq);
-    let sghs = ss4 * zns * (sz31 + sz33 - 6.0);
-    let mut shs = -zns * ss2 * (sz21 + sz23);
+    let ses = ss1 * ZNS * ss5;
+    let sis = ss2 * ZNS * (sz11 + sz13);
+    let sls = -ZNS * ss3 * (sz1 + sz3 - 14.0 - 6.0 * emsq);
+    let sghs = ss4 * ZNS * (sz31 + sz33 - 6.0);
+    let mut shs = -ZNS * ss2 * (sz21 + sz23);
     // sgp4fix for 180 deg incl
     if (*inclm < 5.2359877e-2) || (*inclm > PI - 5.2359877e-2) {
         shs = 0.0;
@@ -242,11 +242,11 @@ pub fn dsinit(
     let sgs = sghs - cosim * shs;
 
     /* ------------------------- do lunar terms ------------------ */
-    *dedt = ses + s1 * znl * s5;
-    *didt = sis + s2 * znl * (z11 + z13);
-    *dmdt = sls - znl * s3 * (z1 + z3 - 14.0 - 6.0 * emsq);
-    let sghl = s4 * znl * (z31 + z33 - 6.0);
-    let mut shll = -znl * s2 * (z21 + z23);
+    *dedt = ses + s1 * ZNL * s5;
+    *didt = sis + s2 * ZNL * (z11 + z13);
+    *dmdt = sls - ZNL * s3 * (z1 + z3 - 14.0 - 6.0 * emsq);
+    let sghl = s4 * ZNL * (z31 + z33 - 6.0);
+    let mut shll = -ZNL * s2 * (z21 + z23);
     // sgp4fix for 180 deg incl
     if (*inclm < 5.2359877e-2) || (*inclm > PI - 5.2359877e-2) {
         shll = 0.0;
@@ -260,7 +260,7 @@ pub fn dsinit(
 
     /* ----------- calculate deep space resonance effects -------- */
     *dndt = 0.0;
-    let theta = (gsto + tc * rptim) % TWOPI;
+    let theta = (gsto + tc * RPTIM) % TWOPI;
     *em = *em + *dedt * t;
     *inclm = *inclm + *didt * t;
     *argpm = *argpm + *domdt * t;
@@ -277,7 +277,7 @@ pub fn dsinit(
 
     /* -------------- initialize the resonance terms ------------- */
     if *irez != 0 {
-        let aonv = f64::powf(*nm / xke, x2o3);
+        let aonv = f64::powf(*nm / xke, X2O3);
 
         /* ---------- geopotential resonance for 12 hour orbits ------ */
         if *irez == 2 {
@@ -341,26 +341,26 @@ pub fn dsinit(
             let xno2 = *nm * *nm;
             let ainv2 = aonv * aonv;
             let mut temp1 = 3.0 * xno2 * ainv2;
-            let mut temp = temp1 * root22;
+            let mut temp = temp1 * ROOT22;
             *d2201 = temp * f220 * g201;
             *d2211 = temp * f221 * g211;
             temp1 = temp1 * aonv;
-            temp = temp1 * root32;
+            temp = temp1 * ROOT32;
             *d3210 = temp * f321 * g310;
             *d3222 = temp * f322 * g322;
             temp1 = temp1 * aonv;
-            temp = 2.0 * temp1 * root44;
+            temp = 2.0 * temp1 * ROOT44;
             *d4410 = temp * f441 * g410;
             *d4422 = temp * f442 * g422;
             temp1 = temp1 * aonv;
-            temp = temp1 * root52;
+            temp = temp1 * ROOT52;
             *d5220 = temp * f522 * g520;
             *d5232 = temp * f523 * g532;
-            temp = 2.0 * temp1 * root54;
+            temp = 2.0 * temp1 * ROOT54;
             *d5421 = temp * f542 * g521;
             *d5433 = temp * f543 * g533;
             *xlamo = (mo + nodeo + nodeo - theta - theta) % TWOPI;
-            *xfact = mdot + *dmdt + 2.0 * (nodedot + *dnodt - rptim) - no;
+            *xfact = mdot + *dmdt + 2.0 * (nodedot + *dnodt - RPTIM) - no;
             *em = emo;
             emsq = emsqo;
         }
@@ -375,11 +375,11 @@ pub fn dsinit(
             f330 = 1.0 + cosim;
             f330 = 1.875 * f330 * f330 * f330;
             *del1 = 3.0 * *nm * *nm * aonv * aonv;
-            *del2 = 2.0 * *del1 * f220 * g200 * q22;
-            *del3 = 3.0 * *del1 * f330 * g300 * q33 * aonv;
-            *del1 = *del1 * f311 * g310 * q31 * aonv;
+            *del2 = 2.0 * *del1 * f220 * g200 * Q22;
+            *del3 = 3.0 * *del1 * f330 * g300 * Q33 * aonv;
+            *del1 = *del1 * f311 * g310 * Q31 * aonv;
             *xlamo = (mo + nodeo + argpo - theta) % TWOPI;
-            *xfact = mdot + xpidot - rptim + *dmdt + *domdt + *dnodt - no;
+            *xfact = mdot + xpidot - RPTIM + *dmdt + *domdt + *dnodt - no;
         }
 
         /* ------------ for sgp4, initialize the integrator ---------- */

@@ -72,7 +72,7 @@ use std::f64::consts::PI;
 *    hoots, schumacher and glover 2004
 *    vallado, crawford, hujsak, kelso  2006
 a	----------------------------------------------------------------------------*/
-fn dspace(
+pub fn dspace(
     irez: i32,
     d2201: f64,
     d2211: f64,
@@ -113,9 +113,9 @@ fn dspace(
 ) {
     const TWOPI: f64 = 2.0 * PI;
     let mut iretn: i32;
-    let mut iret: i32;
+    //let mut iret: i32;
 
-    let mut delt: f64;
+    let delt: f64;
     let mut ft: f64;
     let theta: f64;
     let mut x2li: f64;
@@ -132,22 +132,22 @@ fn dspace(
             g44, g52, g54, fasx2, fasx4, fasx6, rptim, step2, stepn, stepp;
     */
 
-    const fasx2: f64 = 0.13130908;
-    const fasx4: f64 = 2.8843198;
-    const fasx6: f64 = 0.37448087;
-    const g22: f64 = 5.7686396;
-    const g32: f64 = 0.95240898;
-    const g44: f64 = 1.8014998;
-    const g52: f64 = 1.0508330;
-    const g54: f64 = 4.4108898;
-    const rptim: f64 = 4.37526908801129966e-3; // this equates to 7.29211514668855e-5 rad/sec
-    const stepp: f64 = 720.0;
-    const stepn: f64 = -720.0;
-    const step2: f64 = 259200.0;
+    const FASX2: f64 = 0.13130908;
+    const FASX4: f64 = 2.8843198;
+    const FASX6: f64 = 0.37448087;
+    const G22: f64 = 5.7686396;
+    const G32: f64 = 0.95240898;
+    const G44: f64 = 1.8014998;
+    const G52: f64 = 1.0508330;
+    const G54: f64 = 4.4108898;
+    const RPTIM: f64 = 4.37526908801129966e-3; // this equates to 7.29211514668855e-5 rad/sec
+    const STEPP: f64 = 720.0;
+    const STEPN: f64 = -720.0;
+    const STEP2: f64 = 259200.0;
 
     /* ----------- calculate deep space resonance effects ----------- */
     *dndt = 0.0;
-    theta = (gsto + tc * rptim) % TWOPI;
+    theta = (gsto + tc * RPTIM) % TWOPI;
     *em = *em + dedt * t;
 
     *inclm = *inclm + didt * t;
@@ -181,59 +181,59 @@ fn dspace(
         }
         // sgp4fix move check outside loop
         if t > 0.0 {
-            delt = stepp;
+            delt = STEPP;
         } else {
-            delt = stepn;
+            delt = STEPN;
         }
 
         iretn = 381; // added for do loop
-        iret = 0; // added for loop
+                     //iret = 0; // added for loop
         while iretn == 381 {
             /* ------------------- dot terms calculated ------------- */
             /* ----------- near - synchronous resonance terms ------- */
             if irez != 2 {
-                xndt = del1 * f64::sin(*xli - fasx2)
-                    + del2 * f64::sin(2.0 * (*xli - fasx4))
-                    + del3 * f64::sin(3.0 * (*xli - fasx6));
+                xndt = del1 * f64::sin(*xli - FASX2)
+                    + del2 * f64::sin(2.0 * (*xli - FASX4))
+                    + del3 * f64::sin(3.0 * (*xli - FASX6));
                 xldot = *xni + xfact;
-                xnddt = del1 * f64::cos(*xli - fasx2)
-                    + 2.0 * del2 * f64::cos(2.0 * (*xli - fasx4))
-                    + 3.0 * del3 * f64::cos(3.0 * (*xli - fasx6));
+                xnddt = del1 * f64::cos(*xli - FASX2)
+                    + 2.0 * del2 * f64::cos(2.0 * (*xli - FASX4))
+                    + 3.0 * del3 * f64::cos(3.0 * (*xli - FASX6));
                 xnddt = xnddt * xldot;
             } else {
                 /* --------- near - half-day resonance terms -------- */
                 xomi = argpo + argpdot * *atime;
                 x2omi = xomi + xomi;
                 x2li = *xli + *xli;
-                xndt = d2201 * f64::sin(x2omi + *xli - g22)
-                    + d2211 * f64::sin(*xli - g22)
-                    + d3210 * f64::sin(xomi + *xli - g32)
-                    + d3222 * f64::sin(-xomi + *xli - g32)
-                    + d4410 * f64::sin(x2omi + x2li - g44)
-                    + d4422 * f64::sin(x2li - g44)
-                    + d5220 * f64::sin(xomi + *xli - g52)
-                    + d5232 * f64::sin(-xomi + *xli - g52)
-                    + d5421 * f64::sin(xomi + x2li - g54)
-                    + d5433 * f64::sin(-xomi + x2li - g54);
+                xndt = d2201 * f64::sin(x2omi + *xli - G22)
+                    + d2211 * f64::sin(*xli - G22)
+                    + d3210 * f64::sin(xomi + *xli - G32)
+                    + d3222 * f64::sin(-xomi + *xli - G32)
+                    + d4410 * f64::sin(x2omi + x2li - G44)
+                    + d4422 * f64::sin(x2li - G44)
+                    + d5220 * f64::sin(xomi + *xli - G52)
+                    + d5232 * f64::sin(-xomi + *xli - G52)
+                    + d5421 * f64::sin(xomi + x2li - G54)
+                    + d5433 * f64::sin(-xomi + x2li - G54);
                 xldot = *xni + xfact;
-                xnddt = d2201 * f64::cos(x2omi + *xli - g22)
-                    + d2211 * f64::cos(*xli - g22)
-                    + d3210 * f64::cos(xomi + *xli - g32)
-                    + d3222 * f64::cos(-xomi + *xli - g32)
-                    + d5220 * f64::cos(xomi + *xli - g52)
-                    + d5232 * f64::cos(-xomi + *xli - g52)
+                xnddt = d2201 * f64::cos(x2omi + *xli - G22)
+                    + d2211 * f64::cos(*xli - G22)
+                    + d3210 * f64::cos(xomi + *xli - G32)
+                    + d3222 * f64::cos(-xomi + *xli - G32)
+                    + d5220 * f64::cos(xomi + *xli - G52)
+                    + d5232 * f64::cos(-xomi + *xli - G52)
                     + 2.0
-                        * (d4410 * f64::cos(x2omi + x2li - g44)
-                            + d4422 * f64::cos(x2li - g44)
-                            + d5421 * f64::cos(xomi + x2li - g54)
-                            + d5433 * f64::cos(-xomi + x2li - g54));
+                        * (d4410 * f64::cos(x2omi + x2li - G44)
+                            + d4422 * f64::cos(x2li - G44)
+                            + d5421 * f64::cos(xomi + x2li - G54)
+                            + d5433 * f64::cos(-xomi + x2li - G54));
                 xnddt = xnddt * xldot;
             }
 
             /* ----------------------- integrator ------------------- */
             // sgp4fix move end checks to end of routine
-            if f64::abs(t - *atime) >= stepp {
-                iret = 0;
+            if f64::abs(t - *atime) >= STEPP {
+                //iret = 0;
                 iretn = 381;
             } else
             // exit here
@@ -243,8 +243,8 @@ fn dspace(
             }
 
             if iretn == 381 {
-                *xli = *xli + xldot * delt + xndt * step2;
-                *xni = *xni + xndt * delt + xnddt * step2;
+                *xli = *xli + xldot * delt + xndt * STEP2;
+                *xni = *xni + xndt * delt + xnddt * STEP2;
                 *atime = *atime + delt;
             }
         } // while iretn = 381

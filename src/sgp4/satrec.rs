@@ -126,7 +126,7 @@ pub struct SatRec {
     pub am: f64,
     pub em: f64,
     pub im: f64,
-    pub Om: f64,
+    pub om: f64,
     pub mm: f64,
     pub nm: f64,
 }
@@ -239,7 +239,7 @@ impl SatRec {
             am: 0.0,
             em: 0.0,
             im: 0.0,
-            Om: 0.0,
+            om: 0.0,
             mm: 0.0,
             nm: 0.0,
 

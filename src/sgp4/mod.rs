@@ -3,9 +3,11 @@ pub use self::satrec::SatRec;
 
 // pub mod dscom;
 // pub mod dsinit;
-// mod initl;
+pub mod dpper;
+pub mod dscom;
 pub mod dsinit;
 pub mod dspace;
 pub mod getgravconst;
+pub mod initl;
 pub mod satrec;
 //pub mod sgp4init;
