@@ -10,4 +10,5 @@ pub mod dspace;
 pub mod getgravconst;
 pub mod initl;
 pub mod satrec;
-//pub mod sgp4init;
+pub mod sgp4;
+pub mod sgp4init;
