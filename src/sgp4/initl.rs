@@ -197,7 +197,7 @@ pub fn initl(
     let thgr70 = 1.7321343856509374;
     let fk5r = 5.07551419432269442e-15;
     let c1p2p = c1 + TWOPI;
-    let gsto1 = (thgr70 + c1 * ds70 + c1p2p * tfrac + ts70 * ts70 * fk5r) % TWOPI;
+    let mut gsto1 = (thgr70 + c1 * ds70 + c1p2p * tfrac + ts70 * ts70 * fk5r) % TWOPI;
     if gsto1 < 0.0 {
         gsto1 = gsto1 + TWOPI;
     }

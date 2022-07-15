@@ -1,5 +1,4 @@
 pub struct SatRec {
-    pub satnum: usize,
     pub epochyr: i32,
     pub epochtynumrev: i32,
     pub error: i32,
@@ -65,6 +64,8 @@ pub struct SatRec {
     pub se2: f64,
     pub se3: f64,
     pub sgh2: f64,
+    pub sgh3: f64,
+    pub sgh4: f64,
     pub sh2: f64,
     pub sh3: f64,
     pub si2: f64,
@@ -91,6 +92,26 @@ pub struct SatRec {
     pub xli: f64,
     pub xni: f64,
 
+    /*Elements */
+    pub a: f64,
+    pub altp: f64,
+    pub alta: f64,
+    pub epochdays: f64,
+    pub jdsatepoch: f64,
+    pub jdsatepoch_f: f64,
+    pub nddot: f64,
+    pub ndot: f64,
+    pub bstar: f64,
+    pub rcse: f64,
+    pub inclo: f64,
+    pub nodeo: f64,
+    pub ecco: f64,
+    pub argpo: f64,
+    pub mo: f64,
+    pub no: f64,
+    pub no_kozai: f64,
+    pub no_unkozai: f64,
+
     /* Gravity */
     pub tumin: f64,
     pub mus: f64,
@@ -108,31 +129,11 @@ pub struct SatRec {
     pub Om: f64,
     pub mm: f64,
     pub nm: f64,
-
-    /*Elements */
-    pub a: f64,
-    pub altp: f64,
-    pub alta: f64,
-    pub epochdays: f64,
-    pub jdsatepoch: f64,
-    pub nddot: f64,
-    pub ndot: f64,
-    pub bstar: f64,
-    pub rcse: f64,
-    pub inclo: f64,
-    pub nodeo: f64,
-    pub ecco: f64,
-    pub argpo: f64,
-    pub mo: f64,
-    pub no: f64,
-    pub no_kozai: f64,
-    pub no_unkozai: f64,
 }
 
 impl SatRec {
     pub fn new() -> SatRec {
         SatRec {
-            satnum: 0,
             epochyr: 0,
             epochtynumrev: 0,
             error: 0,
@@ -196,6 +197,8 @@ impl SatRec {
             se2: 0.0,
             se3: 0.0,
             sgh2: 0.0,
+            sgh3: 0.0,
+            sgh4: 0.0,
             sh2: 0.0,
             sh3: 0.0,
             si2: 0.0,
@@ -246,6 +249,7 @@ impl SatRec {
             alta: 0.0,
             epochdays: 0.0,
             jdsatepoch: 0.0,
+            jdsatepoch_f: 0.0,
             nddot: 0.0,
             ndot: 0.0,
             bstar: 0.0,

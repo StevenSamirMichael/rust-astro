@@ -35,10 +35,16 @@ mod tests {
             ts2.b = 3.0;
         }
 
+        fn mod2(c: &mut f64) {
+            *c = 5.0;
+        }
+
         let mut ts: TS = TS { a: 1.0, b: 2.0 };
 
         println!("ts = {:?}", ts);
         modts(&mut ts);
         println!("ts 2 = {:?}", ts);
+        mod2(&mut ts.a);
+        println!("ts 3 = {:?}", ts);
     }
 }
