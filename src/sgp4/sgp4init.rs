@@ -3,6 +3,7 @@ use super::dscom::dscom;
 use super::dsinit::dsinit;
 use super::getgravconst::getgravconst;
 use super::initl::initl;
+use super::sgp4_lowlevel::sgp4_lowlevel;
 use super::SatRec;
 
 use std::f64::consts::PI;
@@ -195,8 +196,7 @@ pub fn sgp4init(
     let qzms2t: f64;
     let ss: f64;
     let x2o3: f64;
-    //let r: [f64; 3];
-    //let v: [f64; 3];
+
     let delmotemp: f64;
     let qzms2ttemp: f64;
     let qzms24temp: f64;
@@ -655,6 +655,9 @@ pub fn sgp4init(
     // sgp4fix take out check to let satellites process until they are actually below earth surface
     //       if(satrec.error == 0)
     //sgp4(satrec, 0.0, r, v);
+    let mut r: [f64; 3] = [0.0, 0.0, 0.0];
+    let mut v: [f64; 3] = [0.0, 0.0, 0.0];
+    sgp4_lowlevel(&mut satrec, 0.0, &mut r, &mut v);
 
     satrec.init = 'n';
 

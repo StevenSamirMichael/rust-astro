@@ -10,6 +10,7 @@ pub mod gravity;
 pub mod itrfcoord;
 pub mod jplephem;
 pub mod sgp4;
+pub mod tle;
 
 //mod sgp4unit;
 // pub mod tle;

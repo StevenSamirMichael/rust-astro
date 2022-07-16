@@ -1,14 +1,13 @@
 pub use self::satrec::SatRec;
-//pub use self::sgp4init::sgp4init;
+pub use self::sgp4::sgp4;
 
-// pub mod dscom;
-// pub mod dsinit;
-pub mod dpper;
-pub mod dscom;
-pub mod dsinit;
-pub mod dspace;
-pub mod getgravconst;
-pub mod initl;
+mod dpper;
+mod dscom;
+mod dsinit;
+mod dspace;
+mod getgravconst;
+mod initl;
 pub mod satrec;
 pub mod sgp4;
-pub mod sgp4init;
+mod sgp4_lowlevel;
+mod sgp4init;

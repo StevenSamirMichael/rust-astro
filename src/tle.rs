@@ -1,4 +1,5 @@
 use super::astrotime::AstroTime;
+use crate::sgp4::SatRec;
 
 #[derive(PartialEq, PartialOrd, Clone, Debug)]
 pub struct TLE {
@@ -23,6 +24,7 @@ pub struct TLE {
     pub rev_num: i32,
 
     need_reinit: bool,
+    pub satrec: Option<SatRec>,
 }
 
 impl TLE {
@@ -48,6 +50,7 @@ impl TLE {
             mean_motion: 0.0,
             rev_num: 0,
             need_reinit: true,
+            satrec: None,
         }
     }
 
@@ -217,6 +220,7 @@ impl TLE {
                 }
             },
             need_reinit: true,
+            satrec: None,
         })
     }
 }
@@ -224,28 +228,6 @@ impl TLE {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn testref() {
-        struct TS<'a> {
-            c: &'a f64,
-        }
-
-        fn chnge(a: &mut f64) {
-            *a = *a + 1.0;
-            ()
-        }
-
-        let mut s: TS = TS { c: &32.0 };
-        println!("s = {:?}", s.c);
-        chnge(mut s.c);
-        println!("s = {:?}", s.c);
-
-        let mut b: f64 = 3.0;
-        println!("b = {}", b);
-        chnge(&mut b);
-        println!("b = {}", b);
-    }
 
     #[test]
     fn testload() {

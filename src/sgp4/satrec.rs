@@ -1,3 +1,4 @@
+#[derive(PartialEq, PartialOrd, Clone, Debug)]
 pub struct SatRec {
     pub epochyr: i32,
     pub epochtynumrev: i32,
