@@ -23,8 +23,7 @@ pub struct TLE {
     pub mean_motion: f64,
     pub rev_num: i32,
 
-    need_reinit: bool,
-    pub satrec: Option<SatRec>,
+    pub(in crate) satrec: Option<SatRec>,
 }
 
 impl TLE {
@@ -49,7 +48,6 @@ impl TLE {
             mean_anomaly: 0.0,
             mean_motion: 0.0,
             rev_num: 0,
-            need_reinit: true,
             satrec: None,
         }
     }
@@ -219,7 +217,6 @@ impl TLE {
                     Err(_) => return Err("Could not parse rev num".to_string()),
                 }
             },
-            need_reinit: true,
             satrec: None,
         })
     }
