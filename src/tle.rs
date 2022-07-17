@@ -90,7 +90,7 @@ impl TLE {
         };
 
         // Note: day_of_year starts from 1, not zero, hence the "-1" at end
-        let epoch = AstroTime::from_date(year, 1, 1) + day_of_year - 1.0;
+        let epoch = AstroTime::from_date(year, 1, 1).add_utc_days(day_of_year - 1.0);
 
         Ok(TLE {
             name: "none".to_string(),
@@ -104,13 +104,13 @@ impl TLE {
             desig_year: {
                 match line1[9..11].trim().parse() {
                     Ok(l) => l,
-                    Err(_) => return Err("Could not parse desig year".to_string()),
+                    Err(_) => 70,
                 }
             },
             desig_launch: {
                 match line1[11..14].trim().parse() {
                     Ok(l) => l,
-                    Err(_) => return Err("Could not parse desig_launch".to_string()),
+                    Err(_) => 0,
                 }
             },
             desig_piece: {
@@ -137,7 +137,6 @@ impl TLE {
                 mstr.push_str(&line1[45..50]);
                 mstr.push_str("E");
                 mstr.push_str(&line1[50..53]);
-                println!("mmdd = \"{}\"", mstr.trim());
                 let mut m: f64 = match mstr.trim().parse() {
                     Ok(y) => y,
                     Err(_) => return Err("Could not parse mean motion dot dot".to_string()),
@@ -164,7 +163,7 @@ impl TLE {
             ephem_type: {
                 match line1[62..63].trim().parse() {
                     Ok(y) => y,
-                    Err(_) => return Err("Could not parse ephem type".to_string()),
+                    Err(_) => 0,
                 }
             },
             element_num: {

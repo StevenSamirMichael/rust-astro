@@ -28,8 +28,8 @@ pub fn sgp4(tle: &mut TLE, tm: AstroTime) -> SGP4Result {
         let jdsatepoch = tle.epoch.to_jd(Scale::UTC);
 
         tle.satrec = Some(sgp4init(
-            &"wgs84",
-            'i',
+            &"wgs72",
+            'a',
             &"satno",
             jdsatepoch - 2433281.5,
             bstar,
@@ -63,6 +63,8 @@ pub fn sgp4(tle: &mut TLE, tm: AstroTime) -> SGP4Result {
 mod tests {
     use super::*;
     use crate::tle::TLE;
+    use crate::utils::dev;
+    use std::io::BufRead;
 
     #[test]
     fn testsgp4() {
@@ -87,6 +89,98 @@ mod tests {
             }
             Err(e) => {
                 panic!("Error running sgp4: {}", e);
+            }
+        }
+        println!("module path = {}", std::module_path!());
+    }
+
+    #[test]
+    fn vallado_testvecs() {
+        let testdir = dev::get_project_root()
+            .unwrap()
+            .join("testdata")
+            .join("sgp4");
+        if !testdir.is_dir() {
+            panic!(
+                "Required test directory \"{}\" does not exist",
+                testdir.to_string_lossy()
+            );
+        }
+        let tlefile = testdir.join("SGP4-VER.TLE");
+
+        let mut tles: Vec<TLE> = Vec::<TLE>::new();
+        let f = match std::fs::File::open(&tlefile) {
+            Err(why) => panic!("Could not open {}: {}", tlefile.display(), why),
+            Ok(file) => file,
+        };
+        let mut line0: String = String::from("0 None");
+        let mut line1: String = String::from("");
+        for line in std::io::BufReader::new(f).lines() {
+            match line.unwrap().trim() {
+                v if v.len() < 3 => continue,
+                v if v.chars().nth(0).unwrap() == '#' => continue,
+                v if v.chars().nth(0).unwrap() == '1' => line1 = String::from(v),
+                v if v.chars().nth(0).unwrap() == '0' => line0 = String::from(v),
+                v if v.chars().nth(0).unwrap() == '2' => {
+                    match TLE::load_3line(&line0, &line1, &String::from(v)) {
+                        Ok(tle) => tles.push(tle),
+                        Err(e) => panic!("Error loading TLE: {}", e),
+                    }
+                    line0 = String::from("0 None");
+                    line1 = String::from("");
+                }
+                _ => continue,
+            }
+        }
+
+        for mut tle in tles {
+            let fname = format!("{:05}.e", tle.sat_num);
+            let fh = testdir.join(fname);
+            let ftle = match std::fs::File::open(&fh) {
+                Err(why) => panic!("Could not open {}: {}", fh.display(), why),
+                Ok(file) => file,
+            };
+            for line in std::io::BufReader::new(ftle).lines() {
+                let maxposerr = 1.0e-5;
+                let mut maxvelerr = 1.0e-5;
+
+                let testvec: Vec<f64> = line
+                    .unwrap()
+                    .trim()
+                    .split_whitespace()
+                    .map(|x| match x.parse() {
+                        Ok(v) => v,
+                        Err(_) => -1.0,
+                    })
+                    .collect();
+                if testvec.len() < 7 {
+                    continue;
+                }
+                if testvec[0] < 0.0 {
+                    continue;
+                }
+                let tm = tle.epoch + testvec[0] / 86400.0;
+                match sgp4(&mut tle, tm) {
+                    Ok((pos, vel)) => {
+                        for idx in 0..3 {
+                            // Account for truncation in truth data
+                            if testvec[idx + 4].abs() < 1.0e-4 {
+                                maxvelerr = 1.0e-4;
+                            }
+                            if testvec[idx + 4].abs() < 1.0e-6 {
+                                maxvelerr = 1.0e-2;
+                            }
+                            let poserr =
+                                ((pos[idx] * 1.0e-3 - testvec[idx + 1]) / testvec[idx + 1]).abs();
+                            let velerr =
+                                ((vel[idx] * 1.0e-3 - testvec[idx + 4]) / testvec[idx + 4]).abs();
+                            assert!(poserr < maxposerr);
+                            assert!(velerr < maxvelerr);
+                        }
+                    }
+                    // Note: some errors are part of test vectors
+                    Err(_) => (),
+                }
             }
         }
     }
