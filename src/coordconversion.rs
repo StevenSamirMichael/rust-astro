@@ -93,6 +93,20 @@ pub fn qitrf2tirs(tm: &AstroTime) -> Quat {
     qrotz(-sp) * qroty(xp) * qrotx(yp)
 }
 
+///
+/// Quaternion representing rotation from the
+/// International Terrestrial Reference Frame (ITRF)
+/// to the Geocentric Celestial Reference Frame (GCRS)
+///
+/// # Arguments
+///
+/// * tm: Time at which to compute transform
+///
+/// # Returns
+///
+/// * Quaternion representing rotation from ITRF to GCRS frame
+///
+/// Uses the IAU
 pub fn qitrf2gcrs(tm: &AstroTime) -> Quat {
     let w = qitrf2tirs(tm);
     let r = qrotz(-earth_rotation_angle(tm));
