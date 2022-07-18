@@ -14,6 +14,7 @@ use std::f64::consts::PI;
 
 use super::{GravConst, OpsMode};
 
+#[inline]
 pub fn sgp4(tle: &mut TLE, tm: AstroTime) -> SGP4Result {
     sgp4_full(tle, tm, GravConst::WGS84, OpsMode::IMPROVED)
 }
