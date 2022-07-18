@@ -108,6 +108,21 @@ pub fn get_from_mjd_utc(mjd_utc: f64) -> Option<[f64; 4]> {
     }
 }
 
+///
+/// Get Earth Orientation Parameters at given instant
+///
+/// # Arguments:
+///
+/// * tm: Instant at which to query parameters
+///
+/// # Return:
+///
+/// * Vector [f64; 4] with following elements:
+///   * 0 : (UT1 - UTC) in seconds
+///   * 1 : X polar motion in arcsecs
+///   * 2 : Y polar motion in arcsecs
+///   * 3 : LOD: instantaneous rate of change in (UT1-UTC), msec/day
+///
 #[inline]
 pub fn get(tm: &astrotime::AstroTime) -> Option<[f64; 4]> {
     get_from_mjd_utc(tm.to_mjd(astrotime::Scale::UTC))
