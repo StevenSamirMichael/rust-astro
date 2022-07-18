@@ -6,7 +6,7 @@ type Vec3 = na::Vector3<f64>;
 type Quat = na::UnitQuaternion<f64>;
 
 use super::earth_orientation_params;
-use crate::iau2000::qcirs2gcrs;
+pub use crate::iau2000::qcirs2gcrs;
 
 #[inline]
 pub fn qrotx(theta: f64) -> Quat {
