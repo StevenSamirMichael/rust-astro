@@ -100,9 +100,7 @@ mod tests {
         //let line0: &str = "0 SL-12 DEB";
         let mut tle =
             TLE::load_3line(&line0.to_string(), &line1.to_string(), &line2.to_string()).unwrap();
-        println!("tle = {:?}", tle);
         let tm = tle.epoch;
-        println!("tm = {}", tm);
 
         match sgp4(&mut tle, tm) {
             Ok((pos, vel)) => {

@@ -1,17 +1,18 @@
 //!
 //! # AstroTime
 //!
-//! A representation of time that allows for conversion between various scales or epochs.
-//! Epoch conversion is an often necessary for calculation of astronomic phenomenon, e.g.
-//! the exact rotation between Earth-centered inertial and fixed coordinate frames.
+//! A representation of time that allows for conversion between
+//!  various scales or epochs. Epoch conversion is an often necessary for
+//! calculation of astronomic phenomenon, e.g.the exact rotation between
+//! Earth-centered inertial and fixed coordinate frames.
 //!
 //! ## Scales include:
 //!
-//! * **UTC** - Universal Time Coordinate. In common use.  Local times are generally
-//!   UTC time with a timezone offset
+//! * **UTC** - Universal Time Coordinate. In common use.  Local times are
+//!   generally UTC time with a timezone offset
 //!
-//! * **TAI** - International Atomic Time.  A monotonically increasing epoch that differs
-//!   from UTC in that it does not include leap seconds.
+//! * **TAI** - International Atomic Time.  A monotonically increasing epoch
+//!   that differsfrom UTC in that it does not include leap seconds.
 //!
 //! * **UT1** - Universal Time.  This is defined by the Earth's rotation, with
 //!   correction for polar wander
@@ -23,12 +24,15 @@
 //!   constant 19 seconds after GPS epoch of Jan 6 1980.  Typically reported in
 //!   weeks since midnight Jan 1 1980 and seconds of week.
 //!
-//! * **TDB** - Barycentric Dynamical time.  Used as time scale when dealing with
-//!   solar system ephemerides in solar system barycentric coordinate system.
+//! * **TDB** - Barycentric Dynamical time.  Used as time scale when dealing
+//!     with solar system ephemerides in solar system barycentric coordinate
+//!     system.
 //!
 //! ## Additional Info
 //!
-//! For a good description, see [here](https://www.stjarnhimlen.se/comp/time.html)
+//! For a good description, see
+//!   [here](https://www.stjarnhimlen.se/comp/time.html)
+//!
 #[derive(PartialEq, PartialOrd, Copy, Clone, Debug)]
 pub struct AstroTime {
     mjd_tai: f64,
@@ -285,7 +289,12 @@ impl AstroTime {
                         - 32.184 / 86400.0
                 },
             },
-            Scale::UT1 => AstroTime { mjd_tai: 0.0 },
+            Scale::UT1 => {
+                let utc: f64 = val - eop::get_from_mjd_utc(val).unwrap()[0] / 86400.0;
+                AstroTime {
+                    mjd_tai: utc + mjd_utc2tai_seconds(val) / 86400.0,
+                }
+            }
             Scale::INVALID => AstroTime { mjd_tai: JD2MJD },
         }
     }

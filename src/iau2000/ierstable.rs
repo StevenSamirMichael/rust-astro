@@ -78,6 +78,33 @@ impl IERSTable {
         }
         Ok(table)
     }
+
+    pub fn compute(&self, t_tt: f64, delaunay: &na::SVector<f64, 14>) -> f64 {
+        let mut retval: f64 = 0.0;
+        for i in 0..6 {
+            // return if finished
+            if self.data[i].ncols() == 0 {
+                continue;
+            }
+
+            let mut tmult: f64 = 1.0;
+            for _ in 0..i {
+                tmult = tmult * t_tt;
+            }
+
+            for j in 0..self.data[i].nrows() {
+                //double argVal = 0;
+                let mut argval: f64 = 0.0;
+                for k in 0..13 {
+                    argval += self.data[i][(j, k + 3)] * delaunay[k];
+                }
+                let sval = f64::sin(argval);
+                let cval = f64::cos(argval);
+                retval += tmult * (self.data[i][(j, 1)] * sval + self.data[i][(j, 2)] * cval);
+            }
+        }
+        retval
+    }
 }
 
 #[cfg(test)]
