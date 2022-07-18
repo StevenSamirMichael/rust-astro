@@ -141,29 +141,16 @@ impl std::fmt::Display for AstroTime {
 
         write!(
             f,
-            "{}-{:02}-{:02} {:02}:{:02}:{:02.3}Z",
+            "{}-{:02}-{:02} {:02}:{:02}:{:06.3}Z",
             year, mon, day, hour, min, sec
         )
     }
 }
 
-/// Add given floating-point number of days to AstroTime instance,
-/// and return new instance representing new time.
-///
-/// Days are defined in this case to have exactly 86400.0 seconds
-/// In other words, this will ignore leap seconds and the integer
-/// part of the floating point will increment the number of days and
-/// the decimal part will increment the fractions of a day.
-///
-/// So, for example, adding 1.0 to a day with a leap second will
-/// increment by a full day
-///
 impl std::ops::Add<f64> for AstroTime {
     type Output = Self;
     fn add(self, other: f64) -> Self::Output {
-        let mut utc = self.to_mjd(Scale::UTC);
-        utc = utc + other;
-        AstroTime::from_mjd(utc, Scale::UTC)
+        AstroTime::from_mjd(self.mjd_tai + other, Scale::TAI)
     }
 }
 
@@ -238,6 +225,23 @@ impl AstroTime {
     /// Convert to unixtime (seconds since midnight Jan 1 1970, UTC)
     pub fn to_unixtime(&self) -> i64 {
         ((self.to_mjd(Scale::UTC) - UTC1970) * 86400.0) as i64
+    }
+
+    /// Add given floating-point number of days to AstroTime instance,
+    /// and return new instance representing new time.
+    ///
+    /// Days are defined in this case to have exactly 86400.0 seconds
+    /// In other words, this will ignore leap seconds and the integer
+    /// part of the floating point will increment the number of days and
+    /// the decimal part will increment the fractions of a day.
+    ///
+    /// So, for example, adding 1.0 to a day with a leap second will
+    /// increment by a full day
+    ///
+    pub fn add_utc_days(&self, days: f64) -> AstroTime {
+        let mut utc = self.to_mjd(Scale::UTC);
+        utc = utc + days;
+        AstroTime::from_mjd(utc, Scale::UTC)
     }
 
     /// Construct new AstroTime object representing time at
