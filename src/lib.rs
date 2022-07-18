@@ -13,8 +13,11 @@ pub mod tle;
 
 //mod sgp4unit;
 // pub mod tle;
+pub mod coordconversion;
 pub mod iau2000;
 pub mod utils;
+
+pub use coordconversion::gmst;
 
 #[cfg(test)]
 mod tests {
