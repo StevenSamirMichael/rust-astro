@@ -10,17 +10,17 @@ use crate::iau2000::qcirs2gcrs;
 
 #[inline]
 pub fn qrotx(theta: f64) -> Quat {
-    Quat::from_axis_angle(&Vec3::x_axis(), theta)
+    Quat::from_axis_angle(&Vec3::x_axis(), -theta)
 }
 
 #[inline]
 pub fn qroty(theta: f64) -> Quat {
-    Quat::from_axis_angle(&Vec3::y_axis(), theta)
+    Quat::from_axis_angle(&Vec3::y_axis(), -theta)
 }
 
 #[inline]
 pub fn qrotz(theta: f64) -> Quat {
-    Quat::from_axis_angle(&Vec3::z_axis(), theta)
+    Quat::from_axis_angle(&Vec3::z_axis(), -theta)
 }
 
 ///
@@ -78,12 +78,12 @@ pub fn gast(tm: &AstroTime) -> f64 {
 ///  * Earth rotation angle, in radians
 ///
 pub fn earth_rotation_angle(tm: &AstroTime) -> f64 {
-    let t = tm.to_mjd(Scale::UT1);
+    let t = tm.to_jd(Scale::UT1);
     let f = t % 1.0;
-    2.0 * PI * (0.7790572732640 + f + 0.00273781191135448 * t) % 1.0
+    2.0 * PI * ((0.7790572732640 + f + 0.00273781191135448 * (t - 2451545.0)) % 1.0)
 }
 
-pub fn qitrf2tirs(tm: &AstroTime) -> Quat {
+pub fn qitrf2icrs(tm: &AstroTime) -> Quat {
     const ASEC2RAD: f64 = PI / 180.0 / 3600.0;
     let eop = earth_orientation_params::get(tm).unwrap();
     let xp = eop[1] * ASEC2RAD;
@@ -108,7 +108,7 @@ pub fn qitrf2tirs(tm: &AstroTime) -> Quat {
 ///
 /// Uses the IAU
 pub fn qitrf2gcrs(tm: &AstroTime) -> Quat {
-    let w = qitrf2tirs(tm);
+    let w = qitrf2icrs(tm);
     let r = qrotz(-earth_rotation_angle(tm));
     let q = qcirs2gcrs(tm);
     q * r * w
@@ -122,6 +122,7 @@ pub fn qgcrs2itrf(tm: &AstroTime) -> Quat {
 mod tests {
     use super::*;
     use crate::astrotime::{AstroTime, Scale};
+    type Vec3 = na::Vector3<f64>;
 
     #[test]
     fn test_gmst() {
@@ -134,5 +135,30 @@ mod tests {
         let gmval = gmst(&tm) * 180.0 / PI;
         let truth = -207.4212121875;
         assert!(((gmval - truth) / truth).abs() < 1.0e-6)
+    }
+
+    #[test]
+    fn test_gcrs2itrf() {
+        let tm = &AstroTime::from_datetime(2004, 4, 6, 7, 51, 28.386009);
+        let pitrf = Vec3::new(-1033.4793830, 7901.2952754, 6380.3565958);
+        let t_tt = (tm.to_jd(Scale::TT) - 2451545.0) / 36525.0;
+        println!("tm = {}", tm);
+        println!("t_tt = {}", t_tt);
+        println!("jd = {}", tm.to_jd(Scale::TT));
+        let dut1 = (tm.to_mjd(Scale::UT1) - tm.to_mjd(Scale::UTC)) * 86400.0;
+        println!("dut1 = {} sec", dut1);
+        let delta_at = (tm.to_mjd(Scale::TAI) - tm.to_mjd(Scale::UTC)) * 86400.0;
+        println!("delta_at = {} sec", delta_at);
+
+        //println!("q = {}", qitrf2tirs(&tm));
+        let ptirs = qitrf2icrs(&tm) * pitrf;
+        println!("ptirs = {}", ptirs);
+        let era = earth_rotation_angle(&tm);
+        println!("era = {} deg", era * 180.0 / PI);
+        let pcirs = qrotz(-era) * ptirs;
+        println!("pcirs = {}", pcirs);
+        println!("pgcrs = {}", qcirs2gcrs(tm) * pcirs);
+        let eop = earth_orientation_params::get(tm).unwrap();
+        println!("xp = {} :: yp = {}", eop[1], eop[2]);
     }
 }

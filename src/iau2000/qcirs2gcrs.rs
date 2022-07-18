@@ -12,7 +12,7 @@ use std::f64::consts::PI;
 // Read-only tables used for CIRS to GCRS rotation...
 lazy_static::lazy_static! {
     static ref TABLE5A: IERSTable =
-        IERSTable::from_file("tab4.2a.txt").unwrap();
+        IERSTable::from_file("tab5.2a.txt").unwrap();
     static ref TABLE5B: IERSTable =
         IERSTable::from_file("tab5.2b.txt").unwrap();
     static ref TABLE5D: IERSTable =

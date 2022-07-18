@@ -134,7 +134,7 @@ lazy_static::lazy_static! {
                 Err(_) => (),
             }
         }
-
+        leapvec.reverse();
         leapvec
     };
 }
@@ -441,7 +441,7 @@ impl AstroTime {
 fn mjd_utc2tai_seconds(mjd_utc: f64) -> f64 {
     if mjd_utc > UTC1972 {
         let utc1900: u64 = (mjd_utc as u64 - 15020) * 86400;
-        let val = DELTAAT_NEW.iter().find(|&&x| x[0] >= utc1900);
+        let val = DELTAAT_NEW.iter().find(|&&x| x[0] < utc1900);
         val.unwrap_or(&[0, 0])[1] as f64
     } else {
         0.0
@@ -451,7 +451,7 @@ fn mjd_utc2tai_seconds(mjd_utc: f64) -> f64 {
 fn mjd_tai2utc_seconds(mjd_tai: f64) -> f64 {
     if mjd_tai > UTC1972 {
         let tai1900: u64 = (mjd_tai as u64 - 15020) * 86400;
-        let val = DELTAAT_NEW.iter().find(|&&x| (x[0] + x[1]) > tai1900);
+        let val = DELTAAT_NEW.iter().find(|&&x| (x[0] + x[1]) < tai1900);
         -(val.unwrap_or(&[0, 0])[1] as f64)
     } else {
         0.0
@@ -580,6 +580,21 @@ mod tests {
 
         let dcalc: f64 = tm2 - tm;
         assert!(((dcalc - delta) / delta).abs() < 1.0e-5);
+    }
+
+    #[test]
+    fn test_deltaat() {
+        // Pulled from Vallado example 3-14
+        let tm = &AstroTime::from_datetime(2004, 4, 6, 7, 51, 28.386009);
+        println!("tm = {}", tm);
+        let dut1 = (tm.to_mjd(Scale::UT1) - tm.to_mjd(Scale::UTC)) * 86400.0;
+        println!("dut1 = {} sec", dut1);
+        let delta_at = (tm.to_mjd(Scale::TAI) - tm.to_mjd(Scale::UTC)) * 86400.0;
+        println!("delta_at = {} sec", delta_at);
+        println!(
+            "delta at 2 = {}",
+            mjd_utc2tai_seconds(tm.to_mjd(Scale::UTC))
+        );
     }
 
     #[test]

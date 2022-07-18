@@ -40,8 +40,8 @@ impl IERSTable {
                     if tline.len() < 10 {
                         continue;
                     }
-                    if tline[..4].eq("j =") {
-                        tnum = tline[5..6].parse()?;
+                    if tline[..3].eq("j =") {
+                        tnum = tline[4..5].parse()?;
                         let s: Vec<&str> = tline.split_whitespace().collect();
                         let tsize: usize = s[s.len() - 1].parse().unwrap_or(0);
                         if tnum < 0 || tnum > 5 || tsize == 0 {
@@ -50,18 +50,18 @@ impl IERSTable {
                                 fname
                             );
                         }
-                        table.data[tnum as usize - 1] = na::DMatrix::<f64>::zeros(tsize, 17);
+                        table.data[tnum as usize] = na::DMatrix::<f64>::zeros(tsize, 17);
                         rowcnt = 0;
                         continue;
                     } else if tnum >= 0 {
-                        if table.data[tnum as usize - 1].nrows() < 17 {
+                        if table.data[tnum as usize].ncols() < 17 {
                             return Err(utils::AstroErr::new(
                                 format!("Error parsing file {}, table not initialized", fname)
                                     .as_str(),
                             )
                             .into());
                         }
-                        table.data[tnum as usize - 1].set_row(
+                        table.data[tnum as usize].set_row(
                             rowcnt,
                             &na::SMatrix::<f64, 1, 17>::from_iterator(
                                 tline
@@ -115,8 +115,7 @@ mod tests {
     fn load_table() {
         let t = IERSTable::from_file("tab5.2a.txt");
         if t.is_err() {
-            panic!("{}", t.unwrap_err());
+            panic!("Could not load IERS table");
         }
-        println!("got t: {}", t.is_ok());
     }
 }

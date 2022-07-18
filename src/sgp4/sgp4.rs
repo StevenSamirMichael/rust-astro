@@ -158,6 +158,7 @@ mod tests {
 
         for mut tle in tles {
             let fname = format!("{:05}.e", tle.sat_num);
+
             let fh = testdir.join(fname);
             let ftle = match std::fs::File::open(&fh) {
                 Err(why) => panic!("Could not open {}: {}", fh.display(), why),
