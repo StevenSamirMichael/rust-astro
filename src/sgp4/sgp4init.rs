@@ -5,6 +5,7 @@ use super::getgravconst::getgravconst;
 use super::initl::initl;
 use super::sgp4_lowlevel::sgp4_lowlevel;
 use super::SatRec;
+use super::{GravConst, OpsMode};
 
 use std::f64::consts::PI;
 
@@ -91,8 +92,8 @@ use std::f64::consts::PI;
 ----------------------------------------------------------------------------*/
 
 pub fn sgp4init(
-    whichconst: &str,
-    opsmode: char,
+    gravconst: GravConst,
+    opsmode: OpsMode,
     _satn: &str,
     epoch: f64,
     xbstar: f64,
@@ -230,7 +231,7 @@ pub fn sgp4init(
     // sgp4fix identify constants and allow alternate values
     // this is now the only call for the constants
     getgravconst(
-        whichconst,
+        gravconst,
         &mut satrec.tumin,
         &mut satrec.mus,
         &mut satrec.radiusearthkm,

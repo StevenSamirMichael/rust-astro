@@ -27,9 +27,10 @@
 *    norad spacetrack report #3
 *    vallado, crawford, hujsak, kelso  2006
 --------------------------------------------------------------------------- */
+use super::GravConst;
 
 pub fn getgravconst(
-    whichconst: &str,
+    whichconst: GravConst,
     tumin: &mut f64,
     mus: &mut f64,
     radiusearthkm: &mut f64,
@@ -41,7 +42,7 @@ pub fn getgravconst(
 ) {
     match whichconst {
         // -- wgs-72 low precision str#3 constants --
-        "wgs72old" => {
+        GravConst::WGS72OLD => {
             *mus = 398600.79964; // in km3 / s2
             *radiusearthkm = 6378.135; // km
             *xke = 0.0743669161; // reciprocal of tumin
@@ -52,7 +53,7 @@ pub fn getgravconst(
             *j3oj2 = *j3 / *j2;
         }
         // ------------ wgs-72 constants ------------
-        "wgs72" => {
+        GravConst::WGS72 => {
             *mus = 398600.8; // in km3 / s2
             *radiusearthkm = 6378.135; // km
             *xke = 60.0 / f64::sqrt(*radiusearthkm * *radiusearthkm * *radiusearthkm / *mus);
@@ -62,7 +63,7 @@ pub fn getgravconst(
             *j4 = -0.00000165597;
             *j3oj2 = *j3 / *j2;
         }
-        "wgs84" => {
+        GravConst::WGS84 => {
             // ------------ wgs-84 constants ------------
             *mus = 398600.5; // in km3 / s2
             *radiusearthkm = 6378.137; // km
@@ -73,6 +74,5 @@ pub fn getgravconst(
             *j4 = -0.00000161098761;
             *j3oj2 = *j3 / *j2;
         }
-        &_ => {}
     }
 } // getgravconst

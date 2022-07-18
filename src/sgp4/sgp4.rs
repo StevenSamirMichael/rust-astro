@@ -8,11 +8,32 @@ use crate::tle::TLE;
 type Vec3 = nalgebra::Vector3<f64>;
 
 type SGP4State = (Vec3, Vec3);
-type SGP4Result = Result<SGP4State, i32>;
+type SGP4Result<'a> = Result<SGP4State, (i32, &'a str)>;
 
 use std::f64::consts::PI;
 
+use super::{GravConst, OpsMode};
+
 pub fn sgp4(tle: &mut TLE, tm: AstroTime) -> SGP4Result {
+    sgp4_full(tle, tm, GravConst::WGS84, OpsMode::IMPROVED)
+}
+
+const SGP4_ERRS: [&str; 7] = [
+    "asdfa",
+    "Mean elements, ecc > 1.0 or ecc < -0.001 or a  < 0.95 Earth radius",
+    "Mean motion < 0.0",
+    "Pert. Elements: ecc < 0.0 or ecc > 1.0",
+    "Semi-latus rectum < 0.0",
+    "Epoch elements are sub-orbital",
+    "Satellite has decayed",
+];
+
+pub fn sgp4_full(
+    tle: &mut TLE,
+    tm: AstroTime,
+    gravconst: GravConst,
+    opsmode: OpsMode,
+) -> SGP4Result {
     const TWOPI: f64 = PI * 2.0;
 
     if tle.satrec.is_none() {
@@ -28,8 +49,8 @@ pub fn sgp4(tle: &mut TLE, tm: AstroTime) -> SGP4Result {
         let jdsatepoch = tle.epoch.to_jd(Scale::UTC);
 
         tle.satrec = Some(sgp4init(
-            &"wgs72",
-            'a',
+            gravconst,
+            opsmode,
             &"satno",
             jdsatepoch - 2433281.5,
             bstar,
@@ -51,7 +72,7 @@ pub fn sgp4(tle: &mut TLE, tm: AstroTime) -> SGP4Result {
     sgp4_lowlevel(s, tsince, &mut r, &mut v);
 
     if s.error != 0 {
-        return Err(s.error as i32);
+        return Err((s.error as i32, SGP4_ERRS[s.error as usize]));
     }
     Ok((
         Vec3::new(r[0], r[1], r[2]) * 1.0e3,
@@ -88,7 +109,7 @@ mod tests {
                 println!("vel = {}", vel);
             }
             Err(e) => {
-                panic!("Error running sgp4: {}", e);
+                panic!("Error running sgp4: \"{}\"", e.1);
             }
         }
         println!("module path = {}", std::module_path!());
@@ -99,10 +120,13 @@ mod tests {
         let testdir = dev::get_project_root()
             .unwrap()
             .join("testdata")
-            .join("sgp4");
+            .join("vallado")
+            .join("TestSGP4")
+            .join("TestSGP4");
         if !testdir.is_dir() {
             panic!(
-                "Required test directory \"{}\" does not exist",
+                "Required test directory \"{}\" does not exist
+                try running \"getfiles.sh\" script in $(crateroot)/testdata",
                 testdir.to_string_lossy()
             );
         }
@@ -160,7 +184,9 @@ mod tests {
                     continue;
                 }
                 let tm = tle.epoch + testvec[0] / 86400.0;
-                match sgp4(&mut tle, tm) {
+
+                // Test vectors assume WGS72 gravity model and AFSPC ops mode
+                match sgp4_full(&mut tle, tm, GravConst::WGS72, OpsMode::AFSPC) {
                     Ok((pos, vel)) => {
                         for idx in 0..3 {
                             // Account for truncation in truth data
@@ -179,7 +205,7 @@ mod tests {
                         }
                     }
                     // Note: some errors are part of test vectors
-                    Err(_) => (),
+                    Err(e) => println!("SGP4 Error: \"{}\", is expected in testvecs", e.1),
                 }
             }
         }

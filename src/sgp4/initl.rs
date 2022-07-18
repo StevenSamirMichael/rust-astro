@@ -113,7 +113,7 @@ pub fn initl(
     epoch: f64,
     inclo: f64,
     no_kozai: f64,
-    _opsmode: char,
+    _opsmode: super::OpsMode,
     method: &mut char,
     ainv: &mut f64,
     ao: &mut f64,

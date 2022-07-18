@@ -1,9 +1,11 @@
+use super::OpsMode;
+
 #[derive(PartialEq, PartialOrd, Clone, Debug)]
 pub struct SatRec {
     pub epochyr: i32,
     pub epochtynumrev: i32,
     pub error: i32,
-    pub operationmode: char,
+    pub operationmode: OpsMode,
     pub init: char,
     pub method: char,
 
@@ -138,7 +140,7 @@ impl SatRec {
             epochyr: 0,
             epochtynumrev: 0,
             error: 0,
-            operationmode: 'n',
+            operationmode: OpsMode::IMPROVED,
             init: 'n',
             method: 'm',
 

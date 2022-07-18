@@ -1,5 +1,17 @@
 pub use self::satrec::SatRec;
-pub use self::sgp4::sgp4;
+
+#[derive(PartialEq, PartialOrd, Clone, Debug, Eq, Copy)]
+pub enum GravConst {
+    WGS72,
+    WGS72OLD,
+    WGS84,
+}
+
+#[derive(PartialEq, PartialOrd, Clone, Debug, Eq, Copy)]
+pub enum OpsMode {
+    AFSPC,
+    IMPROVED,
+}
 
 mod dpper;
 mod dscom;

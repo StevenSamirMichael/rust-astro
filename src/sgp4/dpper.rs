@@ -1,3 +1,4 @@
+use super::OpsMode;
 /* -----------------------------------------------------------------------------
 *
 *                           procedure dpper
@@ -105,7 +106,7 @@ pub fn dpper(
     nodep: &mut f64,
     argpp: &mut f64,
     mp: &mut f64,
-    opsmode: char,
+    opsmode: OpsMode,
 ) {
     /* --------------------- local variables ------------------------ */
     use std::f64::consts::PI;
@@ -228,7 +229,7 @@ pub fn dpper(
             *nodep = *nodep % TWOPI;
             //  sgp4fix for afspc written intrinsic functions
             // nodep used without a trigonometric function ahead
-            if *nodep < 0.0 && opsmode == 'a' {
+            if *nodep < 0.0 && opsmode == OpsMode::AFSPC {
                 *nodep = *nodep + TWOPI;
             }
             xls = *mp + *argpp + cosip * *nodep;
@@ -238,7 +239,7 @@ pub fn dpper(
             *nodep = f64::atan2(alfdp, betdp);
             //  sgp4fix for afspc written intrinsic functions
             // nodep used without a trigonometric function ahead
-            if (*nodep < 0.0) && (opsmode == 'a') {
+            if (*nodep < 0.0) && (opsmode == OpsMode::AFSPC) {
                 *nodep = *nodep + TWOPI;
             }
             if f64::abs(xnoh - *nodep) > PI {
