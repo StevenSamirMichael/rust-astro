@@ -17,6 +17,7 @@ pub mod iau2000;
 pub mod utils;
 
 pub use coordconversion::gmst;
+pub use tle::TLE;
 
 #[cfg(test)]
 mod tests {

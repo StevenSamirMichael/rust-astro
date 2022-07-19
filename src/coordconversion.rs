@@ -34,7 +34,8 @@ pub(crate) fn qrotz(theta: f64) -> Quat {
 ///
 /// Vallado algorithm 15:
 ///
-/// $\theta_{GMST} = 67310.5481 + (876600h + 8640184.812866) * t_{ut1} * (0.983104 + t_{ut1} * -6.2e-6)$
+/// GMST = 67310.5481 + (876600h + 8640184.812866) * tᵤₜ₁ * (0.983104 + tᵤₜ₁ * −6.2e−6)
+///
 ///
 /// # Arguments
 ///
@@ -77,13 +78,21 @@ pub fn gast(tm: &AstroTime) -> f64 {
 /// [IERS Technical Note 36, Chapter 5](https://www.iers.org/SharedDocs/Publikationen/EN/IERS/Publications/tn/TechnNote36/tn36_043.pdf?__blob=publicationFile&v=1)
 /// Equation 5.15
 ///
-/// Arguments:
+///
+/// # Arguments:
 ///
 ///   * tm: AstroTime struct representing input time
 ///
-/// Returns:
+/// # Returns:
 ///
 ///  * Earth rotation angle, in radians
+///
+/// # Calculation Details
+///
+/// * Let t be UT1 Julian date
+/// * let f be fractional component of t (fraction of day)
+/// * ERA = 2𝜋 ((0.7790572732640 + f + 0.00273781191135448 * (t − 2451545.0))
+///
 ///
 pub fn earth_rotation_angle(tm: &AstroTime) -> f64 {
     let t = tm.to_jd(Scale::UT1);
@@ -290,6 +299,10 @@ mod tests {
         assert!((dut1 + 0.4399619).abs() < 0.01);
         let delta_at = (tm.to_mjd(Scale::TAI) - tm.to_mjd(Scale::UTC)) * 86400.0;
         assert!((delta_at - 32.0).abs() < 1.0e-7);
+
+        // Slight differences below are due to example using approximate
+        // value for dut1 and polar wander, hence the larger than
+        // expected errors (though still within ~ 1e-6)
         let ptirs = qitrf2tirs(&tm) * pitrf;
         assert!((ptirs[0] + 1033.4750312).abs() < 1.0e-4);
         assert!((ptirs[1] - 7901.3055856).abs() < 1.0e-4);

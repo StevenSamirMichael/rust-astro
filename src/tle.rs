@@ -52,6 +52,38 @@ impl TLE {
         }
     }
 
+    /// Load 3 lines as string into a structure representing
+    /// a Two-Line Element Set  (TLE)
+    ///
+    /// The TLE can then be used to compute satellite position and
+    /// velocity as a function of time.
+    ///
+    /// # Arguments:
+    ///
+    ///   * line0: the "0"th line of the TLE, which sometimes contains
+    ///     the satellite name
+    ///   * line1: the 1st line of TLE
+    ///   * line2: the 2nd line of the TLE
+    ///
+    /// # Returns:
+    ///
+    ///  * A TLE object or string indicating error condition
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// use astro::TLE;
+    /// let line0: &str = "0 INTELSAT 902";
+    /// let line1: &str = "1 26900U 01039A   06106.74503247  .00000045  00000-0  10000-3 0  8290";
+    /// let line2: &str = "2 26900   0.0164 266.5378 0003319  86.1794 182.2590  1.00273847 16981   9300.";
+    /// let tle = TLE::load_3line(&line0.to_string(),
+    ///     &line1.to_string(),
+    ///     &line2.to_string()
+    ///     ).unwrap();
+    ///
+    /// ```
+    ///
     pub fn load_3line(line0: &String, line1: &String, line2: &String) -> Result<TLE, String> {
         match TLE::load_2line(line1, line2) {
             Ok(mut tle) => {
