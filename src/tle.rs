@@ -89,8 +89,10 @@ impl TLE {
             Err(_) => return Err("Could not parse day of year".to_string()),
         };
 
-        // Note: day_of_year starts from 1, not zero, hence the "-1" at end
-        let epoch = AstroTime::from_date(year, 1, 1).add_utc_days(day_of_year - 1.0);
+        // Note: day_of_year starts from 1, not zero,
+        // also, go from Jan 2 to avoid leap-second
+        // issues, hence the "-2" at end
+        let epoch = AstroTime::from_date(year, 1, 2).add_utc_days(day_of_year - 2.0);
 
         Ok(TLE {
             name: "none".to_string(),
