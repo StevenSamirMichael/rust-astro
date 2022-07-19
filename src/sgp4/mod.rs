@@ -13,6 +13,9 @@ pub enum OpsMode {
     IMPROVED,
 }
 
+pub use sgp4::sgp4;
+pub use sgp4::sgp4_full;
+
 mod dpper;
 mod dscom;
 mod dsinit;

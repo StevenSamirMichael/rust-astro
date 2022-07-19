@@ -286,11 +286,6 @@ mod tests {
         let line2: &str =
             "2 26900   0.0164 266.5378 0003319  86.1794 182.2590  1.00273847 16981   9300.";
         let line0: &str = "0 INTELSAT 902";
-
-        //let line1: &str = "1 29238U 06022G   06177.28732010  .00766286  10823-4  13334-2 0   101";
-        //let line2: &str = "2 29238  51.5595 213.7903 0202579  95.2503 267.9010 15.73823839  1061";
-        //let line0: &str = "0 SL-12 DEB";
-
         match TLE::load_3line(&line0.to_string(), &line1.to_string(), &line2.to_string()) {
             Ok(t) => {
                 assert_eq!(1, 1);

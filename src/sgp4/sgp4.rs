@@ -15,12 +15,12 @@ use std::f64::consts::PI;
 use super::{GravConst, OpsMode};
 
 #[inline]
-pub fn sgp4(tle: &mut TLE, tm: AstroTime) -> SGP4Result {
+pub fn sgp4<'a>(tle: &mut TLE, tm: &AstroTime) -> SGP4Result<'a> {
     sgp4_full(tle, tm, GravConst::WGS84, OpsMode::IMPROVED)
 }
 
 const SGP4_ERRS: [&str; 7] = [
-    "asdfa",
+    "Success",
     "Mean elements, ecc > 1.0 or ecc < -0.001 or a  < 0.95 Earth radius",
     "Mean motion < 0.0",
     "Pert. Elements: ecc < 0.0 or ecc > 1.0",
@@ -29,12 +29,65 @@ const SGP4_ERRS: [&str; 7] = [
     "Satellite has decayed",
 ];
 
-pub fn sgp4_full(
+///
+/// Run Simplified General Perturbations (SGP)-4 propagator on
+/// Two-Line Element Set to
+/// output satellite position and velocity at given time
+/// in the "TEME" coordinate system
+///
+/// A detailed description is
+/// [here](https://celestrak.org/publications/AIAA/2008-6770/AIAA-2008-6770.pdf)
+///
+///
+/// # Arguments
+///
+/// * tle: The TLE on which top operate.  Note that a mutable reference
+///   is passed, as SGP-4 metadata is stored after each propagation
+/// * tm: The time at which to compute position and velocity
+///
+/// # Return
+///
+/// Result object containing either an OK value containing a tuple with
+/// position (m) and velocity (m/s) 3-vectors or an Err value containing
+/// a tuple with error code and error string
+///
+/// # Example
+///
+/// ```
+/// // Compute the Geodetic position of a satellite at
+/// // the TLE epoch time
+///     
+/// use astro::TLE;
+/// use astro::sgp4::{sgp4_full, GravConst, OpsMode};
+/// use astro::coordconversion::qteme2itrf;
+/// use astro::itrfcoord::ITRFCoord;
+///
+/// let line0: &str = "0 INTELSAT 902";
+/// let line1: &str = "1 26900U 01039A   06106.74503247  .00000045  00000-0  10000-3 0  8290";
+/// let line2: &str = "2 26900   0.0164 266.5378 0003319  86.1794 182.2590  1.00273847 16981   9300.";
+/// let mut tle = TLE::load_3line(&line0.to_string(),
+///     &line1.to_string(),
+///     &line2.to_string()
+///     ).unwrap();
+///
+/// let tm = tle.epoch;
+/// let (pteme, vteme) = sgp4_full(&mut tle,
+///     &tm,
+///     GravConst::WGS84,
+///     OpsMode::IMPROVED
+///     ).unwrap();
+///
+/// let pitrf = qteme2itrf(&tm) * pteme;
+/// let itrf = ITRFCoord::from_vec(pitrf.into());
+///
+/// ```
+///
+pub fn sgp4_full<'a>(
     tle: &mut TLE,
-    tm: AstroTime,
+    tm: &AstroTime,
     gravconst: GravConst,
     opsmode: OpsMode,
-) -> SGP4Result {
+) -> SGP4Result<'a> {
     const TWOPI: f64 = PI * 2.0;
 
     if tle.satrec.is_none() {
@@ -69,7 +122,7 @@ pub fn sgp4_full(
 
     let mut r: [f64; 3] = [0.0, 0.0, 0.0];
     let mut v: [f64; 3] = [0.0, 0.0, 0.0];
-    let tsince = (tm - tle.epoch) * 1440.0;
+    let tsince = (*tm - tle.epoch) * 1440.0;
     sgp4_lowlevel(s, tsince, &mut r, &mut v);
 
     if s.error != 0 {
@@ -102,7 +155,7 @@ mod tests {
             TLE::load_3line(&line0.to_string(), &line1.to_string(), &line2.to_string()).unwrap();
         let tm = tle.epoch;
 
-        match sgp4(&mut tle, tm) {
+        match sgp4(&mut tle, &tm) {
             Ok((pos, vel)) => {
                 println!("pos = {}", pos);
                 println!("vel = {}", vel);
@@ -186,7 +239,7 @@ mod tests {
                 let tm = tle.epoch + testvec[0] / 86400.0;
 
                 // Test vectors assume WGS72 gravity model and AFSPC ops mode
-                match sgp4_full(&mut tle, tm, GravConst::WGS72, OpsMode::AFSPC) {
+                match sgp4_full(&mut tle, &tm, GravConst::WGS72, OpsMode::AFSPC) {
                     Ok((pos, vel)) => {
                         for idx in 0..3 {
                             // Account for truncation in truth data
