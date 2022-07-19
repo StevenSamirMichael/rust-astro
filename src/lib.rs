@@ -1,6 +1,5 @@
 //! Is this where to-level documentation goes?
-//! apparently not
-//! # asdfasdf
+//! # Introduction
 
 /// AstroTime
 pub mod astrotime;
