@@ -3,24 +3,43 @@ use crate::sgp4::SatRec;
 
 #[derive(PartialEq, PartialOrd, Clone, Debug)]
 pub struct TLE {
+    /// Name of satellite
     pub name: String,
+    /// String describing launch
     pub intl_desig: String,
+    /// Satellite NORAD number
     pub sat_num: i32,
+    /// Launch year
     pub desig_year: i32,
+    /// Numbered launch of year
     pub desig_launch: i32,
+    /// Piece of launch
     pub desig_piece: String,
+    /// TLE epoch
     pub epoch: AstroTime,
+    /// One half of 1st derivative of mean motion wrt time, in revs/day^2
     pub mean_motion_dot: f64,
+    /// One sixth of 2nd derivative of mean motion wrt tim, in revs/day^3
     pub mean_motion_dot_dot: f64,
+    /// Starred ballistic coefficient, in units of inverse Earth radii
     pub bstar: f64,
+    /// Usually 0
     pub ephem_type: u8,
+    /// Bulliten number
     pub element_num: i32,
+    /// Inclination, degrees
     pub inclination: f64,
+    /// Right ascension of ascending node, degrees
     pub raan: f64,
+    /// Eccentricity
     pub eccen: f64,
+    /// Argument of perigee, degrees
     pub arg_of_perigee: f64,
+    /// Mean anomaly, degrees
     pub mean_anomaly: f64,
+    /// Mean motion, revs / day
     pub mean_motion: f64,
+    /// Revolution number
     pub rev_num: i32,
 
     pub(in crate) satrec: Option<SatRec>,
@@ -57,6 +76,8 @@ impl TLE {
     ///
     /// The TLE can then be used to compute satellite position and
     /// velocity as a function of time.
+    ///
+    /// For details, see [here](https://en.wikipedia.org/wiki/Two-line_element_set)
     ///
     /// # Arguments:
     ///
