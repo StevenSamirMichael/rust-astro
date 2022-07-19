@@ -117,5 +117,8 @@ mod tests {
         if t.is_err() {
             panic!("Could not load IERS table");
         }
+        if t.unwrap().data[0].ncols() < 17 {
+            panic!("Error loading table");
+        }
     }
 }

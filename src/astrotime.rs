@@ -51,7 +51,7 @@ use std::path::PathBuf;
 
 const UTC1970: f64 = 40587.;
 const UTC1972: f64 = 41317.;
-//const TAI1972: f64 = UTC1972 + 10. / 86400.;
+const TAI1972: f64 = UTC1972 + 10. / 86400.;
 const UTCGPS0: f64 = 44244.; // 1980-01-06
 const TAIGPS0: f64 = UTCGPS0 + 19. / 86400.;
 
@@ -449,7 +449,7 @@ fn mjd_utc2tai_seconds(mjd_utc: f64) -> f64 {
 }
 
 fn mjd_tai2utc_seconds(mjd_tai: f64) -> f64 {
-    if mjd_tai > UTC1972 {
+    if mjd_tai > TAI1972 {
         let tai1900: u64 = (mjd_tai as u64 - 15020) * 86400;
         let val = DELTAAT_NEW.iter().find(|&&x| (x[0] + x[1]) < tai1900);
         -(val.unwrap_or(&[0, 0])[1] as f64)
