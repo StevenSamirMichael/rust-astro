@@ -15,9 +15,11 @@ pub mod tle;
 pub mod coordconversion;
 pub mod iau2000;
 pub mod utils;
-
 pub use coordconversion::gmst;
 pub use tle::TLE;
+
+#[cfg(feature = "python3")]
+pub mod pybindings;
 
 #[cfg(test)]
 mod tests {
