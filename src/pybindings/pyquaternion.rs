@@ -1,8 +1,11 @@
-use cpython::{self, py_class, PyObject, PyResult, PyString, ToPyObject};
+use cpython::{self, py_class, PyObject, PyResult, PyString, PyType, ToPyObject};
 use nalgebra as na;
 type Quat = na::UnitQuaternion<f64>;
 type Vec3 = na::Vector3<f64>;
+use numpy;
 use std::cell::RefCell;
+
+type NVec1D = numpy::PyArray1<f64>;
 
 py_class! {
     pub class Quaternion |py| {
@@ -36,16 +39,29 @@ py_class! {
             Self::create_instance(py, RefCell::new(self.quat(py).borrow().conjugate()))
         }
 
+        def angle(&self)->PyResult<f64>
+        {
+            Ok(self.quat(py).borrow().angle())
+        }
+
+        def axis(&self)->PyResult<f64>
+        {
+            let ax = self.quat(py).borrow().axis();
+            let v = NVec1D::from_vec(py.into(), vec![1.0, 2.0]);
+            Ok(self.quat(py).borrow().angle())
+        }
+
 
         def __mul__(lhs, rhs) -> PyResult<impl ToPyObject>
         {
 
-            let h: &PyObject = lhs;
-            let t = h.get_type(py);
-            let q: Quaternion = h.extract(py)?;
+            // Quaternion by Quaternion Multiplication
+            if lhs.get_type(py) == rhs.get_type(py) {
+                let q1: Quat = *lhs.extract::<Quaternion>(py).unwrap().quat(py).borrow();
+                let q2: Quat = *rhs.extract::<Quaternion>(py).unwrap().quat(py).borrow();
+                return Quaternion::create_instance(py, RefCell::new(q1*q2));
+            }
 
-
-            t.is_instance(py, h);
 
 
             let c = Quat::from_axis_angle(&Vec3::x_axis(), 1.0);
