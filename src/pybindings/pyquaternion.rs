@@ -1,79 +1,55 @@
-use cpython::{self, py_class, PyObject, PyResult, PyString, PyType, ToPyObject};
 use nalgebra as na;
+use numpy as np;
+use numpy::ndarray::array;
+use pyo3::prelude::*;
+use pyo3::{exceptions, Python};
+
 type Quat = na::UnitQuaternion<f64>;
 type Vec3 = na::Vector3<f64>;
-use numpy;
-use std::cell::RefCell;
 
-type NVec1D = numpy::PyArray1<f64>;
+#[pyclass]
+pub struct Quaternion {
+    inner: Quat,
+}
 
-py_class! {
-    pub class Quaternion |py| {
-        data quat: RefCell<Quat>;
+#[pymethods]
+impl Quaternion {
+    #[new]
+    fn py_new() -> PyResult<Self> {
+        Ok(Quaternion {
+            inner: Quat::from_axis_angle(&Vec3::x_axis(), 0.0),
+        })
+    }
 
-        def __new__(_cls) -> PyResult<Quaternion>
-        {
-            Self::create_instance(py, RefCell::new({
-                    Quat::new(Vec3::z() * 0.0)
-                }))
-        }
-
-        def __str__(&self) -> PyResult<PyString>
-        {
-            let q = self.quat(py).borrow();
-            let a = match q.axis() {
-                Some(ax) => ax,
-                None => Vec3::x_axis()
-            };
-            let f = format!("Quaternion(Axis = [{:7.4}, {:7.4}, {:7.4}] , Angle = {:7.4} rad)", a[0], a[1], a[2], q.angle());
-            Ok(PyString::new(py, f.as_str()))
-        }
-
-        def conjugate(&self) -> PyResult<Quaternion>
-        {
-            Self::create_instance(py, RefCell::new(self.quat(py).borrow().conjugate()))
-        }
-
-        def conj(&self) -> PyResult<Quaternion>
-        {
-            Self::create_instance(py, RefCell::new(self.quat(py).borrow().conjugate()))
-        }
-
-        def angle(&self)->PyResult<f64>
-        {
-            Ok(self.quat(py).borrow().angle())
-        }
-
-        def axis(&self)->PyResult<f64>
-        {
-            let ax = self.quat(py).borrow().axis();
-            let v = NVec1D::from_vec(py.into(), vec![1.0, 2.0]);
-            Ok(self.quat(py).borrow().angle())
-        }
-
-
-        def __mul__(lhs, rhs) -> PyResult<impl ToPyObject>
-        {
-
-            // Quaternion by Quaternion Multiplication
-            if lhs.get_type(py) == rhs.get_type(py) {
-                let q1: Quat = *lhs.extract::<Quaternion>(py).unwrap().quat(py).borrow();
-                let q2: Quat = *rhs.extract::<Quaternion>(py).unwrap().quat(py).borrow();
-                return Quaternion::create_instance(py, RefCell::new(q1*q2));
+    #[staticmethod]
+    fn from_axis_angle(axis: np::PyReadonlyArray1<f64>, angle: f64) -> PyResult<Self> {
+        let v: Vec3 = Vec3::new(axis.as_array()[0], axis.as_array()[1], axis.as_array()[2]);
+        let u = na::UnitVector3::try_new(v, 1.0e-9);
+        match u {
+            Some(ax) => Ok(Quaternion {
+                inner: Quat::from_axis_angle(&ax, angle),
+            }),
+            None => {
+                let err = exceptions::PyArithmeticError::new_err("Axis norm is 0");
+                Err(err)
             }
-
-
-
-            let c = Quat::from_axis_angle(&Vec3::x_axis(), 1.0);
-            Self::create_instance(py, RefCell::new(c))
         }
+    }
 
+    #[getter]
+    fn angle(&self) -> PyResult<f64> {
+        Ok(self.inner.angle())
+    }
 
-        @staticmethod def rotx(theta: f64)->PyResult<Quaternion>
-        {
-            let c = Quat::from_axis_angle(&Vec3::x_axis(), theta);
-            Self::create_instance(py, RefCell::new(c))
-        }
+    #[getter]
+    fn axis(&self) -> PyResult<Py<numpy::PyArray1<f64>>> {
+        let a = match self.inner.axis() {
+            Some(ax) => ax,
+            None => Vec3::x_axis(),
+        };
+        let gil = Python::acquire_gil();
+        let pyarray = np::PyArray1::from_array(gil.python(), &array![a[0], a[1], a[2]]);
 
+        Ok(pyarray.to_owned())
     }
 }

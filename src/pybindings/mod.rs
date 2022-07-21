@@ -1,13 +1,18 @@
-use cpython::py_module_initializer;
+use pyo3::prelude::*;
 
 mod pyquaternion;
 
-py_module_initializer! {
-    astro, |py, module| {
-        module.add(py, "__doc__", "This module is implemented in Rust.")?;
+use pyquaternion::Quaternion;
 
-        module.add_class::<pyquaternion::Quaternion>(py)?;
+#[pyfunction]
+fn sum(a: i32, b: i32) -> PyResult<i32> {
+    Ok(a + b)
+}
 
-        Ok(())
-    }
+#[pymodule]
+pub fn astro(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_wrapped(wrap_pyfunction!(sum))?;
+
+    m.add_class::<Quaternion>()?;
+    Ok(())
 }
