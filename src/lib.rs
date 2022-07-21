@@ -18,9 +18,6 @@ pub mod utils;
 pub use coordconversion::gmst;
 pub use tle::TLE;
 
-#[cfg(feature = "python3")]
-pub mod pybindings;
-
 #[cfg(feature = "pybindings")]
 pub mod pybindings;
 

@@ -7,6 +7,7 @@ use pyquaternion::Quaternion;
 #[pyfunction]
 fn sum(a: i32, b: i32) -> PyResult<i32> {
     Ok(a + b)
+    
 }
 
 #[pymodule]
