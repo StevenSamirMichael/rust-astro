@@ -105,94 +105,6 @@ impl Gravity {
         accel * self.gravity_constant / self.radius / self.radius
     }
 
-    // Equations 8-25 through 8-27, Vallado, page 550.
-    pub fn accel_vallado<const N: usize>(&self, pos: &Vec3) -> Vec3 {
-        let r: f64 = (pos[0] * pos[0] + pos[1] * pos[1] + pos[2] * pos[2]).sqrt();
-        let phi: f64 = f64::asin(pos[2] / r);
-        let lambda: f64 = f64::atan2(pos[1], pos[0]);
-        let p = Gravity::associated_legendre::<N>(phi);
-        let tanphi: f64 = f64::tan(phi);
-
-        let reoverr = self.radius / r;
-
-        let mut dudr: f64 = 0.0;
-        let mut dudphi: f64 = 0.0;
-        let mut dudlambda: f64 = 0.0;
-
-        for l in 0..(N - 1) {
-            let reoverr_l = f64::powf(reoverr, l as f64);
-            let mut dudr_sum = 0.0;
-            let mut dudphi_sum = 0.0;
-            let mut dudlambda_sum = 0.0;
-
-            for m in 2..(l + 1) {
-                let cosmtheta = f64::cos(m as f64 * lambda);
-                let sinmtheta = f64::sin(m as f64 * lambda);
-                let clm = self.coeffs[(l, m)];
-                let mut slm = 0.0;
-                if m > 0 {
-                    slm = self.coeffs[(m - 1, l)];
-                }
-                let m1 = clm * cosmtheta + slm * sinmtheta;
-                let m2 = slm * cosmtheta - clm * sinmtheta;
-
-                dudr_sum += p[(l, m)] * m1;
-                dudphi_sum += (p[(l, m + 1)] - m as f64 * tanphi * p[(l, m)]) * m1;
-                dudlambda_sum += m as f64 * p[(l, m)] * m2;
-            }
-            dudr_sum *= reoverr_l * (l + 1) as f64;
-            dudphi_sum *= reoverr_l;
-            dudlambda_sum *= reoverr_l;
-
-            dudr += dudr_sum;
-            dudphi += dudphi_sum;
-            dudlambda += dudlambda_sum;
-        }
-        dudr *= -1.0 * self.gravity_constant / r / r;
-        dudphi *= self.gravity_constant / r;
-        dudlambda *= self.gravity_constant / r;
-
-        //return Vec3::from([dudr, dudphi / r, dudlambda / r]);
-
-        let rho = f64::sqrt(pos[0] * pos[0] + pos[1] * pos[1]);
-        let term1 = dudr / r - pos[2] / r / r / rho * dudphi;
-        let term2 = dudlambda / rho / rho;
-        let a1 = term1 * pos[0] - term2 * pos[1];
-        let a2 = term1 * pos[1] + term2 * pos[0];
-        let a3 = dudr / r * pos[2] + rho / r / r * dudphi;
-
-        Vec3::from([a1, a2, a3]) - pos * self.gravity_constant / r / r / r
-    }
-
-    fn associated_legendre<const N: usize>(v: f64) -> na::SMatrix<f64, N, N> {
-        let mut p = na::SMatrix::<f64, N, N>::zeros();
-        let sinv = v.sin();
-        let cosv = v.cos();
-
-        // Set initial values
-        p[(0, 0)] = 1.0;
-        p[(1, 0)] = sinv;
-        p[(1, 1)] = cosv;
-
-        // Walk through to get subsequent values
-        // Vallado equation 8-57
-        for l in 2..N {
-            for m in 0..(l + 1) {
-                if m == 0 {
-                    p[(l, m)] = ((2 * l - 1) as f64 * p[(l - 1, m)]
-                        - (l - 1) as f64 * p[(l - 2, 0)])
-                        / (l as f64);
-                } else if m < l {
-                    p[(l, m)] = p[(l - 2, m)] + (2 * l - 1) as f64 * cosv * p[(l - 1, m - 1)];
-                } else {
-                    p[(l, l)] = (2 * l - 1) as f64 * cosv * p[(l - 1, l - 1)];
-                }
-            }
-        }
-
-        p
-    }
-
     fn compute_legendre<const NP4: usize>(&self, pos: &Vec3) -> (Legendre<NP4>, Legendre<NP4>) {
         let rsq = pos.norm_squared();
         let xfac = pos[0] * self.radius / rsq;
@@ -352,24 +264,53 @@ impl Gravity {
 #[cfg(test)]
 mod tests {
 
-    //use super::Gravity;
+    use super::Gravity;
 
-    //use crate::itrfcoord::ITRFCoord;
+    use crate::itrfcoord::ITRFCoord;
+    use crate::itrfcoord::Vec3;
+    use crate::univ::OMEGA_EARTH;
+    use std::f64::consts::PI;
 
-    /*
     #[test]
-    fn load_gravity() {
-        use std::f64::consts::PI;
+    fn test_gravity() {
+        // Lexington, ma
+        let latitude: f64 = 42.4473;
+        let longitude: f64 = -71.2272;
+        let altitude: f64 = 0.0;
+
+        // reference gravity computations, using
+        // JGM3 model, with 16 terms, found at:
+        // http://icgem.gfz-potsdam.de/calcstat/
+        // Outputs from above web page below:
+        let reference_gravitation: f64 = 9.822206169031;
+        // "gravity" includes centrifugal force, "gravitation" does not
+        let reference_gravity: f64 = 9.803696372738;
+        // Gravity deflections from normal along east-west and north-south
+        // direction, in arcseconds
+        let reference_ew_deflection_asec: f64 = -1.283542043355E+00;
+        let reference_ns_deflection_asec: f64 = -1.311709802440E+00;
+
         let g = Gravity::from_file("jgm3.gfc").unwrap();
-        let itrf = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 0.0);
-        //let accel = g.accel_t::<4, 8>(&itrf.into());
-        //let truth = [2.34440183, 6.86790166, -6.1888031];
-        //let accel_ned = itrf.q_ned2itrf().conjugate() * accel;
-        //println!("ned accel = {}", accel_ned);
-        //let ew_deflection = f64::atan2(accel_ned[1], accel_ned[2]) * 180.0 / PI * 3600.0;
-        //let nw_deflection = f64::atan2(accel_ned[0], accel_ned[2]) * 180.0 / PI * 3600.0;
-        //println!("Deflections = {} :: {}", ew_deflection, nw_deflection);
-        //let a2 = g.accel_vallado::<8>(&itrf.into());
+        let coord = ITRFCoord::from_geodetic_deg(latitude, longitude, altitude);
+        let gravitation: Vec3 = g.accel(&coord.into(), 16);
+        let centrifugal: Vec3 =
+            Vec3::new(coord.itrf[0], coord.itrf[1], 0.0) * OMEGA_EARTH * OMEGA_EARTH;
+        let gravity = gravitation + centrifugal;
+
+        // Check gravitation matches the reference value from http://icgem.gfz-potsdam.de/calcstat/
+        assert!(f64::abs(gravitation.norm() / reference_gravitation - 1.0) < 1.0E-9);
+        // Check that gravity matches reference value
+        assert!(f64::abs(gravity.norm() / reference_gravity - 1.0) < 1.0E-9);
+
+        // Rotate to ENU coordinate frame
+        let g_enu: Vec3 = coord.q_enu2itrf().conjugate() * gravity;
+
+        // Compute East/West and North/South deflections, in arcsec
+        let ew_deflection: f64 = -f64::atan2(g_enu[0], -g_enu[2]) * 180.0 / PI * 3600.0;
+        let ns_deflection: f64 = -f64::atan2(g_enu[1], -g_enu[2]) * 180.0 / PI * 3600.0;
+
+        // Compare with reference values
+        assert!(f64::abs(ew_deflection / reference_ew_deflection_asec - 1.0) < 1.0e-5);
+        assert!(f64::abs(ns_deflection / reference_ns_deflection_asec - 1.0) < 1.0e-5);
     }
-    */
 }
