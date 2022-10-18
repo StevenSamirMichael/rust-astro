@@ -1,5 +1,8 @@
 use super::astrotime::AstroTime;
 use crate::sgp4::SatRec;
+use crate::utils::AstroResult;
+
+use std::cell::RefCell;
 
 #[derive(PartialEq, PartialOrd, Clone, Debug)]
 pub struct TLE {
@@ -42,10 +45,39 @@ pub struct TLE {
     /// Revolution number
     pub rev_num: i32,
 
-    pub(in crate) satrec: Option<SatRec>,
+    pub(in crate) satrec: RefCell<Option<SatRec>>,
 }
 
 impl TLE {
+    pub fn from_lines(lines: &Vec<String>) -> AstroResult<Vec<TLE>> {
+        let mut tles: Vec<TLE> = Vec::<TLE>::new();
+        let mut line0: &String = &String::new();
+        let mut line1: &String = &String::new();
+        let mut line2: &String;
+
+        for line in lines {
+            if line.len() < 10 {
+                continue;
+            }
+            if line.chars().nth(0).unwrap() == '0' {
+                line0 = line;
+            }
+            if line.chars().nth(0).unwrap() == '1' {
+                line1 = line;
+            }
+            if line.chars().nth(0).unwrap() == '2' {
+                line2 = line;
+                if line0.is_empty() {
+                    tles.push(TLE::load_2line(line1, line2)?);
+                } else {
+                    tles.push(TLE::load_3line(line0, line1, line2)?);
+                }
+            }
+        }
+
+        Ok(tles)
+    }
+
     pub fn new() -> TLE {
         TLE {
             name: "none".to_string(),
@@ -67,7 +99,7 @@ impl TLE {
             mean_anomaly: 0.0,
             mean_motion: 0.0,
             rev_num: 0,
-            satrec: None,
+            satrec: RefCell::new(None),
         }
     }
 
@@ -271,7 +303,7 @@ impl TLE {
                     Err(_) => return Err("Could not parse rev num".to_string()),
                 }
             },
-            satrec: None,
+            satrec: RefCell::new(None),
         })
     }
 }

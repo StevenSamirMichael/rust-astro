@@ -1,4 +1,4 @@
-use crate::utils::{self, AstroErr, AstroResult};
+use crate::utils::{self, AstroResult};
 use nalgebra as na;
 use std::io::{self, BufRead};
 use std::path::PathBuf;

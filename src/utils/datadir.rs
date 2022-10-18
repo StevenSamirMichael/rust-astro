@@ -1,5 +1,4 @@
 use nix::libc;
-use std::fs::metadata;
 use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
 
@@ -33,10 +32,6 @@ fn get_dylib_path() -> Option<PathBuf> {
 }
 
 fn get_testdirs() -> Vec<PathBuf> {
-    fn testdir(dir: &str) {
-        println!("dir = {}", dir);
-    }
-
     let mut testdirs: Vec<PathBuf> = Vec::new();
 
     // Look for paths in environment variable
@@ -78,15 +73,6 @@ fn get_testdirs() -> Vec<PathBuf> {
     #[cfg(target_os = "macos")]
     testdirs.push(Path::new(&"/Library/Application Support/astro-data").to_path_buf());
 
-    let dirname = "/Users/st16626";
-    match metadata(dirname) {
-        Ok(v) => {
-            if v.is_dir() {
-                testdir(dirname)
-            }
-        }
-        Err(_e) => (),
-    }
     testdirs
 }
 

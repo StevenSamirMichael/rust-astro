@@ -38,6 +38,8 @@ pub struct AstroTime {
     mjd_tai: f64,
 }
 
+use crate::utils::{astroerr, AstroResult};
+
 use super::earth_orientation_params as eop;
 use super::utils::datadir;
 
@@ -45,9 +47,11 @@ extern crate chrono;
 
 use std::f64::consts::PI;
 
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 const UTC1970: f64 = 40587.;
 const UTC1972: f64 = 41317.;
@@ -177,6 +181,13 @@ impl std::ops::Sub for AstroTime {
     }
 }
 
+impl std::ops::Add<&Vec<f64>> for AstroTime {
+    type Output = Vec<Self>;
+    fn add(self, other: &Vec<f64>) -> Self::Output {
+        other.into_iter().map(|x| self + *x).collect()
+    }
+}
+
 impl<T: chrono::TimeZone> std::convert::From<chrono::DateTime<T>> for AstroTime {
     fn from(c: chrono::DateTime<T>) -> Self {
         let mut t = AstroTime::from_unixtime(c.timestamp());
@@ -224,6 +235,19 @@ impl AstroTime {
     /// (seconds since midnight Jan 1 1970, UTC)
     pub fn from_unixtime(t: i64) -> AstroTime {
         AstroTime::from_mjd(t as f64 / 86400.0 + UTC1970, Scale::UTC)
+    }
+
+    /// Construt new AstroTime object, representing
+    /// current date and time
+    pub fn now() -> AstroResult<AstroTime> {
+        let now = SystemTime::now();
+        match now.duration_since(UNIX_EPOCH) {
+            Ok(v) => Ok(AstroTime::from_mjd(
+                v.as_millis() as f64 / 86400000.0 + UTC1970,
+                Scale::UTC,
+            )),
+            Err(v) => astroerr!("Cannot get current time: {}", v),
+        }
     }
 
     /// Convert to unixtime (seconds since midnight Jan 1 1970, UTC)
@@ -516,6 +540,31 @@ fn date2mjd_utc(year: u32, month: u32, day: u32) -> i32 {
     (jdn - 2400001) as i32
 }
 
+// I know references would be better, but I can't figure out
+// how to make this work with the optional python bindings
+// Uggh....
+pub enum TimeInput {
+    Single(AstroTime),
+    Array(RefCell<Vec<AstroTime>>),
+    Error(String),
+}
+
+pub trait TimeInputType {
+    fn to_time_input(&self) -> TimeInput;
+}
+
+impl TimeInputType for AstroTime {
+    fn to_time_input<'a>(&self) -> TimeInput {
+        TimeInput::Single(*self)
+    }
+}
+
+impl TimeInputType for &Vec<AstroTime> {
+    fn to_time_input(&self) -> TimeInput {
+        TimeInput::Array(RefCell::new(self.to_vec()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -580,6 +629,13 @@ mod tests {
 
         let dcalc: f64 = tm2 - tm;
         assert!(((dcalc - delta) / delta).abs() < 1.0e-5);
+    }
+
+    #[test]
+    fn test_vec() {
+        let tm = AstroTime::from_datetime(2004, 4, 6, 7, 51, 28.386009);
+        let v: &Vec<f64> = &vec![0.0, 1.0, 2.0, 3.0];
+        println!("time vec = {:?}", tm + v);
     }
 
     #[test]

@@ -22,64 +22,30 @@
 extern crate nalgebra;
 use nalgebra::DMatrix;
 
+use crate::solarsystem::SolarSystem;
 use nalgebra as na;
 pub type Vec3 = na::Vector3<f64>;
 pub type Quat = na::UnitQuaternion<f64>;
 
+use crate::utils::AstroResult;
+
 use super::astrotime::{AstroTime, Scale};
 
-/// Solar system bodies for which
-/// JPL high-precision ephemeris can be queried
-///
-/// Coordinates origin is the solar system barycenter
-///
-/// ## Notes:
-///  * Positions for all bodies are natively relative to solar system barycenter,
-///    with exception of moon, which is computed in Geocentric system
-///  * EMB (2) is the Earth-Moon barycenter
-///  * The sun position is relative to the solar system barycenter
-///    (it will be close to origin)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EphBody {
-    // Mercury
-    MERCURY = 0,
-    // Venus
-    VENUS = 1,
-    // Earth-Moon Barycenter
-    EMB = 2,
-    // Mars
-    MARS = 3,
-    // Jupiter
-    JUPITER = 4,
-    // Saturn
-    SATURN = 5,
-    // Uranus
-    URANUS = 6,
-    // Neptune
-    NEPTUNE = 7,
-    // Pluto
-    PLUTO = 8,
-    // Moon (Geocentric)
-    MOON = 9,
-    // Sun
-    SUN = 10,
-}
-
-impl TryFrom<i32> for EphBody {
+impl TryFrom<i32> for SolarSystem {
     type Error = ();
     fn try_from(v: i32) -> Result<Self, Self::Error> {
         match v {
-            x if x == EphBody::MERCURY as i32 => Ok(EphBody::MERCURY),
-            x if x == EphBody::VENUS as i32 => Ok(EphBody::VENUS),
-            x if x == EphBody::EMB as i32 => Ok(EphBody::EMB),
-            x if x == EphBody::MARS as i32 => Ok(EphBody::MARS),
-            x if x == EphBody::JUPITER as i32 => Ok(EphBody::JUPITER),
-            x if x == EphBody::SATURN as i32 => Ok(EphBody::SATURN),
-            x if x == EphBody::URANUS as i32 => Ok(EphBody::URANUS),
-            x if x == EphBody::NEPTUNE as i32 => Ok(EphBody::NEPTUNE),
-            x if x == EphBody::PLUTO as i32 => Ok(EphBody::PLUTO),
-            x if x == EphBody::MOON as i32 => Ok(EphBody::MOON),
-            x if x == EphBody::SUN as i32 => Ok(EphBody::SUN),
+            x if x == SolarSystem::MERCURY as i32 => Ok(SolarSystem::MERCURY),
+            x if x == SolarSystem::VENUS as i32 => Ok(SolarSystem::VENUS),
+            x if x == SolarSystem::EMB as i32 => Ok(SolarSystem::EMB),
+            x if x == SolarSystem::MARS as i32 => Ok(SolarSystem::MARS),
+            x if x == SolarSystem::JUPITER as i32 => Ok(SolarSystem::JUPITER),
+            x if x == SolarSystem::SATURN as i32 => Ok(SolarSystem::SATURN),
+            x if x == SolarSystem::URANUS as i32 => Ok(SolarSystem::URANUS),
+            x if x == SolarSystem::NEPTUNE as i32 => Ok(SolarSystem::NEPTUNE),
+            x if x == SolarSystem::PLUTO as i32 => Ok(SolarSystem::PLUTO),
+            x if x == SolarSystem::MOON as i32 => Ok(SolarSystem::MOON),
+            x if x == SolarSystem::SUN as i32 => Ok(SolarSystem::SUN),
             _ => Err(()),
         }
     }
@@ -152,7 +118,7 @@ impl JPLEphem {
     ///  // (see submodule) that holds all the data files
     ///  // for the rest of the library
     ///
-    /// use astro::jplephem::{JPLEphem, EphBody};
+    /// use astro::jplephem::{JPLEphem, SolarSystem};
     /// use astro::astrotime::AstroTime;
     /// let jpl = JPLEphem::from_file("jplephem.440").unwrap();
     ///
@@ -160,10 +126,10 @@ impl JPLEphem {
     /// let t = AstroTime::from_datetime(2021, 3, 1, 12, 0, 0.0);
     ///
     /// // Find geocentric moon position at this time
-    /// let p = jpl.geocentric_body_pos(EphBody::MOON, &t).unwrap();
+    /// let p = jpl.geocentric_body_pos(SolarSystem::MOON, &t).unwrap();
     /// ```
     ///
-    pub fn from_file(fname: &str) -> Result<JPLEphem, Box<dyn std::error::Error>> {
+    pub fn from_file(fname: &str) -> AstroResult<JPLEphem> {
         use super::utils::datadir;
         use std::collections::HashMap;
         use std::path::PathBuf;
@@ -301,9 +267,9 @@ impl JPLEphem {
     // (Matrix is allocated on stack, not heap)
     fn body_pos_optimized<const N: usize>(
         &self,
-        body: EphBody,
+        body: SolarSystem,
         tm: &AstroTime,
-    ) -> Result<Vec3, Box<dyn std::error::Error>> {
+    ) -> AstroResult<Vec3> {
         // Terrestrial time
         let tt = tm.to_jd(Scale::TT);
         if (self.jd_start > tt) || (self.jd_stop < tt) {
@@ -346,7 +312,8 @@ impl JPLEphem {
         Ok(pos * 1.0e3)
     }
 
-    /// Return the position of the given body in the Heliocentric coordinate system
+    /// Return the position of the given body in the Barycentric
+    /// coordinate system (origin is solarsystem barycenter)
     ///
     /// # Inputs
     ///
@@ -364,11 +331,7 @@ impl JPLEphem {
     ///  * EMB (2) is the Earth-Moon barycenter
     ///  * The sun position is relative to the solar system barycenter
     ///    (it will be close to origin)
-    pub fn body_pos(
-        &self,
-        body: EphBody,
-        tm: &AstroTime,
-    ) -> Result<Vec3, Box<dyn std::error::Error>> {
+    pub fn barycentric_pos(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
         match self.ipt[body as usize][1] {
             6 => self.body_pos_optimized::<6>(body, tm),
             7 => self.body_pos_optimized::<7>(body, tm),
@@ -381,7 +344,8 @@ impl JPLEphem {
             _ => panic!("Invalid body"),
         }
     }
-    /// Return the position & velocity the given body in the Heliocentric coordinate system
+    /// Return the position & velocity the given body in the barycentric coordinate system
+    /// (origin is solar system barycenter)
     ///
     /// # Inputs
     ///
@@ -401,11 +365,11 @@ impl JPLEphem {
     ///  * EMB (2) is the Earth-Moon barycenter
     ///  * The sun position is relative to the solar system barycenter
     ///    (it will be close to origin)
-    pub fn body_state(
+    pub fn barycentric_state(
         &self,
-        body: EphBody,
+        body: SolarSystem,
         tm: &AstroTime,
-    ) -> Result<(Vec3, Vec3), Box<dyn std::error::Error>> {
+    ) -> AstroResult<(Vec3, Vec3)> {
         match self.ipt[body as usize][1] {
             6 => self.body_state_optimized::<6>(body, tm),
             7 => self.body_state_optimized::<7>(body, tm),
@@ -421,9 +385,9 @@ impl JPLEphem {
 
     fn body_state_optimized<const N: usize>(
         &self,
-        body: EphBody,
+        body: SolarSystem,
         tm: &AstroTime,
-    ) -> Result<(Vec3, Vec3), Box<dyn std::error::Error>> {
+    ) -> AstroResult<(Vec3, Vec3)> {
         // Terrestrial time
         let tt = tm.to_jd(Scale::TT);
         if (self.jd_start > tt) || (self.jd_stop < tt) {
@@ -475,7 +439,8 @@ impl JPLEphem {
         ))
     }
 
-    /// Return the position of the given body in the Geocentric coordinate system
+    /// Return the position of the given body in
+    /// Geocentric coordinate system
     ///
     /// # Inputs
     ///
@@ -486,17 +451,13 @@ impl JPLEphem {
     ///
     ///    3-vector of cartesian Geocentric position in meters
     ///
-    pub fn geocentric_body_pos(
-        &self,
-        body: EphBody,
-        tm: &AstroTime,
-    ) -> Result<Vec3, Box<dyn std::error::Error>> {
-        if body == EphBody::MOON {
-            return self.body_pos(body, tm);
+    pub fn geocentric_pos(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
+        if body == SolarSystem::MOON {
+            return self.barycentric_pos(body, tm);
         } else {
-            let emb: Vec3 = self.body_pos(EphBody::EMB, tm).unwrap();
-            let moon: Vec3 = self.body_pos(EphBody::MOON, tm).unwrap();
-            let b: Vec3 = self.body_pos(body, tm).unwrap();
+            let emb: Vec3 = self.barycentric_pos(SolarSystem::EMB, tm)?;
+            let moon: Vec3 = self.barycentric_pos(SolarSystem::MOON, tm)?;
+            let b: Vec3 = self.barycentric_pos(body, tm)?;
 
             // Compute the position of the body relative to the Earth-moon
             // barycenter, then "correct" to Earth-center by accounting
@@ -505,7 +466,8 @@ impl JPLEphem {
         }
     }
 
-    /// Return the position and velocity of the given body in the Geocentric coordinate system
+    /// Return the position and velocity of the given body in
+    ///  Geocentric coordinate system
     ///
     /// # Inputs
     ///
@@ -517,23 +479,23 @@ impl JPLEphem {
     ///   * Tuple with following elements:
     ///     * 3-vector of cartesian Geocentric position in meters
     ///     * 3-vector of cartesian Geocentric velocity in meters / second
+    ///       Note: velocity is relative to Earth
     ///
-    pub fn geocentric_body_state(
-        &self,
-        body: EphBody,
-        tm: &AstroTime,
-    ) -> Result<(Vec3, Vec3), Box<dyn std::error::Error>> {
-        if body == EphBody::MOON {
-            return self.body_state(body, tm);
+    pub fn geocentric_state(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
+        if body == SolarSystem::MOON {
+            return self.barycentric_state(body, tm);
         } else {
-            let emb: Vec3 = self.body_pos(EphBody::EMB, tm).unwrap();
-            let moon: Vec3 = self.body_pos(EphBody::MOON, tm).unwrap();
-            let b: (Vec3, Vec3) = self.body_state(body, tm).unwrap();
+            let emb: (Vec3, Vec3) = self.barycentric_state(SolarSystem::EMB, tm)?;
+            let moon: (Vec3, Vec3) = self.barycentric_state(SolarSystem::MOON, tm)?;
+            let b: (Vec3, Vec3) = self.barycentric_state(body, tm)?;
 
             // Compute the position of the body relative to the Earth-moon
             // barycenter, then "correct" to Earth-center by accounting
             // for moon position and Earth/moon mass ratio
-            Ok((b.0 - emb + moon / (1.0 + self.emrat), b.1))
+            Ok((
+                b.0 - emb.0 + moon.0 / (1.0 + self.emrat),
+                b.1 - emb.1 + moon.1 / (1.0 + self.emrat),
+            ))
         }
     }
 }
@@ -549,7 +511,7 @@ mod tests {
         //let tm = &AstroTime::from_date(2010, 3, 1);
         let tm = AstroTime::from_jd(2451545.0, Scale::TT);
         //let tm = &AstroTime::from_jd(2451545.0, Scale::UTC);
-        let (_, _): (Vec3, Vec3) = jpl.geocentric_body_state(EphBody::MOON, &tm).unwrap();
+        let (_, _): (Vec3, Vec3) = jpl.geocentric_state(SolarSystem::MOON, &tm).unwrap();
     }
 
     /// Load the test vectors that come with the JPL ephemeris files
@@ -585,10 +547,10 @@ mod tests {
             let tm = AstroTime::from_jd(jd, Scale::TT);
             if tar <= 10 && src <= 10 && coord <= 6 {
                 let (mut tpos, mut tvel) = jpl
-                    .geocentric_body_state(EphBody::try_from(tar - 1).unwrap(), &tm)
+                    .geocentric_state(SolarSystem::try_from(tar - 1).unwrap(), &tm)
                     .unwrap();
                 let (mut spos, mut svel) = jpl
-                    .geocentric_body_state(EphBody::try_from(src - 1).unwrap(), &tm)
+                    .geocentric_state(SolarSystem::try_from(src - 1).unwrap(), &tm)
                     .unwrap();
 
                 // in test vectors, index 3 is not EMB, but rather Earth
@@ -596,27 +558,27 @@ mod tests {
                 if tar == 3 {
                     tpos = Vec3::zeros();
                     let (_mpos, mvel): (Vec3, Vec3) =
-                        jpl.geocentric_body_state(EphBody::MOON, &tm).unwrap();
+                        jpl.geocentric_state(SolarSystem::MOON, &tm).unwrap();
                     // Scale Earth velocity
                     tvel = tvel - mvel / (1.0 + jpl.emrat);
                 }
                 if src == 3 {
                     spos = Vec3::zeros();
                     let (_mpos, mvel): (Vec3, Vec3) =
-                        jpl.geocentric_body_state(EphBody::MOON, &tm).unwrap();
+                        jpl.geocentric_state(SolarSystem::MOON, &tm).unwrap();
                     //Scale Earth velocity
                     svel = svel - mvel / (1.0 + jpl.emrat);
                 }
                 if src == 10 {
-                    // Compute moon velocity in heliocentric frame (not relative to Earth)
+                    // Compute moon velocity in barycentric frame (not relative to Earth)
                     let (_embpos, embvel): (Vec3, Vec3) =
-                        jpl.geocentric_body_state(EphBody::EMB, &tm).unwrap();
+                        jpl.geocentric_state(SolarSystem::EMB, &tm).unwrap();
                     svel = svel + (embvel - svel / (1.0 + jpl.emrat));
                 }
                 if tar == 10 {
-                    // Comput moon velocity in heliocentric frame (not relative to Earth)
+                    // Comput moon velocity in barycentric frame (not relative to Earth)
                     let (_embpos, embvel): (Vec3, Vec3) =
-                        jpl.geocentric_body_state(EphBody::EMB, &tm).unwrap();
+                        jpl.geocentric_state(SolarSystem::EMB, &tm).unwrap();
                     tvel = tvel + (embvel - tvel / (1.0 + jpl.emrat));
                 }
 

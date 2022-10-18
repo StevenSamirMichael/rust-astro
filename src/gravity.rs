@@ -1,13 +1,75 @@
-use super::super::utils::datadir;
+use crate::utils::*;
+use std::collections::HashMap;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
-
-use super::errors::GravityError;
 
 use nalgebra as na;
 type CoeffTable = na::DMatrix<f64>;
 
 type DivisorTable = na::SMatrix<f64, 20, 20>;
+
+///
+/// Gravity model enumeration
+///
+/// For details of models, see:
+/// http://icgem.gfz-potsdam.de/tom_longtime
+///
+#[derive(PartialEq, Eq, Hash)]
+pub enum GravityModel {
+    JGM3,
+    JGM2,
+    EGM96,
+    ITUGrace16,
+}
+
+// Since gravity models don't change, they work well as
+// global variables.  Declare them here; they don't actually
+// get instantiated until first use.
+lazy_static::lazy_static! {
+    pub static ref GRAVITY_JGM3: Gravity = Gravity::from_file("jgm3.gfc").unwrap();
+    pub static ref GRAVITY_JGM2: Gravity = Gravity::from_file("jgm2.gfc").unwrap();
+    pub static ref GRAVITY_EGM96: Gravity = Gravity::from_file("egm96.gfc").unwrap();
+    pub static ref GRAVITY_ITUGRACE16: Gravity = Gravity::from_file("ITU_GRACE16.gfc").unwrap();
+
+    static ref GRAVHASH: HashMap<GravityModel, &'static Gravity> = {
+        let mut m = HashMap::new();
+        let g1: &Gravity = &GRAVITY_JGM3;
+        m.insert(GravityModel::JGM3, g1);
+        m.insert(GravityModel::JGM2, &GRAVITY_JGM2);
+        m.insert(GravityModel::EGM96, &GRAVITY_EGM96);
+        m.insert(GravityModel::ITUGrace16, &GRAVITY_ITUGRACE16);
+        m
+    };
+}
+
+///
+/// Return acceleration due to Earth gravity at the input position. The
+/// acceleration does not include the centrifugal force, and is output
+/// in m/s^2 in the International Terrestrial Reference Frame (ITRF)
+///
+/// Inputs:
+///
+///       pos:    Position as nalgebra 3-vecotr
+///
+///     order:    The order of the gravity model to use.
+///               Maximum is 16
+///
+///     model:    The gravity model to use, of type "GravityModel"
+///
+///               For details of models, see:
+///               http://icgem.gfz-potsdam.de/tom_longtime
+///
+///               For details of calculation, see Chapter 3.2 of:
+///               "Satellite Orbits: Models, Methods, Applications",
+///               O. Montenbruck and B. Gill, Springer, 2012.
+///
+pub fn accel(pos_itrf: &Vec3, order: usize, model: GravityModel) -> Vec3 {
+    GRAVHASH.get(&model).unwrap().accel(pos_itrf, order)
+}
+
+pub fn accel_jgm3(pos_itrf: &Vec3, order: usize) -> Vec3 {
+    GRAVITY_JGM3.accel(pos_itrf, order)
+}
 
 #[derive(Debug, Clone)]
 pub struct Gravity {
@@ -22,6 +84,22 @@ pub struct Gravity {
 
 type Legendre<const N: usize> = na::SMatrix<f64, N, N>;
 type Vec3 = na::Vector3<f64>;
+
+///
+/// Return acceleration due to Earth gravity at the input position. The
+/// acceleration does not include the centrifugal force, and is output
+/// in m/s^2 in the International Terrestrial Reference Frame (ITRF)
+///
+/// Inputs:
+///
+///       pos:   Position as ITRF coordinate (astro.itrfcoord) or numpy
+///              3-vector representing ITRF position in meters
+///
+///     order:   Order of the gravity model
+///
+/// See Equation 3.33 of Montenbruck & Gill (referenced above) for
+/// calculation details.
+///
 
 impl Gravity {
     pub fn accel(&self, pos: &Vec3, order: usize) -> Vec3 {
@@ -142,10 +220,13 @@ impl Gravity {
         (v, w)
     }
 
-    pub fn from_file(filename: &str) -> Result<Gravity, Box<dyn std::error::Error + Send + Sync>> {
+    /// Load Gravity model coefficients from file
+    /// Files are at:
+    /// http://icgem.gfz-potsdam.de/tom_longtime
+    pub fn from_file(filename: &str) -> AstroResult<Gravity> {
         let path = datadir::get().unwrap_or(PathBuf::from(".")).join(filename);
         if !path.is_file() {
-            return Err(GravityError::new("File does not exist").into());
+            return astroerr!("File does not exist");
         }
         let file = std::fs::File::open(&path)?;
 
@@ -185,7 +266,7 @@ impl Gravity {
             }
         }
         if max_degree == 0 {
-            return Err(GravityError::new("Invalid File; did not find max_degree").into());
+            return astroerr!("Invalid file; did not find max degree");
         }
 
         // Create matrix with lookup values
@@ -194,8 +275,7 @@ impl Gravity {
         for line in &lines[header_cnt..] {
             let s: Vec<&str> = line.split_whitespace().collect();
             if s.len() < 3 {
-                println!("bad line = {}", line);
-                return Err(GravityError::new("Invalid File").into());
+                return astroerr!("Invalid line: {}", line);
             }
 
             let n: usize = s[1].parse()?;
@@ -297,7 +377,8 @@ mod tests {
             Vec3::new(coord.itrf[0], coord.itrf[1], 0.0) * OMEGA_EARTH * OMEGA_EARTH;
         let gravity = gravitation + centrifugal;
 
-        // Check gravitation matches the reference value from http://icgem.gfz-potsdam.de/calcstat/
+        // Check gravitation matches the reference value
+        // from http://icgem.gfz-potsdam.de/calcstat/
         assert!(f64::abs(gravitation.norm() / reference_gravitation - 1.0) < 1.0E-9);
         // Check that gravity matches reference value
         assert!(f64::abs(gravity.norm() / reference_gravity - 1.0) < 1.0E-9);

@@ -11,7 +11,7 @@ pub struct AstroErr {
 #[macro_export]
 macro_rules! astroerr {
     ($($args:tt),*) => {{
-        Err(AstroErr::new(format!($($args),*).as_str()).into())
+        Err(crate::utils::AstroErr::new(format!($($args),*).as_str()).into())
     }};
 }
 

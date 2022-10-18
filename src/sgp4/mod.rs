@@ -15,6 +15,8 @@ pub enum OpsMode {
 
 pub use sgp4::sgp4;
 pub use sgp4::sgp4_full;
+pub use sgp4::SGP4Result;
+pub use sgp4::SGP4State;
 
 mod dpper;
 mod dscom;

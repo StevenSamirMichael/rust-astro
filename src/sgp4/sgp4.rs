@@ -1,21 +1,20 @@
 use super::sgp4_lowlevel::sgp4_lowlevel;
 use super::sgp4init::sgp4init;
 
-use crate::astrotime::AstroTime;
-use crate::astrotime::Scale;
+use crate::astrotime::{Scale, TimeInput, TimeInputType};
 use crate::tle::TLE;
+use nalgebra::{Const, Dynamic, OMatrix};
 
-type Vec3 = nalgebra::Vector3<f64>;
-
-type SGP4State = (Vec3, Vec3);
-type SGP4Result<'a> = Result<SGP4State, (i32, &'a str)>;
+type StateArr = OMatrix<f64, Const<3>, Dynamic>;
+pub type SGP4State = (StateArr, StateArr);
+pub type SGP4Result = Result<SGP4State, (i32, String)>;
 
 use std::f64::consts::PI;
 
 use super::{GravConst, OpsMode};
 
 #[inline]
-pub fn sgp4<'a>(tle: &mut TLE, tm: &AstroTime) -> SGP4Result<'a> {
+pub fn sgp4(tle: &TLE, tm: &impl TimeInputType) -> SGP4Result {
     sgp4_full(tle, tm, GravConst::WGS84, OpsMode::IMPROVED)
 }
 
@@ -83,14 +82,14 @@ const SGP4_ERRS: [&str; 7] = [
 /// ```
 ///
 pub fn sgp4_full<'a>(
-    tle: &mut TLE,
-    tm: &AstroTime,
+    tle: &TLE,
+    tm: &impl TimeInputType,
     gravconst: GravConst,
     opsmode: OpsMode,
-) -> SGP4Result<'a> {
+) -> SGP4Result {
     const TWOPI: f64 = PI * 2.0;
 
-    if tle.satrec.is_none() {
+    if tle.satrec.borrow().is_none() {
         let no = tle.mean_motion / (1440.0 / TWOPI);
         let bstar = tle.bstar;
         let ndot = tle.mean_motion_dot / (1440.0 * 1440.0 / TWOPI);
@@ -102,7 +101,7 @@ pub fn sgp4_full<'a>(
         let ecco = tle.eccen;
         let jdsatepoch = tle.epoch.to_jd(Scale::UTC);
 
-        tle.satrec = Some(sgp4init(
+        tle.satrec.replace(Some(sgp4init(
             gravconst,
             opsmode,
             &"satno",
@@ -116,22 +115,59 @@ pub fn sgp4_full<'a>(
             mo,
             no,
             nodeo,
-        ));
+        )));
     }
-    let s = tle.satrec.as_mut().unwrap();
 
-    let mut r: [f64; 3] = [0.0, 0.0, 0.0];
-    let mut v: [f64; 3] = [0.0, 0.0, 0.0];
-    let tsince = (*tm - tle.epoch) * 1440.0;
-    sgp4_lowlevel(s, tsince, &mut r, &mut v);
+    // Get the underlying satrec as mutable from RefMut object
+    // Checking so that it is only borrowed once
+    let mut satrecmut = match tle.satrec.try_borrow_mut() {
+        Ok(v) => v,
+        Err(e) => {
+            return Err((
+                -1,
+                String::from(format!(
+                    "Error: \"{}\",  is more than one thread trying to run SGP4 on TLE?",
+                    e.to_string()
+                )),
+            ))
+        }
+    };
+    // Get the underlying mutable reference
+    let s = satrecmut.as_mut().unwrap();
 
-    if s.error != 0 {
-        return Err((s.error as i32, SGP4_ERRS[s.error as usize]));
+    match tm.to_time_input() {
+        // Single time input
+        TimeInput::Single(thetime) => {
+            let mut r: [f64; 3] = [0.0, 0.0, 0.0];
+            let mut v: [f64; 3] = [0.0, 0.0, 0.0];
+            let tsince = (thetime - tle.epoch) * 1440.0;
+            sgp4_lowlevel(s, tsince, &mut r, &mut v);
+
+            if s.error != 0 {
+                return Err((s.error as i32, String::from(SGP4_ERRS[s.error as usize])));
+            }
+            Ok((
+                StateArr::from_row_slice(&r) * 1.0e3,
+                StateArr::from_row_slice(&v) * 1.0e3,
+            ))
+        }
+        TimeInput::Array(tarr) => {
+            let n = tarr.borrow().len();
+            let mut rarr = StateArr::zeros(n);
+            let mut varr = StateArr::zeros(n);
+            for (pos, thetime) in tarr.borrow().iter().enumerate() {
+                let mut r: [f64; 3] = [0.0, 0.0, 0.0];
+                let mut v: [f64; 3] = [0.0, 0.0, 0.0];
+                let tsince = (*thetime - tle.epoch) * 1440.0;
+                sgp4_lowlevel(s, tsince, &mut r, &mut v);
+                rarr.index_mut((.., pos)).copy_from_slice(&r);
+                varr.index_mut((.., pos)).copy_from_slice(&v);
+            }
+
+            Ok((rarr * 1.0e3, varr * 1.0e3))
+        }
+        TimeInput::Error(s) => Err((-1, String::from(s))),
     }
-    Ok((
-        Vec3::new(r[0], r[1], r[2]) * 1.0e3,
-        Vec3::new(v[0], v[1], v[2]) * 1.0e3,
-    ))
 }
 
 #[cfg(test)]
@@ -183,31 +219,14 @@ mod tests {
             );
         }
         let tlefile = testdir.join("SGP4-VER.TLE");
-
-        let mut tles: Vec<TLE> = Vec::<TLE>::new();
         let f = match std::fs::File::open(&tlefile) {
             Err(why) => panic!("Could not open {}: {}", tlefile.display(), why),
             Ok(file) => file,
         };
-        let mut line0: String = String::from("0 None");
-        let mut line1: String = String::from("");
-        for line in std::io::BufReader::new(f).lines() {
-            match line.unwrap().trim() {
-                v if v.len() < 3 => continue,
-                v if v.chars().nth(0).unwrap() == '#' => continue,
-                v if v.chars().nth(0).unwrap() == '1' => line1 = String::from(v),
-                v if v.chars().nth(0).unwrap() == '0' => line0 = String::from(v),
-                v if v.chars().nth(0).unwrap() == '2' => {
-                    match TLE::load_3line(&line0, &line1, &String::from(v)) {
-                        Ok(tle) => tles.push(tle),
-                        Err(e) => panic!("Error loading TLE: {}", e),
-                    }
-                    line0 = String::from("0 None");
-                    line1 = String::from("");
-                }
-                _ => continue,
-            }
-        }
+        let buf = std::io::BufReader::new(f);
+        let lines: Vec<String> = buf.lines().map(|l| l.unwrap()).collect();
+        let tles = TLE::from_lines(&lines).unwrap();
+        assert!(tles.len() > 5);
 
         for mut tle in tles {
             let fname = format!("{:05}.e", tle.sat_num);

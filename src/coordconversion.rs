@@ -3,7 +3,7 @@ use std::f64::consts::PI;
 
 use nalgebra as na;
 type Vec3 = na::Vector3<f64>;
-type Quat = na::UnitQuaternion<f64>;
+pub type Quat = na::UnitQuaternion<f64>;
 
 use super::earth_orientation_params;
 pub use crate::iau2000::qcirs2gcrs;
@@ -123,7 +123,7 @@ pub fn qitrf2tirs(tm: &AstroTime) -> Quat {
 
 ///
 /// Rotation from True Equator Mean Equinox (TEME) frame
-/// to International Terrestrial Reference Frame (TEME)
+/// to International Terrestrial Reference Frame (ITRF)
 ///
 /// # Arguments
 ///
@@ -137,7 +137,7 @@ pub fn qitrf2tirs(tm: &AstroTime) -> Quat {
 ///
 /// * The TEME frame is the default frame output by the
 /// SGP4 propagator
-/// * This is Equation 3-90 from Vallado
+/// * This is Equation 3-90 in Vallado
 ///
 pub fn qteme2itrf(tm: &AstroTime) -> Quat {
     qitrf2tirs(tm).conjugate() * qrotz(gmst(tm))
@@ -247,6 +247,33 @@ pub fn qitrf2gcrf(tm: &AstroTime) -> Quat {
     let r = qtirs2cirs(tm);
     let q = qcirs2gcrs(tm);
     q * r * w
+}
+
+///
+/// Quaternion representing rotation from the
+/// Geocentric Celestial Reference Frame (GCRF)
+/// to the International Terrestrial Reference Frame (ITRF)
+///
+///
+/// # Arguments
+///
+/// * tm: Time at which to compute rotation
+///
+/// # Returns
+///
+/// * Quaternion representing rotation from GCRF to ITRF
+///
+/// # Notes:
+///
+///  * Uses the full IAU2006 reduction, see
+/// [IERS Technical Note 36, Chapter 5](https://www.iers.org/SharedDocs/Publikationen/EN/IERS/Publications/tn/TechnNote36/tn36_043.pdf?__blob=publicationFile&v=1)
+/// Equation 5.1
+///
+///  * This is **very** computationally expensive; for most
+/// applications, the approximate rotation will work just fine
+///
+pub fn qgcrf2itrf(tm: &AstroTime) -> Quat {
+    qitrf2gcrf(tm).conjugate()
 }
 
 ///

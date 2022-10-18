@@ -1,55 +1,42 @@
 //! Is this where to-level documentation goes?
 //! # Introduction
 
-/// AstroTime
+/// Time and time bases (UTC, TAI, GPS, TT, etc...)
 pub mod astrotime;
-pub mod earth_orientation_params;
-pub mod gravity;
-pub mod itrfcoord;
-pub mod jplephem;
-pub mod sgp4;
-pub mod tle;
-
-//mod sgp4unit;
-// pub mod tle;
+/// Conversion between coordinate frames
 pub mod coordconversion;
+/// Earth orientation parameters (polar motion, delta-UT1, lenth of day)
+pub mod earth_orientation_params;
+/// Zonal gravity model
+pub mod gravity;
 pub mod iau2000;
+/// Internation Terrestrial Reference Frame coordinates &
+/// transformations to Geodetic, East-North-Up, North-East-Down
+pub mod itrfcoord;
+/// Solar system body ephemerides, as published by JPL
+pub mod jplephem;
+pub mod lpephem;
+/// Orbit Propagation
+pub mod orbitprop;
+/// SGP-4 Orbit Propagator
+pub mod sgp4;
+/// Solar system bodies
+mod solarsystem;
+pub mod spaceweather;
+/// Two-line Element Set
+pub mod tle;
+/// Universal constants
+pub mod univ;
+/// Utility functions
 pub mod utils;
 
-pub use coordconversion::gmst;
+pub use astrotime::AstroTime;
+pub use astrotime::Scale as TimeScale;
+pub use itrfcoord::ITRFCoord;
+pub use solarsystem::SolarSystem;
 pub use tle::TLE;
+pub use utils::AstroErr;
+pub use utils::AstroResult;
 
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-
-    #[test]
-    fn tests() {
-        #[derive(Debug)]
-        struct TS {
-            a: f64,
-            b: f64,
-        }
-
-        fn modts(ts2: &mut TS) {
-            ts2.b = 3.0;
-        }
-
-        fn mod2(c: &mut f64) {
-            *c = 5.0;
-        }
-
-        let mut ts: TS = TS { a: 1.0, b: 2.0 };
-
-        println!("ts = {:?}", ts);
-        modts(&mut ts);
-        println!("ts 2 = {:?}", ts);
-        mod2(&mut ts.a);
-        println!("ts 3 = {:?}", ts);
-    }
-}
+#[cfg(feature = "pybindings")]
+pub mod pybindings;
