@@ -1,5 +1,6 @@
 use super::force_gravity::ForceGravity;
 use super::force_moon::ForceMoon;
+use super::force_sun::ForceSun;
 
 use super::forceterm::*;
 use super::settings::PropSettings;
@@ -46,10 +47,11 @@ pub fn propagate(
     // Gravity force recorder
     let g = &ForceGravity::init(start, stop, settings);
     let m = &ForceMoon::init(start, stop, settings);
+    let s: &ForceSun = &ForceSun::init(start, stop, settings);
     // Propagation structure
     let p: Propagation = Propagation {
         start: *start,
-        forces: vec![g, m],
+        forces: vec![g, m, s],
     };
 
     // Duration to end of integration, in seconds

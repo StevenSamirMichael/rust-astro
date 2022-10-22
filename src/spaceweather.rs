@@ -1,10 +1,13 @@
 use std::fs::File;
 
 use std::io::{self, BufRead};
+use std::ops::DerefMut;
 use std::path::PathBuf;
 
 use crate::astrotime::AstroTime;
-use crate::utils::{astroerr, AstroResult, *};
+use crate::utils::{astroerr, datadir, AstroResult};
+use std::sync::Mutex;
+
 use lazy_static;
 
 #[derive(Debug)]
@@ -124,8 +127,13 @@ fn load_space_weather() -> AstroResult<SpaceWeatherData> {
 
 lazy_static::lazy_static! {
 
-static ref SPACE_WEATHER_DATA: AstroResult<SpaceWeatherData> = load_space_weather();
+static ref SPACE_WEATHER_DATA: Mutex<AstroResult<SpaceWeatherData>> = Mutex::new(load_space_weather());
 
+}
+
+pub fn reload() -> AstroResult<()> {
+    *(SPACE_WEATHER_DATA.lock().unwrap().deref_mut()) = load_space_weather();
+    Ok(())
 }
 
 #[cfg(test)]

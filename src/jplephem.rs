@@ -27,6 +27,7 @@ use nalgebra as na;
 pub type Vec3 = na::Vector3<f64>;
 pub type Quat = na::UnitQuaternion<f64>;
 
+use crate::utils::datadir;
 use crate::utils::AstroResult;
 
 use super::astrotime::{AstroTime, Scale};
@@ -96,6 +97,14 @@ pub struct JPLEphem {
     cheby: DMatrix<f64>,
 }
 
+// Static representation of JPL Ephemerides
+// Loaded on demand when called for the first time
+lazy_static::lazy_static! {
+    pub static ref JPLEPHEM: AstroResult<JPLEphem> =
+       JPLEphem::from_file("linux_p1550p2650.440");
+
+}
+
 impl JPLEphem {
     pub fn consts(&self, s: &String) -> Option<&f64> {
         self.consts.get(s)
@@ -120,7 +129,7 @@ impl JPLEphem {
     ///
     /// use astro::jplephem::{JPLEphem, SolarSystem};
     /// use astro::astrotime::AstroTime;
-    /// let jpl = JPLEphem::from_file("jplephem.440").unwrap();
+    /// let jpl = JPLEphem::from_file("linux_p1550p2650.440").unwrap();
     ///
     /// // Construct time: March 1 2021 12:00pm UTC
     /// let t = AstroTime::from_datetime(2021, 3, 1, 12, 0, 0.0);
@@ -130,7 +139,6 @@ impl JPLEphem {
     /// ```
     ///
     pub fn from_file(fname: &str) -> AstroResult<JPLEphem> {
-        use super::utils::datadir;
         use std::collections::HashMap;
         use std::path::PathBuf;
 
@@ -503,12 +511,14 @@ impl JPLEphem {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::download_file;
+    use std::io::{self, BufRead};
 
     #[test]
     fn load_test() {
-        let jpl = JPLEphem::from_file("jpleph.440").unwrap();
-
         //let tm = &AstroTime::from_date(2010, 3, 1);
+        let jpl = JPLEPHEM.as_ref().unwrap();
+
         let tm = AstroTime::from_jd(2451545.0, Scale::TT);
         //let tm = &AstroTime::from_jd(2451545.0, Scale::UTC);
         let (_, _): (Vec3, Vec3) = jpl.geocentric_state(SolarSystem::MOON, &tm).unwrap();
@@ -518,21 +528,18 @@ mod tests {
     /// and compare calculated positions to test vectors.
     #[test]
     fn testvecs() {
-        let jpl = JPLEphem::from_file("jpleph.440").unwrap();
-
         // Read in test vectors from the NASA JPL web site
-        // Note: this file will be stored in the "datadir" directory
-        // permanently.
-        use super::super::utils::dev::*;
-        let lines =
-            match lines_from_url("https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/testpo.440")
-            {
-                Ok(v) => (v),
-                Err(e) => {
-                    panic!("Cannot download test points: {}", e.to_string());
-                }
-            };
-        for rline in lines.skip(14) {
+
+        let jpl = JPLEPHEM.as_ref().unwrap();
+
+        let url = "https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/testpo.440";
+        download_file(url, &datadir::get().unwrap(), false).unwrap();
+
+        let fullpath = datadir::get().unwrap().join("testpo.440");
+        let file = std::fs::File::open(fullpath).unwrap();
+        let b = io::BufReader::new(file);
+
+        for rline in b.lines().skip(14) {
             let line = match rline {
                 Ok(v) => v,
                 Err(_) => continue,
@@ -557,17 +564,23 @@ mod tests {
                 // (this took me a long time to figure out...)
                 if tar == 3 {
                     tpos = Vec3::zeros();
-                    let (_mpos, mvel): (Vec3, Vec3) =
-                        jpl.geocentric_state(SolarSystem::MOON, &tm).unwrap();
+                    let (_mpos, mvel): (Vec3, Vec3) = JPLEPHEM
+                        .as_ref()
+                        .unwrap()
+                        .geocentric_state(SolarSystem::MOON, &tm)
+                        .unwrap();
                     // Scale Earth velocity
-                    tvel = tvel - mvel / (1.0 + jpl.emrat);
+                    tvel = tvel - mvel / (1.0 + JPLEPHEM.as_ref().unwrap().emrat);
                 }
                 if src == 3 {
                     spos = Vec3::zeros();
-                    let (_mpos, mvel): (Vec3, Vec3) =
-                        jpl.geocentric_state(SolarSystem::MOON, &tm).unwrap();
+                    let (_mpos, mvel): (Vec3, Vec3) = JPLEPHEM
+                        .as_ref()
+                        .unwrap()
+                        .geocentric_state(SolarSystem::MOON, &tm)
+                        .unwrap();
                     //Scale Earth velocity
-                    svel = svel - mvel / (1.0 + jpl.emrat);
+                    svel = svel - mvel / (1.0 + JPLEPHEM.as_ref().unwrap().emrat);
                 }
                 if src == 10 {
                     // Compute moon velocity in barycentric frame (not relative to Earth)

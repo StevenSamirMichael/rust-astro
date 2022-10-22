@@ -67,6 +67,19 @@ fn lpephem(_py: Python, m: &PyModule) -> PyResult<()> {
     Ok(())
 }
 
+#[pyfunction]
+fn datadir() -> PyResult<String> {
+    Ok(String::from(
+        crate::utils::datadir::get().unwrap().to_str().unwrap(),
+    ))
+}
+
+#[pymodule]
+fn util(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(datadir, m)?).unwrap();
+    Ok(())
+}
+
 /// Coordinate Conversion Sub-Module
 #[pymodule]
 fn frametransform(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -108,6 +121,8 @@ pub fn astro(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(frametransform))?;
     m.add_wrapped(wrap_pymodule!(jplephem))?;
     m.add_wrapped(wrap_pymodule!(lpephem))?;
+
+    m.add_wrapped(wrap_pymodule!(util))?;
 
     Ok(())
 }

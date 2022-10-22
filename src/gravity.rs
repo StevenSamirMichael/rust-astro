@@ -26,9 +26,9 @@ pub enum GravityModel {
 // global variables.  Declare them here; they don't actually
 // get instantiated until first use.
 lazy_static::lazy_static! {
-    pub static ref GRAVITY_JGM3: Gravity = Gravity::from_file("jgm3.gfc").unwrap();
-    pub static ref GRAVITY_JGM2: Gravity = Gravity::from_file("jgm2.gfc").unwrap();
-    pub static ref GRAVITY_EGM96: Gravity = Gravity::from_file("egm96.gfc").unwrap();
+    pub static ref GRAVITY_JGM3: Gravity = Gravity::from_file("JGM3.gfc").unwrap();
+    pub static ref GRAVITY_JGM2: Gravity = Gravity::from_file("JGM2.gfc").unwrap();
+    pub static ref GRAVITY_EGM96: Gravity = Gravity::from_file("EGM96.gfc").unwrap();
     pub static ref GRAVITY_ITUGRACE16: Gravity = Gravity::from_file("ITU_GRACE16.gfc").unwrap();
 
     static ref GRAVHASH: HashMap<GravityModel, &'static Gravity> = {
@@ -370,7 +370,7 @@ mod tests {
         let reference_ew_deflection_asec: f64 = -1.283542043355E+00;
         let reference_ns_deflection_asec: f64 = -1.311709802440E+00;
 
-        let g = Gravity::from_file("jgm3.gfc").unwrap();
+        let g = Gravity::from_file("JGM3.gfc").unwrap();
         let coord = ITRFCoord::from_geodetic_deg(latitude, longitude, altitude);
         let gravitation: Vec3 = g.accel(&coord.into(), 16);
         let centrifugal: Vec3 =

@@ -3,21 +3,10 @@ use pyo3::prelude::*;
 use super::pysolarsystem;
 use super::pyutils::*;
 use crate::astrotime::AstroTime;
-use crate::jplephem::JPLEphem;
+use crate::jplephem::JPLEPHEM;
 use crate::solarsystem::SolarSystem;
 use crate::utils::AstroResult;
 use nalgebra as na;
-
-lazy_static::lazy_static! {
-    static ref JPLEPHEM: Option<JPLEphem> = {
-        match JPLEphem::from_file("jpleph.440") {
-            Ok(eph) => Some(eph),
-            Err(_) => None
-        }
-    };
-
-
-}
 
 /// Return the position and velocity of the given body in
 ///  Geocentric coordinate system
@@ -39,7 +28,7 @@ lazy_static::lazy_static! {
 ///
 #[pyfunction]
 pub fn geocentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
-    if JPLEPHEM.is_none() {
+    if JPLEPHEM.is_err() {
         return Err(pyo3::exceptions::PyFileNotFoundError::new_err(
             "Could not load ephemeris file",
         ));
@@ -78,7 +67,7 @@ pub fn geocentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResu
 ///
 #[pyfunction]
 pub fn barycentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
-    if JPLEPHEM.is_none() {
+    if JPLEPHEM.is_err() {
         return Err(pyo3::exceptions::PyFileNotFoundError::new_err(
             "Could not load ephemeris file",
         ));
@@ -105,7 +94,7 @@ pub fn barycentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyRes
 ///
 #[pyfunction]
 pub fn geocentric_pos(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
-    if JPLEPHEM.is_none() {
+    if JPLEPHEM.is_err() {
         return Err(pyo3::exceptions::PyFileNotFoundError::new_err(
             "Could not load ephemeris file",
         ));
@@ -140,7 +129,7 @@ pub fn geocentric_pos(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult
 ///    (it will be close to origin)
 #[pyfunction]
 pub fn barycentric_pos(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
-    if JPLEPHEM.is_none() {
+    if JPLEPHEM.is_err() {
         return Err(pyo3::exceptions::PyFileNotFoundError::new_err(
             "Could not load ephemeris file",
         ));

@@ -1,3 +1,5 @@
+use crate::astroerr;
+use crate::AstroResult;
 use nix::libc;
 use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
@@ -31,7 +33,7 @@ fn get_dylib_path() -> Option<PathBuf> {
     }
 }
 
-fn get_testdirs() -> Vec<PathBuf> {
+pub fn get_testdirs() -> Vec<PathBuf> {
     let mut testdirs: Vec<PathBuf> = Vec::new();
 
     // Look for paths in environment variable
@@ -44,8 +46,7 @@ fn get_testdirs() -> Vec<PathBuf> {
     match std::env::var(&"HOME") {
         Ok(val) => {
             let vstr = &String::from(val);
-            testdirs.push(Path::new(vstr).to_path_buf());
-            testdirs.push(Path::new(vstr).join("astro-data"));
+
             #[cfg(target_os = "macos")]
             testdirs.push(
                 Path::new(vstr)
@@ -53,6 +54,8 @@ fn get_testdirs() -> Vec<PathBuf> {
                     .join("Application Support")
                     .join("astro-data"),
             );
+            testdirs.push(Path::new(vstr).join("astro-data"));
+            testdirs.push(Path::new(vstr).to_path_buf());
         }
         Err(_e) => (),
     }
@@ -77,7 +80,7 @@ fn get_testdirs() -> Vec<PathBuf> {
 }
 
 lazy_static::lazy_static! {
-    static ref DATADIR: Option<PathBuf> = {
+    static ref DATADIR: AstroResult<PathBuf> = {
         /*
         Go through possible data directories
            and return if "tab5.2a.txt" is found
@@ -86,10 +89,10 @@ lazy_static::lazy_static! {
         for ref dir in get_testdirs() {
             let p = PathBuf::from(&dir).join("tab5.2a.txt");
             if p.is_file() {
-                return Some(dir.to_path_buf().clone());
+                return Ok(dir.to_path_buf().clone());
             }
         }
-        None
+        astroerr!("Could not find valid data directory.")
     };
 }
 
@@ -97,9 +100,10 @@ lazy_static::lazy_static! {
 ///
 /// Tries the following paths in order, and stops when the
 /// files are found
+///
 /// *  "ASTROLIB_DATA" environment variable
-/// *  ${HOME}
 /// *  ${HOME}/share/astro-data
+/// *  ${HOME}
 /// *  /usr/share/astro-data
 /// *  On Mac Only:
 ///    * /Library/Application Support/astro-data
@@ -110,8 +114,11 @@ lazy_static::lazy_static! {
 ///  * Option<<std::path::PathBuf>> representing directory
 ///    where files are stored
 ///
-pub fn get() -> Option<PathBuf> {
-    DATADIR.clone()
+pub fn get() -> AstroResult<PathBuf> {
+    match DATADIR.as_ref() {
+        Ok(v) => Ok(v.clone()),
+        Err(_e) => astroerr!("No data directory found"),
+    }
 }
 
 #[cfg(test)]
@@ -120,6 +127,6 @@ mod tests {
     fn datadir() {
         use crate::utils::datadir;
         let d = datadir::get();
-        assert_eq!(d.is_none(), false);
+        assert_eq!(d.is_err(), false);
     }
 }
