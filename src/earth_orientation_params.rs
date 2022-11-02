@@ -3,13 +3,10 @@ use std::io::{self, BufRead};
 use std::path::PathBuf;
 use std::sync::RwLock;
 
-use crate::utils::{astroerr, AstroResult};
-
 use super::astrotime;
 use crate::utils::datadir;
 use crate::utils::download_file;
 use lazy_static;
-use std::sync::RwLock;
 
 use crate::{astroerr, AstroResult};
 
@@ -122,35 +119,6 @@ pub fn update() -> AstroResult<()> {
     Ok(())
 }
 
-lazy_static::lazy_static! {
-    static ref EOP_PARAMS : RwLock<EOPData> = RwLock::new(load_eop_data(None));
-}
-
-///
-/// Download updated Earth Orientation Parameters
-/// to provided dita directory.
-///
-/// These should be updated daily
-///
-///
-pub fn update() -> AstroResult<()> {
-    let path = datadir::get()?;
-    if path.metadata()?.permissions().readonly() {
-        let s = path.to_str().unwrap();
-        return astroerr!("Cannot write to data directory: {}", s);
-    }
-    let url = "https://celestrak.org/SpaceData/sw19571001.txt";
-    download_file(url, &path, true)?;
-
-    let mut eopguard = EOP_PARAMS.write().unwrap();
-    *eopguard = load_eop_data(None);
-
-    Ok(())
-}
-
-///
-/// Get Earth orientation parameters given UTC modified Julian date
-///
 pub fn get_from_mjd_utc(mjd_utc: f64) -> Option<[f64; 4]> {
     let eop = EOP_PARAMS.read().unwrap();
 
