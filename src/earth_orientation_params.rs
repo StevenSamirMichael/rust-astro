@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
+use std::sync::RwLock;
 
 use crate::utils::{astroerr, AstroResult};
 
@@ -9,6 +10,8 @@ use crate::utils::datadir;
 use crate::utils::download_file;
 use lazy_static;
 use std::sync::RwLock;
+
+use crate::{astroerr, AstroResult};
 
 #[derive(Debug)]
 struct EOPEntry {
@@ -19,24 +22,25 @@ struct EOPEntry {
     lod: f64,
 }
 
-type EOPData = AstroResult<Vec<EOPEntry>>;
-
-fn load_eop_data(pathoption: Option<PathBuf>) -> EOPData {
-    let path: PathBuf = match pathoption {
-        Some(p) => p,
+fn load_eop_file(filename: Option<PathBuf>) -> Vec<EOPEntry> {
+    let path: PathBuf = match filename {
+        Some(pb) => pb,
         None => datadir::get()
             .unwrap_or(PathBuf::from("."))
             .join("finals2000A.all"),
     };
+
     if !path.is_file() {
-        let ln = format!(
+        panic!(
             "Cannot open earth orientation parameters file: {}",
             path.to_str().unwrap()
         );
-        return astroerr!("{}", ln);
     }
 
-    let file = File::open(&path)?;
+    let file = match File::open(&path) {
+        Err(why) => panic!("Couldn't open {}: {}", path.display(), why),
+        Ok(file) => file,
+    };
 
     let mut eopvec = Vec::<EOPEntry>::new();
     for line in io::BufReader::new(file).lines() {
@@ -87,7 +91,35 @@ fn load_eop_data(pathoption: Option<PathBuf>) -> EOPData {
             }
         }
     }
-    Ok(eopvec)
+    eopvec
+}
+
+lazy_static::lazy_static! {
+    static ref EOP_PARAMS: RwLock<Vec<EOPEntry>> = RwLock::new(load_eop_file(None));
+}
+
+/// Download new Earth Orientation Parameters file, and load it.
+/// By default, tries to download into writeable directory where
+/// data files for this crate are stored: crate::datadir::get()
+pub fn update() -> AstroResult<()> {
+    // Find writeabld data directory
+    let d: Vec<PathBuf> = datadir::get_testdirs()
+        .into_iter()
+        .filter(|x| x.is_dir())
+        .filter(|x| x.metadata().unwrap().permissions().readonly() == false)
+        .collect();
+    if d.len() == 0 {
+        return astroerr!("Cannot find writable data directory");
+    }
+
+    // Download most-recent EOP
+    let url = "https://datacenter.iers.org/data/9/finals2000A.all";
+    download_file(url, &d[0], true)?;
+
+    // Re-load the params
+    *EOP_PARAMS.write().unwrap() = load_eop_file(None);
+
+    Ok(())
 }
 
 lazy_static::lazy_static! {
@@ -120,8 +152,7 @@ pub fn update() -> AstroResult<()> {
 /// Get Earth orientation parameters given UTC modified Julian date
 ///
 pub fn get_from_mjd_utc(mjd_utc: f64) -> Option<[f64; 4]> {
-    let eopguard = EOP_PARAMS.read().unwrap();
-    let eop = eopguard.as_ref().unwrap();
+    let eop = EOP_PARAMS.read().unwrap();
 
     let idx = eop.iter().position(|x| x.mjd_utc > mjd_utc);
     match idx {
@@ -167,23 +198,20 @@ pub fn get(tm: &astrotime::AstroTime) -> Option<[f64; 4]> {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     /// Check that data is loaded
     #[test]
     fn loaded() {
-        let eopref = EOP_PARAMS.read().unwrap();
-        let eop = eopref.as_ref().unwrap();
-
-        assert_eq!(eop[0].mjd_utc >= 0.0, true);
+        assert_eq!(EOP_PARAMS.read().unwrap()[0].mjd_utc >= 0.0, true);
     }
 
     /// Check value against manual value from file
     #[test]
     fn checkval() {
-        // Check against known values from past...
         let v = get_from_mjd_utc(59464.00).unwrap();
-        const TRUTH: [f64; 4] = [-0.1145696, 0.241133, 0.317267, -0.2505];
+        const TRUTH: [f64; 4] = [-0.1145681, 0.241135, 0.317269, -0.2418];
         for it in v.iter().zip(TRUTH.iter()) {
             let (a, b) = it;
             assert!(((a - b) / b).abs() < 1.0e-5);

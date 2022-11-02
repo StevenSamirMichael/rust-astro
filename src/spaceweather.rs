@@ -1,16 +1,17 @@
+use std::cmp::Ordering;
 use std::fs::File;
-
 use std::io::{self, BufRead};
 use std::ops::DerefMut;
 use std::path::PathBuf;
 
 use crate::astrotime::AstroTime;
-use crate::utils::{astroerr, datadir, AstroResult};
-use std::sync::Mutex;
+use crate::utils::{astroerr, datadir, download_file, AstroResult};
+
+use std::sync::RwLock;
 
 use lazy_static;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SpaceWeatherRecord {
     /// Date of record
     pub date: AstroTime,
@@ -38,11 +39,6 @@ pub struct SpaceWeatherRecord {
     pub f10p7_adj_l81: f64,
 }
 
-#[derive(Debug)]
-struct SpaceWeatherData {
-    data: Vec<SpaceWeatherRecord>,
-}
-
 fn str2num<T: core::str::FromStr>(s: &str, sidx: usize, eidx: usize) -> Option<T> {
     match s
         .chars()
@@ -57,7 +53,31 @@ fn str2num<T: core::str::FromStr>(s: &str, sidx: usize, eidx: usize) -> Option<T
     }
 }
 
-fn load_space_weather() -> AstroResult<SpaceWeatherData> {
+impl PartialEq for SpaceWeatherRecord {
+    fn eq(&self, other: &Self) -> bool {
+        self.date == other.date
+    }
+}
+
+impl PartialOrd for SpaceWeatherRecord {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.date.partial_cmp(&other.date)
+    }
+}
+
+impl PartialEq<AstroTime> for SpaceWeatherRecord {
+    fn eq(&self, other: &AstroTime) -> bool {
+        self.date == *other
+    }
+}
+
+impl PartialOrd<AstroTime> for SpaceWeatherRecord {
+    fn partial_cmp(&self, other: &AstroTime) -> Option<Ordering> {
+        self.date.partial_cmp(other)
+    }
+}
+
+fn load_space_weather() -> AstroResult<Vec<SpaceWeatherRecord>> {
     let path = datadir::get()
         .unwrap_or(PathBuf::from("."))
         .join("sw19571001.txt");
@@ -67,9 +87,7 @@ fn load_space_weather() -> AstroResult<SpaceWeatherData> {
 
     let file = File::open(&path)?;
 
-    let mut sw = SpaceWeatherData {
-        data: Vec::<SpaceWeatherRecord>::new(),
-    };
+    let mut sw = Vec::<SpaceWeatherRecord>::new();
 
     for line in io::BufReader::new(file).lines() {
         let vline = line.unwrap();
@@ -91,7 +109,7 @@ fn load_space_weather() -> AstroResult<SpaceWeatherData> {
             Some(v) => v,
             None => continue,
         };
-        sw.data.push(SpaceWeatherRecord {
+        sw.push(SpaceWeatherRecord {
             date: (AstroTime::from_date(year, mon, day)),
             bsrn: (str2num(&vline, 11, 15).unwrap_or(-1)),
             nd: (str2num(&vline, 16, 18).unwrap_or(-1)),
@@ -127,12 +145,49 @@ fn load_space_weather() -> AstroResult<SpaceWeatherData> {
 
 lazy_static::lazy_static! {
 
-static ref SPACE_WEATHER_DATA: Mutex<AstroResult<SpaceWeatherData>> = Mutex::new(load_space_weather());
+static ref SPACE_WEATHER_DATA: RwLock<AstroResult<Vec<SpaceWeatherRecord>>> = RwLock::new(load_space_weather());
 
 }
 
+pub fn get(tm: AstroTime) -> AstroResult<SpaceWeatherRecord> {
+    let sw_lock = SPACE_WEATHER_DATA.read().unwrap();
+    let sw = sw_lock.as_ref().unwrap();
+
+    // First, try simple indexing
+    let idx = (tm - sw[0].date).floor() as usize;
+    if idx < sw.len() {
+        if (tm - sw[idx].date).abs() < 1.0 {
+            return Ok(sw[idx].clone());
+        }
+    }
+
+    // More-complex lookup (is it in the future?)
+    // Increase efficiency by looking backward
+    let rec = sw.iter().rev().find(|x| x.date <= tm);
+    if rec.is_none() {
+        astroerr!("Invalid date")
+    } else {
+        Ok(rec.unwrap().clone())
+    }
+}
+
 pub fn reload() -> AstroResult<()> {
-    *(SPACE_WEATHER_DATA.lock().unwrap().deref_mut()) = load_space_weather();
+    // Find writeabld data directory
+    let d: Vec<PathBuf> = datadir::get_testdirs()
+        .into_iter()
+        .filter(|x| x.is_dir())
+        .filter(|x| x.metadata().unwrap().permissions().readonly() == false)
+        .collect();
+
+    if d.len() == 0 {
+        return astroerr!("Cannot find writable data directory");
+    }
+
+    // Download most-recent EOP
+    let url = "https://celestrak.org/SpaceData/sw19571001.txt";
+    download_file(url, &d[0], true)?;
+
+    *SPACE_WEATHER_DATA.write().unwrap() = load_space_weather();
     Ok(())
 }
 
@@ -142,7 +197,9 @@ mod tests {
 
     #[test]
     fn test_load() {
-        let x = load_space_weather();
-        println!("x = {:?}", x.unwrap().data[0]);
+        let tm: AstroTime = AstroTime::from_datetime(2023, 11, 14, 0, 0, 0.0);
+        let r = get(tm);
+        println!("r = {:?}", r);
+        println!("rdate = {}", r.unwrap().date);
     }
 }

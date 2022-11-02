@@ -4,19 +4,6 @@ use crate::astroerr;
 use crate::AstroResult;
 use std::path::PathBuf;
 
-///
-/// Download a complete set of updated data files required for full use of the
-/// astrodynamics library
-///
-/// These include:
-///
-/// Gravity coefficients for JGM2, JGM3, EGM96, and ITU_GRACE16 gravity models
-/// Leap seconds
-/// Earth orientation parameters (can be updated daily)
-/// Space weather data (can be updated daily)
-/// JPL high-precision ephemerides for solar-system bodies
-/// Coefficients required for IAU-2006 reduction (inertial to Earth-fixed rotation)
-///
 pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> AstroResult<()> {
     // Find directory where files will be downloaded
     let downloaddir = match dir {
@@ -47,7 +34,6 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> Astr
         "https://www.ietf.org/timezones/data/leap-seconds.list",
         "https://datacenter.iers.org/data/9/finals2000A.all",
         "https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/linux_p1550p2650.440",
-        "https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/testpo.440"
 
     ];
 
@@ -67,7 +53,7 @@ mod tests {
     #[test]
     fn update_data() {
         match update_datafiles(None, false) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(e) => {
                 println!("Error: {}", e.to_string());
                 assert!(1 == 0);
