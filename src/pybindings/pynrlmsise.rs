@@ -50,9 +50,6 @@ pub fn nrlmsise00(alt_km: f64, option_kwds: Option<&PyDict>) -> PyResult<(f64, f
             None => (),
         }
     }
-    println!("lat = {:?}", lat);
-    println!("lon = {:?}", lon);
-    println!("tm = {:?}", tm);
-    println!("use_spaceweather = {}", use_spaceweather);
+
     Ok(nrlmsise::nrlmsise(alt_km, lat, lon, tm, use_spaceweather))
 }
