@@ -8,6 +8,7 @@ mod pyitrfcoord;
 mod pyjplephem;
 mod pylpephem_moon;
 mod pylpephem_sun;
+mod pynrlmsise;
 mod pyquaternion;
 mod pysgp4;
 mod pysolarsystem;
@@ -110,6 +111,9 @@ pub fn astro(_py: Python, m: &PyModule) -> PyResult<()> {
 
     m.add_class::<pygravity::GravModel>()?;
     m.add_function(wrap_pyfunction!(pygravity::gravity, m)?)
+        .unwrap();
+
+    m.add_function(wrap_pyfunction!(pynrlmsise::nrlmsise00, m)?)
         .unwrap();
 
     m.add_class::<pyuniv::Univ>()?;
