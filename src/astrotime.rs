@@ -206,7 +206,7 @@ impl std::convert::From<&chrono::NaiveDateTime> for AstroTime {
 
 impl std::convert::From<AstroTime> for chrono::NaiveDateTime {
     fn from(s: AstroTime) -> chrono::NaiveDateTime {
-        let secs: i64 = s.to_unixtime();
+        let secs: i64 = s.to_unixtime() as i64;
         let nsecs: u32 = (((s.to_mjd(Scale::UTC) * 86400.0) % 1.0) * 1.0e9) as u32;
         chrono::NaiveDateTime::from_timestamp(secs, nsecs)
     }
@@ -251,8 +251,8 @@ impl AstroTime {
     }
 
     /// Convert to unixtime (seconds since midnight Jan 1 1970, UTC)
-    pub fn to_unixtime(&self) -> i64 {
-        ((self.to_mjd(Scale::UTC) - UTC1970) * 86400.0) as i64
+    pub fn to_unixtime(&self) -> f64 {
+        (self.to_mjd(Scale::UTC) - UTC1970) * 86400.0
     }
 
     /// Add given floating-point number of days to AstroTime instance,

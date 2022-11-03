@@ -4,6 +4,8 @@ pub use astroerr::AstroResult;
 
 mod astroerr;
 pub mod datadir;
+
+#[cfg(test)]
 pub mod dev;
 
 mod update_data;

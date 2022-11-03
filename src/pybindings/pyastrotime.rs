@@ -1,4 +1,5 @@
 use pyo3::prelude::*;
+use pyo3::types::PyDateTime;
 
 use crate::astrotime::{self, AstroTime, Scale, TimeInput, TimeInputType};
 
@@ -110,12 +111,21 @@ impl PyAstroTime {
     /// 5 : Minute of hour, in range [0,59]
     /// 6 : floating point second of minute, in range [0,60)
     ///
-    fn to_datetime(&self) -> (u32, u32, u32, u32, u32, f64) {
+    fn to_gregorian(&self) -> (u32, u32, u32, u32, u32, f64) {
         self.inner.to_datetime()
     }
 
+    /// Convert UTC Gegorian date and time to time object with
+    /// 6-element input:
+    /// 1 : Gregorian Year
+    /// 2 : Gregorian month (1 = January, 2 = February, ...)
+    /// 3 : Day of month, beginning with 1
+    /// 4 : Hour of day, in range [0,23]
+    /// 5 : Minute of hour, in range [0,59]
+    /// 6 : floating point second of minute, in range [0,60)
+    ///
     #[staticmethod]
-    fn from_datetime(
+    fn from_gregorian(
         year: u32,
         month: u32,
         day: u32,
@@ -128,6 +138,16 @@ impl PyAstroTime {
         })
     }
 
+    /// Convert to Python datetime object
+    fn datetime(&self) -> PyObject {
+        pyo3::Python::with_gil(|py| -> PyObject {
+            let timestamp: f64 = self.to_unixtime();
+            PyDateTime::from_timestamp(py, timestamp, None)
+                .unwrap()
+                .into_py(py)
+        })
+    }
+
     fn to_mjd(&self, scale: &PyTimeScale) -> f64 {
         self.inner.to_mjd(scale.into())
     }
@@ -136,7 +156,7 @@ impl PyAstroTime {
         self.inner.to_jd(scale.into())
     }
 
-    fn to_unixtime(&self) -> i64 {
+    fn to_unixtime(&self) -> f64 {
         self.inner.to_unixtime()
     }
 
