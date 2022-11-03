@@ -139,12 +139,10 @@ impl PyAstroTime {
     }
 
     /// Convert to Python datetime object
-    fn datetime(&self) -> PyObject {
-        pyo3::Python::with_gil(|py| -> PyObject {
+    fn datetime(&self) -> PyResult<PyObject> {
+        pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
             let timestamp: f64 = self.to_unixtime();
-            PyDateTime::from_timestamp(py, timestamp, None)
-                .unwrap()
-                .into_py(py)
+            Ok(PyDateTime::from_timestamp(py, timestamp, None)?.into_py(py))
         })
     }
 
