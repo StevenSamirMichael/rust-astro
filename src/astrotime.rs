@@ -190,7 +190,7 @@ impl std::ops::Add<&Vec<f64>> for AstroTime {
 
 impl<T: chrono::TimeZone> std::convert::From<chrono::DateTime<T>> for AstroTime {
     fn from(c: chrono::DateTime<T>) -> Self {
-        let mut t = AstroTime::from_unixtime(c.timestamp());
+        let mut t = AstroTime::from_unixtime(c.timestamp() as f64);
         t = t + c.timestamp_subsec_micros() as f64 / 86400.0e6;
         t
     }
@@ -198,7 +198,7 @@ impl<T: chrono::TimeZone> std::convert::From<chrono::DateTime<T>> for AstroTime 
 
 impl std::convert::From<&chrono::NaiveDateTime> for AstroTime {
     fn from(c: &chrono::NaiveDateTime) -> Self {
-        let mut t = AstroTime::from_unixtime(c.timestamp());
+        let mut t = AstroTime::from_unixtime(c.timestamp() as f64);
         t = t + c.timestamp_subsec_micros() as f64 / 86400.0e6;
         t
     }
@@ -217,7 +217,7 @@ impl TryFrom<std::time::SystemTime> for AstroTime {
     fn try_from(st: std::time::SystemTime) -> Result<Self, Self::Error> {
         let val = st.duration_since(std::time::SystemTime::UNIX_EPOCH);
         match val {
-            Ok(v) => Ok(AstroTime::from_unixtime(v.as_secs() as i64)),
+            Ok(v) => Ok(AstroTime::from_unixtime(v.as_secs() as f64)),
             Err(_) => Err("Invalid system time"),
         }
     }
@@ -233,8 +233,8 @@ impl AstroTime {
 
     /// Construct new AstroTime object, representing given unixtime
     /// (seconds since midnight Jan 1 1970, UTC)
-    pub fn from_unixtime(t: i64) -> AstroTime {
-        AstroTime::from_mjd(t as f64 / 86400.0 + UTC1970, Scale::UTC)
+    pub fn from_unixtime(t: f64) -> AstroTime {
+        AstroTime::from_mjd(t / 86400.0 + UTC1970, Scale::UTC)
     }
 
     /// Construt new AstroTime object, representing

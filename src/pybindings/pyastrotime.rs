@@ -138,6 +138,19 @@ impl PyAstroTime {
         })
     }
 
+    /// Convert from Python datetime object
+    #[staticmethod]
+    fn from_datetime(tm: &PyDateTime) -> PyResult<Self> {
+        let ts: f64 = tm
+            .call_method("timestamp", (), None)
+            .unwrap()
+            .extract::<f64>()
+            .unwrap();
+        Ok(PyAstroTime {
+            inner: AstroTime::from_unixtime(ts),
+        })
+    }
+
     /// Convert to Python datetime object
     fn datetime(&self) -> PyResult<PyObject> {
         pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
