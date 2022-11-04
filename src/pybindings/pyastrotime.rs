@@ -1,5 +1,7 @@
 use pyo3::prelude::*;
+use pyo3::types::timezone_utc;
 use pyo3::types::PyDateTime;
+use pyo3::types::PyTzInfo;
 
 use crate::astrotime::{self, AstroTime, Scale, TimeInput, TimeInputType};
 
@@ -152,10 +154,21 @@ impl PyAstroTime {
     }
 
     /// Convert to Python datetime object
-    fn datetime(&self) -> PyResult<PyObject> {
+    ///
+    /// Inputs:
+    ///   
+    ///    utc_timezone: Optional bool indicating use UTC as timezone
+    ///                  if not passed in, defaults to true
+    ///
+    #[args(utc = "true")]
+    fn datetime(&self, utc: bool) -> PyResult<PyObject> {
         pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
             let timestamp: f64 = self.to_unixtime();
-            Ok(PyDateTime::from_timestamp(py, timestamp, None)?.into_py(py))
+            let mut tz: Option<&PyTzInfo> = Some(timezone_utc(py));
+            if utc == false {
+                tz = None;
+            }
+            Ok(PyDateTime::from_timestamp(py, timestamp, tz)?.into_py(py))
         })
     }
 
