@@ -30,18 +30,24 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> Astr
         "https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2a.txt",
         "https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2b.txt",
         "https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2d.txt",
-        "https://celestrak.org/SpaceData/sw19571001.txt",
         "https://www.ietf.org/timezones/data/leap-seconds.list",
-        "https://datacenter.iers.org/data/9/finals2000A.all",
         "https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/linux_p1550p2650.440",
+    ];
 
+    // List of files that are updated daily and may need to get overwritten
+    let urls_overwrite: Vec<&str> = vec![
+        "https://datacenter.iers.org/data/9/finals2000A.all",
+        "https://celestrak.org/SpaceData/sw19571001.txt",
     ];
 
     // Walk through & download files
     for url in urls {
         download_file(url, &downloaddir, overwrite_if_exists)?;
     }
-
+    // Walk through & download files
+    for url in urls_overwrite {
+        download_file(url, &downloaddir, true)?;
+    }
     Ok(())
 }
 

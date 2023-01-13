@@ -10,10 +10,6 @@ pub fn download_file(
     let fname = std::path::Path::new(url).file_name().unwrap();
     let fullpath = downloaddir.join(fname);
     if fullpath.exists() && !overwrite_if_exists {
-        println!(
-            "File: {} already exists.  Not downloading",
-            fullpath.as_os_str().to_str().unwrap()
-        );
         Ok(false)
     } else {
         println!("Downloading {}", fname.to_str().unwrap());
