@@ -208,7 +208,7 @@ impl std::convert::From<AstroTime> for chrono::NaiveDateTime {
     fn from(s: AstroTime) -> chrono::NaiveDateTime {
         let secs: i64 = s.to_unixtime() as i64;
         let nsecs: u32 = (((s.to_mjd(Scale::UTC) * 86400.0) % 1.0) * 1.0e9) as u32;
-        chrono::NaiveDateTime::from_timestamp(secs, nsecs)
+        chrono::NaiveDateTime::from_timestamp_opt(secs, nsecs).unwrap()
     }
 }
 
@@ -588,7 +588,10 @@ mod tests {
     #[test]
     fn testchrono() {
         use chrono::prelude::*;
-        let dt = Utc.ymd(2014, 7, 8).and_hms(9, 10, 11); // `2014-07-08T09:10:11Z`
+
+        //let dt = Utc.ymd(2014, 7, 8).and_hms(9, 10, 11); // `2014-07-08T09:10:11Z`
+        let dt = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 100).unwrap();
+
         let ts = AstroTime::from(dt);
         let (year, mon, day, hour, min, sec) = ts.to_datetime();
         assert_eq!(year, 2014);

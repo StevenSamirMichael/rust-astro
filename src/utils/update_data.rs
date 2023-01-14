@@ -40,14 +40,24 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> Astr
         "https://celestrak.org/SpaceData/sw19571001.txt",
     ];
 
+    let mut joiners: Vec<std::thread::JoinHandle<AstroResult<bool>>> = Vec::new();
+
     // Walk through & download files
     for url in urls {
-        download_file(url, &downloaddir, overwrite_if_exists)?;
+        let d = downloaddir.clone();
+        joiners.push(std::thread::spawn(move || {
+            download_file(url, &d, overwrite_if_exists.clone())
+        }));
     }
     // Walk through & download files
     for url in urls_overwrite {
-        download_file(url, &downloaddir, true)?;
+        let d = downloaddir.clone();
+        joiners.push(std::thread::spawn(move || download_file(url, &d, true)));
     }
+    for jh in joiners {
+        jh.join().unwrap()?;
+    }
+
     Ok(())
 }
 
