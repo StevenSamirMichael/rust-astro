@@ -1,6 +1,5 @@
-
 use super::pyutils::*;
-use crate::coordconversion as cc;
+use crate::frametransform as ft;
 use pyo3::prelude::*;
 
 ///
@@ -21,7 +20,7 @@ use pyo3::prelude::*;
 ///
 #[pyfunction]
 pub fn gmst(tm: &PyAny) -> PyResult<PyObject> {
-    py_func_of_time_arr(cc::gmst, tm)
+    py_func_of_time_arr(ft::gmst, tm)
 }
 
 ///
@@ -29,7 +28,7 @@ pub fn gmst(tm: &PyAny) -> PyResult<PyObject> {
 ///
 #[pyfunction]
 pub fn eqeq(tm: &PyAny) -> PyResult<PyObject> {
-    py_func_of_time_arr(cc::eqeq, tm)
+    py_func_of_time_arr(ft::eqeq, tm)
 }
 
 ///
@@ -45,7 +44,7 @@ pub fn eqeq(tm: &PyAny) -> PyResult<PyObject> {
 ///
 #[pyfunction]
 pub fn gast(tm: &PyAny) -> PyResult<PyObject> {
-    py_func_of_time_arr(cc::gast, tm)
+    py_func_of_time_arr(ft::gast, tm)
 }
 
 ///
@@ -72,7 +71,7 @@ pub fn gast(tm: &PyAny) -> PyResult<PyObject> {
 ///
 #[pyfunction]
 pub fn earth_rotation_angle(tm: &PyAny) -> PyResult<PyObject> {
-    py_func_of_time_arr(cc::earth_rotation_angle, tm)
+    py_func_of_time_arr(ft::earth_rotation_angle, tm)
 }
 
 ///
@@ -89,12 +88,12 @@ pub fn earth_rotation_angle(tm: &PyAny) -> PyResult<PyObject> {
 ///
 #[pyfunction]
 pub fn qitrf2tirs(tm: &PyAny) -> PyResult<PyObject> {
-    py_quat_from_time_arr(cc::qitrf2tirs, tm)
+    py_quat_from_time_arr(ft::qitrf2tirs, tm)
 }
 
 #[pyfunction]
 pub fn qtirs2cirs(tm: &PyAny) -> PyResult<PyObject> {
-    py_quat_from_time_arr(cc::qtirs2cirs, tm)
+    py_quat_from_time_arr(ft::qtirs2cirs, tm)
 }
 
 ///
@@ -117,7 +116,7 @@ pub fn qtirs2cirs(tm: &PyAny) -> PyResult<PyObject> {
 ///
 #[pyfunction]
 pub fn qitrf2gcrf(tm: &PyAny) -> PyResult<PyObject> {
-    py_quat_from_time_arr(cc::qitrf2gcrf, tm)
+    py_quat_from_time_arr(ft::qitrf2gcrf, tm)
 }
 
 ///
@@ -138,5 +137,5 @@ pub fn qitrf2gcrf(tm: &PyAny) -> PyResult<PyObject> {
 ///
 #[pyfunction]
 pub fn qteme2itrf(tm: &PyAny) -> PyResult<PyObject> {
-    py_quat_from_time_arr(cc::qteme2itrf, tm)
+    py_quat_from_time_arr(ft::qteme2itrf, tm)
 }

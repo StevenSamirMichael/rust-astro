@@ -3,10 +3,10 @@
 
 /// Time and time bases (UTC, TAI, GPS, TT, etc...)
 pub mod astrotime;
-/// Conversion between coordinate frames
-pub mod coordconversion;
 /// Earth orientation parameters (polar motion, delta-UT1, lenth of day)
 pub mod earth_orientation_params;
+/// Conversion between coordinate frames
+pub mod frametransform;
 /// Zonal gravity model
 pub mod gravity;
 pub mod iau2000;

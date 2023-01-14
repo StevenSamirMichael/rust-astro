@@ -3,7 +3,7 @@ use super::settings::PropSettings;
 use super::types::*;
 use super::utils::linterp_idx;
 use crate::astrotime::AstroTime;
-use crate::coordconversion as cc;
+use crate::frametransform as ft;
 
 use crate::gravity::GRAVITY_JGM3;
 use nalgebra as na;
@@ -51,7 +51,7 @@ impl ForceTerm<SimpleState> for ForceGravity {
                     .into_iter()
                     .map(|x| {
                         let tm = *start_time + x as f64 / 86400.0;
-                        cc::qgcrf2itrf_approx(&tm).quaternion().to_owned()
+                        ft::qgcrf2itrf_approx(&tm).quaternion().to_owned()
                     })
                     .collect();
                 ret

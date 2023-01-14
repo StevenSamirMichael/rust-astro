@@ -8,22 +8,22 @@ pub type Quat = na::UnitQuaternion<f64>;
 use super::earth_orientation_params;
 pub use crate::iau2000::qcirs2gcrs;
 
-// Right-handed rotation of coordinate sytstem about x axis
-// (left-handed rotation of vector)
+/// Right-handed rotation of coordinate sytstem about x axis
+/// (left-handed rotation of vector)
 #[inline]
 pub(crate) fn qrotx(theta: f64) -> Quat {
     Quat::from_axis_angle(&Vec3::x_axis(), -theta)
 }
 
-// Right-handed rotation of coordinate sytstem about y axis
-// (left-handed rotation of vector)
+/// Right-handed rotation of coordinate sytstem about y axis
+/// (left-handed rotation of vector)
 #[inline]
 pub(crate) fn qroty(theta: f64) -> Quat {
     Quat::from_axis_angle(&Vec3::y_axis(), -theta)
 }
 
-// Right-handed rotation of coordinate sytstem about z axis
-// (left-handed rotation of vector)
+/// Right-handed rotation of coordinate sytstem about z axis
+/// (left-handed rotation of vector)
 #[inline]
 pub(crate) fn qrotz(theta: f64) -> Quat {
     Quat::from_axis_angle(&Vec3::z_axis(), -theta)
@@ -76,6 +76,7 @@ pub fn gast(tm: &AstroTime) -> f64 {
 ///
 /// See
 /// [IERS Technical Note 36, Chapter 5](https://www.iers.org/SharedDocs/Publikationen/EN/IERS/Publications/tn/TechnNote36/tn36_043.pdf?__blob=publicationFile&v=1)
+///
 /// Equation 5.15
 ///
 ///

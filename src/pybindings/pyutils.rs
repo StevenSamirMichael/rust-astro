@@ -1,6 +1,6 @@
 use super::pyquaternion::Quaternion;
 use crate::astrotime::{AstroTime, TimeInput, TimeInputType};
-use crate::coordconversion::Quat;
+use crate::frametransform::Quat;
 use crate::utils::AstroResult;
 use nalgebra as na;
 use numpy as np;

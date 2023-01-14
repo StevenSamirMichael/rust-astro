@@ -24,6 +24,7 @@ cty = "0.2.2"
 
 [build-dependencies]
 cc = {version="1.0.74", features=["parallel"]}
+chrono = "0.4.19"
 
 [dev-dependencies]
 

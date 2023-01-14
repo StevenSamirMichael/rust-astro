@@ -2,7 +2,7 @@ use nalgebra as na;
 
 use super::ierstable::IERSTable;
 use crate::astrotime::{AstroTime, Scale};
-use crate::coordconversion::{qroty, qrotz};
+use crate::frametransform::{qroty, qrotz};
 
 type Quat = na::UnitQuaternion<f64>;
 type Delaunay = na::SVector<f64, 14>;
