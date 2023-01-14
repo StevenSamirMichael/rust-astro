@@ -54,6 +54,8 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> Astr
         let d = downloaddir.clone();
         joiners.push(std::thread::spawn(move || download_file(url, &d, true)));
     }
+
+    // Wait for all the threads to funish
     for jh in joiners {
         jh.join().unwrap()?;
     }
