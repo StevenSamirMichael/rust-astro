@@ -6,24 +6,23 @@ use crate::astrotime::AstroTime;
 use crate::coordconversion as cc;
 
 use crate::gravity::GRAVITY_JGM3;
-use nalgebra as na;
+use quaternion::QuaternionD as Quat;
 
 pub struct ForceGravity {
     gravity_order: usize,
     gravity_interp_dt_secs: f64,
     start_time: AstroTime,
-    qitrf2gcrf_arr: Vec<na::Quaternion<f64>>,
+    qitrf2gcrf_arr: Vec<Quat>,
 }
 
 impl ForceTerm<SimpleState> for ForceGravity {
     fn ydot(&self, time: &AstroTime, state: &SimpleState) -> SimpleState {
         let float_idx: f64 = (*time - self.start_time) / self.gravity_interp_dt_secs;
-        let qitrf2gcrf: Quat = na::UnitQuaternion::from_quaternion(
-            linterp_idx(&self.qitrf2gcrf_arr, float_idx).unwrap(),
-        );
+        let qitrf2gcrf = linterp_idx(&self.qitrf2gcrf_arr, float_idx).unwrap();
+
         let pos: Vec3 = Vec3::from_row_slice(state.index((0..3, ..)).as_slice());
-        let pitrf: Vec3 = qitrf2gcrf.conjugate() * pos;
-        let accel: Vec3 = GRAVITY_JGM3.accel(&pitrf, self.gravity_order);
+        let pitrf = qitrf2gcrf.conjugate() * pos.as_slice();
+        let accel = GRAVITY_JGM3.accel(&pitrf, self.gravity_order);
         let accel_gcrf: Vec3 = qitrf2gcrf * accel;
 
         let mut statedot = SimpleState::zeros();
@@ -51,7 +50,7 @@ impl ForceTerm<SimpleState> for ForceGravity {
                     .into_iter()
                     .map(|x| {
                         let tm = *start_time + x as f64 / 86400.0;
-                        cc::qgcrf2itrf_approx(&tm).quaternion().to_owned()
+                        cc::qgcrf2itrf_approx(&tm)
                     })
                     .collect();
                 ret

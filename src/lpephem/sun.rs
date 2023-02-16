@@ -23,7 +23,7 @@ use nalgebra as na;
 ///    at given time.  Units are meters
 ///
 #[inline]
-pub fn pos_gcrf(time: &AstroTime) -> na::Vector3<f64> {
+pub fn pos_gcrf(time: &AstroTime) -> [f64; 3] {
     crate::coordconversion::qmod2gcrs(time) * pos_mod(time)
 }
 
@@ -43,7 +43,7 @@ pub fn pos_gcrf(time: &AstroTime) -> na::Vector3<f64> {
 ///
 /// From Vallado: Valid with accuracy of .01 degrees from 1950 to 2050
 ///
-pub fn pos_mod(time: &AstroTime) -> na::Vector3<f64> {
+pub fn pos_mod(time: &AstroTime) -> [f64; 3] {
     let t: f64 = (time.to_jd(TimeScale::TDB) - 2451545.0) / 36525.0;
     #[allow(non_upper_case_globals)]
     const deg2rad: f64 = std::f64::consts::PI / 180.;
@@ -66,11 +66,11 @@ pub fn pos_mod(time: &AstroTime) -> na::Vector3<f64> {
     let r: f64 =
         univ::AU * (1.000140612 - 0.016708617 * f64::cos(M) - 0.000139589 * f64::cos(2. * M));
 
-    na::Vector3::<f64>::new(
+    [
         r * f64::cos(lambda_ecliptic),
         r * f64::sin(lambda_ecliptic) * f64::cos(epsilon),
         r * f64::sin(lambda_ecliptic) * f64::sin(epsilon),
-    )
+    ]
 }
 
 ///

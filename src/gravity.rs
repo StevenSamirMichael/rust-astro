@@ -4,6 +4,7 @@ use std::io::{self, BufRead};
 use std::path::PathBuf;
 
 use nalgebra as na;
+use ndarray;
 type CoeffTable = na::DMatrix<f64>;
 
 type DivisorTable = na::SMatrix<f64, 20, 20>;
@@ -83,7 +84,8 @@ pub struct Gravity {
 }
 
 type Legendre<const N: usize> = na::SMatrix<f64, N, N>;
-type Vec3 = na::Vector3<f64>;
+//type Vec3 = na::Vector3<f64>;
+type Vec3 = ndarray::Array1<f64>;
 
 ///
 /// Return acceleration due to Earth gravity at the input position. The
@@ -150,7 +152,7 @@ impl Gravity {
         v: &Legendre<NP4>,
         w: &Legendre<NP4>,
     ) -> Vec3 {
-        let mut accel = Vec3::zeros();
+        let mut accel = ndarray::array![0.0, 0.0, 0.0];
 
         for n in 0..(N + 1) {
             for m in 0..(n + 1) {
@@ -184,7 +186,7 @@ impl Gravity {
     }
 
     fn compute_legendre<const NP4: usize>(&self, pos: &Vec3) -> (Legendre<NP4>, Legendre<NP4>) {
-        let rsq = pos.norm_squared();
+        let rsq = pos[0] * pos[0] + pos[1] * pos[1] + pos[2] * pos[2];
         let xfac = pos[0] * self.radius / rsq;
         let yfac = pos[1] * self.radius / rsq;
         let zfac = pos[2] * self.radius / rsq;
@@ -374,7 +376,7 @@ mod tests {
         let coord = ITRFCoord::from_geodetic_deg(latitude, longitude, altitude);
         let gravitation: Vec3 = g.accel(&coord.into(), 16);
         let centrifugal: Vec3 =
-            Vec3::new(coord.itrf[0], coord.itrf[1], 0.0) * OMEGA_EARTH * OMEGA_EARTH;
+            ndarray::array![coord.itrf[0], coord.itrf[1], 0.0] * OMEGA_EARTH * OMEGA_EARTH;
         let gravity = gravitation + centrifugal;
 
         // Check gravitation matches the reference value

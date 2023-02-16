@@ -1,11 +1,9 @@
-use nalgebra as na;
-
 use super::ierstable::IERSTable;
 use crate::astrotime::{AstroTime, Scale};
 use crate::coordconversion::{qroty, qrotz};
 
-type Quat = na::UnitQuaternion<f64>;
-type Delaunay = na::SVector<f64, 14>;
+pub type Delaunay = [f64; 14];
+type Quat = quaternion::QuaternionD;
 
 use std::f64::consts::PI;
 
@@ -23,7 +21,7 @@ pub fn qcirs2gcrs(tm: &AstroTime) -> Quat {
     let t_tt = (tm.to_mjd(Scale::TT) - 51544.5) / 36525.0;
     const ASEC2RAD: f64 = PI / 180.0 / 3600.0;
 
-    let mut delaunay = Delaunay::zeros();
+    let mut delaunay = [0.0; 14];
 
     // Arguments for lunisolar nutation
     // Equation 5.43 in IERS technical note 36

@@ -7,11 +7,12 @@ const RAD2DEG: f64 = 180. / PI;
 pub const WGS84_A: f64 = 6378137.0;
 pub const WGS84_F: f64 = 0.003352810664747;
 
-use nalgebra as na;
-pub type Vec3 = na::Vector3<f64>;
-pub type Quat = na::UnitQuaternion<f64>;
+use ndarray::array;
 
-#[derive(PartialEq, PartialOrd, Copy, Clone)]
+pub type Vec3 = ndarray::Array1<f64>;
+pub type Quat = quaternion::QuaternionD;
+
+#[derive(PartialEq, Clone)]
 pub struct ITRFCoord {
     pub itrf: Vec3,
 }
@@ -57,7 +58,7 @@ impl std::ops::Sub<ITRFCoord> for ITRFCoord {
 impl std::convert::From<[f64; 3]> for ITRFCoord {
     fn from(v: [f64; 3]) -> Self {
         ITRFCoord {
-            itrf: Vec3::from(v),
+            itrf: ndarray::arr1(v.as_slice()),
         }
     }
 }
@@ -100,7 +101,7 @@ impl ITRFCoord {
     ///
     pub fn from_vec(v: [f64; 3]) -> ITRFCoord {
         ITRFCoord {
-            itrf: Vec3::from(v),
+            itrf: ndarray::arr1(v.as_slice()),
         }
     }
     /// Returns an ITRF Coordinate given the geodetic inputs
@@ -132,11 +133,11 @@ impl ITRFCoord {
         let s = f2 * c;
 
         ITRFCoord {
-            itrf: Vec3::from([
+            itrf: ndarray::array![
                 (WGS84_A * c + hae) * cosp * cosl,
                 (WGS84_A * c + hae) * cosp * sinl,
                 (WGS84_A * s + hae) * sinp,
-            ]),
+            ],
         }
     }
 
@@ -232,8 +233,7 @@ impl ITRFCoord {
     #[inline]
     pub fn q_ned2itrf(&self) -> Quat {
         let (lat, lon, _) = self.to_geodetic_rad();
-        Quat::from_axis_angle(&Vec3::z_axis(), lon)
-            * Quat::from_axis_angle(&Vec3::y_axis(), -lat - PI / 2.0)
+        Quat::rotz(lon) * Quat::roty(-lat - PI / 2.0)
     }
 
     /// Convert coordinate to a North-East-Down (NED)
@@ -270,8 +270,7 @@ impl ITRFCoord {
     /// ITRF coordinate frame
     pub fn q_enu2itrf(&self) -> Quat {
         let (lat, lon, _) = self.to_geodetic_rad();
-        Quat::from_axis_angle(&Vec3::z_axis(), lon + PI / 2.0)
-            * Quat::from_axis_angle(&Vec3::x_axis(), PI / 2.0 - lat)
+        Quat::rotz(lon + PI / 2.0) * Quat::rotx(PI / 2.0 - lat)
     }
 
     /// Convert coordinate to a East-North-Up (ENU)
@@ -337,7 +336,7 @@ mod tests {
         assert!(ned[1].abs() < 1.0e-6);
         assert!(((ned[2] + 100.0) / 100.0).abs() < 1.0e-6);
 
-        let dvec = Vec3::from([-100.0, -200.0, 300.0]);
+        let dvec = array![-100.0, -200.0, 300.0];
         let itrf3 = itrf2 + itrf2.q_ned2itrf() * dvec;
         let nedvec = itrf3.to_ned(&itrf2);
         let itrf4 = itrf2 + itrf2.q_enu2itrf() * dvec;

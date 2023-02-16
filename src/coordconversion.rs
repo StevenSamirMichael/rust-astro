@@ -1,32 +1,25 @@
 use super::astrotime::{AstroTime, Scale};
 use std::f64::consts::PI;
 
-use nalgebra as na;
-type Vec3 = na::Vector3<f64>;
-pub type Quat = na::UnitQuaternion<f64>;
+type Vec3 = [f64; 3];
+pub type Quat = quaternion::QuaternionD;
 
 use super::earth_orientation_params;
 pub use crate::iau2000::qcirs2gcrs;
 
-// Right-handed rotation of coordinate sytstem about x axis
-// (left-handed rotation of vector)
-#[inline]
-pub(crate) fn qrotx(theta: f64) -> Quat {
-    Quat::from_axis_angle(&Vec3::x_axis(), -theta)
+#[inline(always)]
+pub fn qrotz(a: f64) -> Quat {
+    Quat::rotz(a)
 }
 
-// Right-handed rotation of coordinate sytstem about y axis
-// (left-handed rotation of vector)
-#[inline]
-pub(crate) fn qroty(theta: f64) -> Quat {
-    Quat::from_axis_angle(&Vec3::y_axis(), -theta)
+#[inline(always)]
+pub fn qrotx(a: f64) -> Quat {
+    Quat::rotx(a)
 }
 
-// Right-handed rotation of coordinate sytstem about z axis
-// (left-handed rotation of vector)
-#[inline]
-pub(crate) fn qrotz(theta: f64) -> Quat {
-    Quat::from_axis_angle(&Vec3::z_axis(), -theta)
+#[inline(always)]
+pub fn qroty(a: f64) -> Quat {
+    Quat::roty(a)
 }
 
 ///
@@ -295,7 +288,7 @@ pub fn qtirs2cirs(tm: &AstroTime) -> Quat {
 mod tests {
     use super::*;
     use crate::astrotime::{AstroTime, Scale};
-    type Vec3 = na::Vector3<f64>;
+    type Vec3 = [f64; 3];
 
     #[test]
     fn test_gmst() {
@@ -317,7 +310,7 @@ mod tests {
         // Input time
         let tm = &AstroTime::from_datetime(2004, 4, 6, 7, 51, 28.386009);
         // Input terrestrial location
-        let pitrf = Vec3::new(-1033.4793830, 7901.2952754, 6380.3565958);
+        let pitrf = [-1033.4793830, 7901.2952754, 6380.3565958];
         let t_tt = (tm.to_jd(Scale::TT) - 2451545.0) / 36525.0;
         assert!((t_tt - 0.0426236319).abs() < 1.0e-8);
 

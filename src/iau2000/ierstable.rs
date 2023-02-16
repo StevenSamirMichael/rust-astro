@@ -79,7 +79,7 @@ impl IERSTable {
         Ok(table)
     }
 
-    pub fn compute(&self, t_tt: f64, delaunay: &na::SVector<f64, 14>) -> f64 {
+    pub fn compute(&self, t_tt: f64, delaunay: &[f64; 14]) -> f64 {
         let mut retval: f64 = 0.0;
         for i in 0..6 {
             // return if finished
