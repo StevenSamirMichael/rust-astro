@@ -7,9 +7,8 @@ const RAD2DEG: f64 = 180. / PI;
 pub const WGS84_A: f64 = 6378137.0;
 pub const WGS84_F: f64 = 0.003352810664747;
 
-use nalgebra as na;
-pub type Vec3 = na::Vector3<f64>;
-pub type Quat = na::UnitQuaternion<f64>;
+use crate::types::Quat;
+use crate::types::Vec3;
 
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
 pub struct ITRFCoord {

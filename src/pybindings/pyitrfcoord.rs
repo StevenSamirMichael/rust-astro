@@ -1,7 +1,8 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
-use crate::itrfcoord::{ITRFCoord, Vec3};
+use crate::itrfcoord::ITRFCoord;
+use crate::types::Vec3;
 
 use super::Quaternion;
 
