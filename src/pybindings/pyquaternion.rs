@@ -1,6 +1,5 @@
 use nalgebra as na;
 use numpy as np;
-use numpy::ndarray::array;
 use numpy::ToPyArray;
 use pyo3::prelude::*;
 
@@ -45,16 +44,15 @@ impl Quaternion {
 
     #[staticmethod]
     fn from_axis_angle(axis: np::PyReadonlyArray1<f64>, angle: f64) -> PyResult<Self> {
-        let v: Vec3 = Vec3::new(axis.as_array()[0], axis.as_array()[1], axis.as_array()[2]);
+        let v = Vec3::from_row_slice(axis.as_slice().unwrap());
         let u = na::UnitVector3::try_new(v, 1.0e-9);
         match u {
             Some(ax) => Ok(Quaternion {
                 inner: Quat::from_axis_angle(&ax, angle),
             }),
-            None => {
-                let err = pyo3::exceptions::PyArithmeticError::new_err("Axis norm is 0");
-                Err(err)
-            }
+            None => Err(pyo3::exceptions::PyArithmeticError::new_err(
+                "Axis norm is 0",
+            )),
         }
     }
 
@@ -86,16 +84,20 @@ impl Quaternion {
             None => Vec3::x_axis(),
         };
         pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
-            Ok(array![a[0], a[1], a[2]].to_pyarray(py).to_object(py))
+            Ok(numpy::ndarray::arr1(a.as_slice())
+                .to_pyarray(py)
+                .to_object(py))
         })
     }
 
+    #[getter]
     fn conj(&self) -> PyResult<Quaternion> {
         Ok(Quaternion {
             inner: self.inner.conjugate(),
         })
     }
 
+    #[getter]
     fn conjugate(&self) -> PyResult<Quaternion> {
         Ok(Quaternion {
             inner: self.inner.conjugate(),

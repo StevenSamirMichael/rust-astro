@@ -158,6 +158,7 @@ impl JPLEphem {
         if !path.is_file() {
             panic!("Cannot open JPL Ephemeris file");
         }
+        println!("loading {path:?}");
 
         // Read in bytes
         let raw = std::fs::read(path)?;

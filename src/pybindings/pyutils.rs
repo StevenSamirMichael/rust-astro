@@ -8,7 +8,7 @@ use numpy::ndarray;
 use numpy::{PyArray1, PyArray2};
 use pyo3::prelude::*;
 
-type Vec3 = nalgebra::Vector3<f64>;
+use crate::types::Vec3;
 
 pub fn py_vec3_of_time_arr(
     cfunc: &dyn Fn(&AstroTime) -> Vec3,

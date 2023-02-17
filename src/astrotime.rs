@@ -590,7 +590,7 @@ mod tests {
         use chrono::prelude::*;
 
         //let dt = Utc.ymd(2014, 7, 8).and_hms(9, 10, 11); // `2014-07-08T09:10:11Z`
-        let dt = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 100).unwrap();
+        let dt = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11).unwrap();
 
         let ts = AstroTime::from(dt);
         let (year, mon, day, hour, min, sec) = ts.to_datetime();

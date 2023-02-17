@@ -1,6 +1,9 @@
 //! Is this where to-level documentation goes?
 //! # Introduction
 
+// Type definitions
+pub mod types;
+
 /// Time and time bases (UTC, TAI, GPS, TT, etc...)
 pub mod astrotime;
 /// Earth orientation parameters (polar motion, delta-UT1, lenth of day)
@@ -32,6 +35,7 @@ pub mod univ;
 /// Utility functions
 pub mod utils;
 
+// Objects available at crate level
 pub use astrotime::AstroTime;
 pub use astrotime::Scale as TimeScale;
 pub use itrfcoord::ITRFCoord;
