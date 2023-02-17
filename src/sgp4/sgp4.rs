@@ -3,9 +3,9 @@ use super::sgp4init::sgp4init;
 
 use crate::astrotime::{Scale, TimeInput, TimeInputType};
 use crate::tle::TLE;
-use nalgebra::{Const, Dynamic, OMatrix};
+use nalgebra::{Const, Dyn, OMatrix};
 
-type StateArr = OMatrix<f64, Const<3>, Dynamic>;
+type StateArr = OMatrix<f64, Const<3>, Dyn>;
 pub type SGP4State = (StateArr, StateArr);
 pub type SGP4Result = Result<SGP4State, (i32, String)>;
 

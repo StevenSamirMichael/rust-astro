@@ -313,7 +313,7 @@ impl JPLEphem {
         for ix in 0..3 {
             let m = self
                 .cheby
-                .fixed_slice::<N, 1>(offset0 + N * ix, int_num as usize);
+                .fixed_view::<N, 1>(offset0 + N * ix, int_num as usize);
             pos[ix] = (m.transpose() * t)[(0, 0)];
         }
 
@@ -436,7 +436,7 @@ impl JPLEphem {
         for ix in 0..3 {
             let m = self
                 .cheby
-                .fixed_slice::<N, 1>(offset0 + N * ix, int_num as usize);
+                .fixed_view::<N, 1>(offset0 + N * ix, int_num as usize);
             pos[ix] = (m.transpose() * t)[(0, 0)];
             vel[ix] = (m.transpose() * v)[(0, 0)];
         }

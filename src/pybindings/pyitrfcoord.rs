@@ -17,7 +17,7 @@ const DEG2RAD: f64 = PI / 180.;
 impl PyITRFCoord {
     //! Represent a coordinate in the ITRF (International Terrestrial Reference Frame)
     #[new]
-    #[args(x = "0.0", y = "0.0", z = "0.0")]
+    #[pyo3(signature=(x = 0.0, y = 0.0, z = 0.0))]
     fn new(x: f64, y: f64, z: f64) -> PyResult<Self> {
         Ok(PyITRFCoord {
             inner: ITRFCoord::from_vec([x, y, z]),
@@ -42,7 +42,7 @@ impl PyITRFCoord {
     /// altitude: height above ellipsoid, meters
     ///
     #[staticmethod]
-    #[args(latitude = "0.0", longitude = "0.0", altitude = "0.0", kwargs = "**")]
+    #[pyo3(signature=(latitude=0.0, longitude=0.0, altitude=0.0, **kwargs))]
     fn from_geodetic(
         mut latitude: f64,
         mut longitude: f64,

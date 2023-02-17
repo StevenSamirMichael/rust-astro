@@ -82,7 +82,8 @@ impl IntoPy<PyObject> for &GravityModel {
 ///               "Satellite Orbits: Models, Methods, Applications",
 ///               O. Montenbruck and B. Gill, Springer, 2012.
 ///
-#[pyfunction(kwds = "**")]
+#[pyfunction]
+#[pyo3(signature=(pos, **kwds))]
 pub fn gravity(pos: &PyAny, kwds: Option<&PyDict>) -> PyResult<PyObject> {
     let mut order: usize = 6;
     let mut model: GravModel = GravModel::jgm3;

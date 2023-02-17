@@ -160,7 +160,7 @@ impl PyAstroTime {
     ///    utc_timezone: Optional bool indicating use UTC as timezone
     ///                  if not passed in, defaults to true
     ///
-    #[args(utc = "true")]
+    #[pyo3(signature = (utc=true))]
     fn datetime(&self, utc: bool) -> PyResult<PyObject> {
         pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
             let timestamp: f64 = self.to_unixtime();

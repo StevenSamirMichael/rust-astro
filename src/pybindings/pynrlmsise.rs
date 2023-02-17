@@ -25,7 +25,8 @@ use crate::AstroTime;
 ///   d  : Density in kg/m^3
 ///   k  : Temperature in Kelvin
 ///
-#[pyfunction(option_kwds = "**")]
+#[pyfunction]
+#[pyo3(signature=(alt_km, **option_kwds))]
 pub fn nrlmsise00(alt_km: f64, option_kwds: Option<&PyDict>) -> PyResult<(f64, f64)> {
     let mut lat: Option<f64> = None;
     let mut lon: Option<f64> = None;

@@ -2,7 +2,7 @@ mod force_gravity;
 mod force_moon;
 mod force_sun;
 mod forceterm;
-pub mod propagator;
+//pub mod propagator;
 /// Propagator Settings
 mod settings;
 pub mod types;

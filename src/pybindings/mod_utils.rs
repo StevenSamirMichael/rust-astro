@@ -30,7 +30,8 @@ use std::path::PathBuf;
 /// Note that files update daily will always be downloaded independed of
 /// overwrite flag
 ///
-#[pyfunction(kwds = "**")]
+#[pyfunction]
+#[pyo3(signature=(**kwds))]
 fn update_datafiles(kwds: Option<&PyDict>) -> PyResult<()> {
     let overwrite_files = match kwds {
         None => false,
