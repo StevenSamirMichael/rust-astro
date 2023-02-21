@@ -342,12 +342,13 @@ impl Gravity {
 }
 
 #[cfg(test)]
+
 mod tests {
 
     use super::Gravity;
 
     use crate::itrfcoord::ITRFCoord;
-    use crate::itrfcoord::Vec3;
+    use crate::types::Vec3;
     use crate::univ::OMEGA_EARTH;
     use std::f64::consts::PI;
 

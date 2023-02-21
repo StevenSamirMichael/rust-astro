@@ -7,7 +7,7 @@ const RAD2DEG: f64 = 180. / PI;
 pub const WGS84_A: f64 = 6378137.0;
 pub const WGS84_F: f64 = 0.003352810664747;
 
-use crate::types::Quat;
+use crate::types::Quaternion as Quat;
 use crate::types::Vec3;
 
 #[derive(PartialEq, PartialOrd, Copy, Clone)]

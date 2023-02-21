@@ -105,7 +105,7 @@ pub fn sgp4init(
     xmo: f64,
     xno_kozai: f64,
     xnodeo: f64,
-) -> SatRec {
+) -> Result<SatRec, i32> {
     /* --------------------- local variables ------------------------ */
     let mut ao: f64 = 0.0;
     let mut ainv: f64 = 0.0;
@@ -656,13 +656,12 @@ pub fn sgp4init(
     // sgp4fix take out check to let satellites process until they are actually below earth surface
     //       if(satrec.error == 0)
     //sgp4(satrec, 0.0, r, v);
-    let mut r: [f64; 3] = [0.0, 0.0, 0.0];
-    let mut v: [f64; 3] = [0.0, 0.0, 0.0];
-    sgp4_lowlevel(&mut satrec, 0.0, &mut r, &mut v);
+
+    sgp4_lowlevel(&mut satrec, 0.0)?;
 
     satrec.init = 'n';
 
     //#include "debug6.cpp"
     //sgp4fix return boolean. satrec.error contains any error codes
-    satrec
+    Ok(satrec)
 } // sgp4init

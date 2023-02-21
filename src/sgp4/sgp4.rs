@@ -1,7 +1,7 @@
-use super::sgp4_lowlevel::sgp4_lowlevel;
+use super::sgp4_lowlevel::sgp4_lowlevel; // propagator
 use super::sgp4init::sgp4init;
 
-use crate::astrotime::{Scale, TimeInput, TimeInputType};
+use crate::astrotime::{AstroTime, Scale};
 use crate::tle::TLE;
 use nalgebra::{Const, Dyn, OMatrix};
 
@@ -14,7 +14,7 @@ use std::f64::consts::PI;
 use super::{GravConst, OpsMode};
 
 #[inline]
-pub fn sgp4(tle: &TLE, tm: &impl TimeInputType) -> SGP4Result {
+pub fn sgp4(tle: &mut TLE, tm: &[AstroTime]) -> SGP4Result {
     sgp4_full(tle, tm, GravConst::WGS84, OpsMode::IMPROVED)
 }
 
@@ -82,14 +82,14 @@ const SGP4_ERRS: [&str; 7] = [
 /// ```
 ///
 pub fn sgp4_full<'a>(
-    tle: &TLE,
-    tm: &impl TimeInputType,
+    tle: &mut TLE,
+    tm: &[AstroTime],
     gravconst: GravConst,
     opsmode: OpsMode,
 ) -> SGP4Result {
     const TWOPI: f64 = PI * 2.0;
 
-    if tle.satrec.borrow().is_none() {
+    if tle.satrec.is_none() {
         let no = tle.mean_motion / (1440.0 / TWOPI);
         let bstar = tle.bstar;
         let ndot = tle.mean_motion_dot / (1440.0 * 1440.0 / TWOPI);
@@ -101,7 +101,7 @@ pub fn sgp4_full<'a>(
         let ecco = tle.eccen;
         let jdsatepoch = tle.epoch.to_jd(Scale::UTC);
 
-        tle.satrec.replace(Some(sgp4init(
+        match sgp4init(
             gravconst,
             opsmode,
             &"satno",
@@ -115,59 +115,29 @@ pub fn sgp4_full<'a>(
             mo,
             no,
             nodeo,
-        )));
+        ) {
+            Ok(sr) => tle.satrec = Some(sr),
+            Err(e) => return Err((e, String::from(SGP4_ERRS[e as usize]))),
+        }
     }
 
-    // Get the underlying satrec as mutable from RefMut object
-    // Checking so that it is only borrowed once
-    let mut satrecmut = match tle.satrec.try_borrow_mut() {
-        Ok(v) => v,
-        Err(e) => {
-            return Err((
-                -1,
-                String::from(format!(
-                    "Error: \"{}\",  is more than one thread trying to run SGP4 on TLE?",
-                    e.to_string()
-                )),
-            ))
-        }
-    };
-    // Get the underlying mutable reference
-    let s = satrecmut.as_mut().unwrap();
+    let mut s = tle.satrec.as_mut().unwrap();
 
-    match tm.to_time_input() {
-        // Single time input
-        TimeInput::Single(thetime) => {
-            let mut r: [f64; 3] = [0.0, 0.0, 0.0];
-            let mut v: [f64; 3] = [0.0, 0.0, 0.0];
-            let tsince = (thetime - tle.epoch) * 1440.0;
-            sgp4_lowlevel(s, tsince, &mut r, &mut v);
+    let n = tm.len();
+    let mut rarr = StateArr::zeros(n);
+    let mut varr = StateArr::zeros(n);
+    for (pos, thetime) in tm.iter().enumerate() {
+        let tsince = (*thetime - tle.epoch) * 1440.0;
 
-            if s.error != 0 {
-                return Err((s.error as i32, String::from(SGP4_ERRS[s.error as usize])));
-            }
-            Ok((
-                StateArr::from_row_slice(&r) * 1.0e3,
-                StateArr::from_row_slice(&v) * 1.0e3,
-            ))
-        }
-        TimeInput::Array(tarr) => {
-            let n = tarr.borrow().len();
-            let mut rarr = StateArr::zeros(n);
-            let mut varr = StateArr::zeros(n);
-            for (pos, thetime) in tarr.borrow().iter().enumerate() {
-                let mut r: [f64; 3] = [0.0, 0.0, 0.0];
-                let mut v: [f64; 3] = [0.0, 0.0, 0.0];
-                let tsince = (*thetime - tle.epoch) * 1440.0;
-                sgp4_lowlevel(s, tsince, &mut r, &mut v);
+        match sgp4_lowlevel(&mut s, tsince) {
+            Ok((r, v)) => {
                 rarr.index_mut((.., pos)).copy_from_slice(&r);
                 varr.index_mut((.., pos)).copy_from_slice(&v);
             }
-
-            Ok((rarr * 1.0e3, varr * 1.0e3))
+            Err(e) => return Err((e, String::from(SGP4_ERRS[e as usize]))),
         }
-        TimeInput::Error(s) => Err((-1, String::from(s))),
     }
+    Ok((rarr * 1.0e3, varr * 1.0e3))
 }
 
 #[cfg(test)]
@@ -191,7 +161,7 @@ mod tests {
             TLE::load_3line(&line0.to_string(), &line1.to_string(), &line2.to_string()).unwrap();
         let tm = tle.epoch;
 
-        match sgp4(&mut tle, &tm) {
+        match sgp4(&mut tle, &[tm]) {
             Ok((pos, vel)) => {
                 println!("pos = {}", pos);
                 println!("vel = {}", vel);
@@ -258,7 +228,7 @@ mod tests {
                 let tm = tle.epoch + testvec[0] / 86400.0;
 
                 // Test vectors assume WGS72 gravity model and AFSPC ops mode
-                match sgp4_full(&mut tle, &tm, GravConst::WGS72, OpsMode::AFSPC) {
+                match sgp4_full(&mut tle, &[tm], GravConst::WGS72, OpsMode::AFSPC) {
                     Ok((pos, vel)) => {
                         for idx in 0..3 {
                             // Account for truncation in truth data

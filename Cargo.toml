@@ -1,5 +1,5 @@
 [package]
-name = "rust_astro"
+name = "astro"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,12 +7,12 @@ edition = "2021"
 # https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name="astro"
-crate-type = ["cdylib"]
+crate-type = ["dylib"]
 
 
 [dependencies]
 nalgebra = "0.32.1"
-nix = "0.26.2"
+libc = "0.2.139"
 lazy_static = "1.4.0"
 chrono = "0.4.19"
 ode_solvers = "0.3.7"

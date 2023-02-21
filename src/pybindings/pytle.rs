@@ -114,8 +114,8 @@ impl IntoPy<PyObject> for TLE {
     }
 }
 
-impl<'b> From<&'b PyTLE> for &'b TLE {
-    fn from<'a>(s: &'a PyTLE) -> &'a TLE {
-        &s.inner
+impl<'b> From<&'b mut PyTLE> for &'b mut TLE {
+    fn from<'a>(s: &'a mut PyTLE) -> &'a mut TLE {
+        &mut s.inner
     }
 }

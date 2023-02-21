@@ -3,10 +3,9 @@ use pyo3::types::timezone_utc;
 use pyo3::types::PyDateTime;
 use pyo3::types::PyTzInfo;
 
-use crate::astrotime::{self, AstroTime, Scale, TimeInput, TimeInputType};
+use crate::astrotime::{self, AstroTime, Scale};
 
 use numpy as np;
-use std::cell::RefCell;
 
 #[pyclass(name = "timescale")]
 pub enum PyTimeScale {
@@ -328,24 +327,30 @@ impl<'b> From<&'b PyAstroTime> for &'b astrotime::AstroTime {
     }
 }
 
-impl TimeInputType for &PyAny {
-    fn to_time_input(&self) -> TimeInput {
+pub trait ToTimeVec {
+    fn to_time_vec(&self) -> PyResult<Vec<AstroTime>>;
+}
+
+impl ToTimeVec for &PyAny {
+    fn to_time_vec(&self) -> PyResult<Vec<AstroTime>> {
         // "Scalar" time input case
         if self.is_instance_of::<PyAstroTime>().unwrap() {
             let tm: PyAstroTime = self.extract().unwrap();
-            TimeInput::Single(tm.inner)
+            Ok(vec![tm.inner.clone()])
         }
         // List case
         else if self.is_instance_of::<pyo3::types::PyList>().unwrap() {
             match self.extract::<Vec<PyAstroTime>>() {
-                Ok(v) => TimeInput::Array(RefCell::new(v.into_iter().map(|x| x.inner).collect())),
-                Err(e) => TimeInput::Error(e.to_string()),
+                Ok(v) => Ok(v.iter().map(|x| x.inner).collect::<Vec<_>>()),
+                Err(e) => Err(pyo3::exceptions::PyRuntimeError::new_err(format!(
+                    "Not a list of astro::AstroTime: {e}"
+                ))),
             }
         }
         // numpy array case
         else if self.is_instance_of::<numpy::PyArray1<PyObject>>().unwrap() {
             match self.extract::<numpy::PyReadonlyArray1<PyObject>>() {
-                Ok(v) => pyo3::Python::with_gil(|py| -> TimeInput {
+                Ok(v) => pyo3::Python::with_gil(|py| -> PyResult<Vec<AstroTime>> {
                     // Extract times from numpya array of objects
                     let tmarray: Result<Vec<AstroTime>, _> = v
                         .as_array()
@@ -358,16 +363,21 @@ impl TimeInputType for &PyAny {
                         })
                         .collect();
                     if !tmarray.is_ok() {
-                        return TimeInput::Error(String::from("Invalid data type in numpy array"));
+                        Err(pyo3::exceptions::PyRuntimeError::new_err(
+                            "Invalid AstroTime input",
+                        ))
+                    } else {
+                        Ok(tmarray.unwrap())
                     }
-                    TimeInput::Array(RefCell::new(tmarray.unwrap()))
                 }),
 
-                Err(e) => TimeInput::Error(e.to_string()),
+                Err(e) => Err(pyo3::exceptions::PyRuntimeError::new_err(format!(
+                    "Invalid AstroTime input: {e}"
+                ))),
             }
         } else {
-            TimeInput::Error(String::from(
-                "Input is not astro::time or ndarray or list of astro::time",
+            Err(pyo3::exceptions::PyRuntimeError::new_err(
+                "Invalid AstroTime input",
             ))
         }
     }

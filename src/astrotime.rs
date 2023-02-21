@@ -47,7 +47,6 @@ extern crate chrono;
 
 use std::f64::consts::PI;
 
-use std::cell::RefCell;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
@@ -538,31 +537,6 @@ fn date2mjd_utc(year: u32, month: u32, day: u32) -> i32 {
     jdn = jdn - (3 * ((g + A) / 100)) / 4 - C;
 
     (jdn - 2400001) as i32
-}
-
-// I know references would be better, but I can't figure out
-// how to make this work with the optional python bindings
-// Uggh....
-pub enum TimeInput {
-    Single(AstroTime),
-    Array(RefCell<Vec<AstroTime>>),
-    Error(String),
-}
-
-pub trait TimeInputType {
-    fn to_time_input(&self) -> TimeInput;
-}
-
-impl TimeInputType for AstroTime {
-    fn to_time_input<'a>(&self) -> TimeInput {
-        TimeInput::Single(*self)
-    }
-}
-
-impl TimeInputType for &Vec<AstroTime> {
-    fn to_time_input(&self) -> TimeInput {
-        TimeInput::Array(RefCell::new(self.to_vec()))
-    }
 }
 
 #[cfg(test)]

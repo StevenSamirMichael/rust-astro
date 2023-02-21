@@ -1,6 +1,5 @@
 use crate::astroerr;
 use crate::AstroResult;
-use nix::libc;
 use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
 

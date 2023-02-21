@@ -90,7 +90,7 @@ use super::satrec::SatRec;
 
 use std::f64::consts::PI;
 
-pub fn sgp4_lowlevel(satrec: &mut SatRec, tsince: f64, r: &mut [f64; 3], v: &mut [f64; 3]) -> bool {
+pub fn sgp4_lowlevel(satrec: &mut SatRec, tsince: f64) -> Result<([f64; 3], [f64; 3]), i32> {
     let am: f64;
     let axnl: f64;
     let aynl: f64;
@@ -279,7 +279,7 @@ pub fn sgp4_lowlevel(satrec: &mut SatRec, tsince: f64, r: &mut [f64; 3], v: &mut
         //         printf("# error nm %f\n", nm);
         satrec.error = 2;
         // sgp4fix add return
-        return false;
+        return Err(satrec.error as i32);
     }
     am = f64::powf(satrec.xke / nm, X2O3) * tempa * tempa;
     nm = satrec.xke / f64::powf(am, 1.5);
@@ -291,7 +291,7 @@ pub fn sgp4_lowlevel(satrec: &mut SatRec, tsince: f64, r: &mut [f64; 3], v: &mut
         //         printf("# error em %f\n", em);
         satrec.error = 1;
         // sgp4fix to return if there is an error in eccentricity
-        return false;
+        return Err(satrec.error as i32);
     }
     // sgp4fix fix tolerance to avoid a divide by zero
     if em < 1.0e-6 {
@@ -380,7 +380,7 @@ pub fn sgp4_lowlevel(satrec: &mut SatRec, tsince: f64, r: &mut [f64; 3], v: &mut
             //            printf("# error ep %f\n", ep);
             satrec.error = 3;
             // sgp4fix add return
-            return false;
+            return Err(satrec.error as i32);
         }
     } // if method = d
 
@@ -430,72 +430,85 @@ pub fn sgp4_lowlevel(satrec: &mut SatRec, tsince: f64, r: &mut [f64; 3], v: &mut
     esine = axnl * sineo1 - aynl * coseo1;
     el2 = axnl * axnl + aynl * aynl;
     pl = am * (1.0 - el2);
+
     if pl < 0.0 {
         //         printf("# error pl %f\n", pl);
         satrec.error = 4;
         // sgp4fix add return
-        return false;
-    } else {
-        rl = am * (1.0 - ecose);
-        rdotl = f64::sqrt(am) * esine / rl;
-        rvdotl = f64::sqrt(pl) / rl;
-        betal = f64::sqrt(1.0 - el2);
-        temp = esine / (1.0 + betal);
-        sinu = am / rl * (sineo1 - aynl - axnl * temp);
-        cosu = am / rl * (coseo1 - axnl + aynl * temp);
-        su = f64::atan2(sinu, cosu);
-        sin2u = (cosu + cosu) * sinu;
-        cos2u = 1.0 - 2.0 * sinu * sinu;
-        temp = 1.0 / pl;
-        temp1 = 0.5 * satrec.j2 * temp;
-        temp2 = temp1 * temp;
+        return Err(satrec.error as i32);
+    }
 
-        /* -------------- update for short period periodics ------------ */
-        if satrec.method == 'd' {
-            cosisq = cosip * cosip;
-            satrec.con41 = 3.0 * cosisq - 1.0;
-            satrec.x1mth2 = 1.0 - cosisq;
-            satrec.x7thm1 = 7.0 * cosisq - 1.0;
-        }
-        mrt = rl * (1.0 - 1.5 * temp2 * betal * satrec.con41) + 0.5 * temp1 * satrec.x1mth2 * cos2u;
-        su = su - 0.25 * temp2 * satrec.x7thm1 * sin2u;
-        xnode = nodep + 1.5 * temp2 * cosip * sin2u;
-        xinc = xincp + 1.5 * temp2 * cosip * sinip * cos2u;
-        mvt = rdotl - nm * temp1 * satrec.x1mth2 * sin2u / satrec.xke;
-        rvdot = rvdotl + nm * temp1 * (satrec.x1mth2 * cos2u + 1.5 * satrec.con41) / satrec.xke;
+    rl = am * (1.0 - ecose);
+    rdotl = f64::sqrt(am) * esine / rl;
+    rvdotl = f64::sqrt(pl) / rl;
+    betal = f64::sqrt(1.0 - el2);
+    temp = esine / (1.0 + betal);
+    sinu = am / rl * (sineo1 - aynl - axnl * temp);
+    cosu = am / rl * (coseo1 - axnl + aynl * temp);
+    su = f64::atan2(sinu, cosu);
+    sin2u = (cosu + cosu) * sinu;
+    cos2u = 1.0 - 2.0 * sinu * sinu;
+    temp = 1.0 / pl;
+    temp1 = 0.5 * satrec.j2 * temp;
+    temp2 = temp1 * temp;
 
-        /* --------------------- orientation vectors ------------------- */
-        sinsu = f64::sin(su);
-        cossu = f64::cos(su);
-        snod = f64::sin(xnode);
-        cnod = f64::cos(xnode);
-        sini = f64::sin(xinc);
-        cosi = f64::cos(xinc);
-        xmx = -snod * cosi;
-        xmy = cnod * cosi;
-        ux = xmx * sinsu + cnod * cossu;
-        uy = xmy * sinsu + snod * cossu;
-        uz = sini * sinsu;
-        vx = xmx * cossu - cnod * sinsu;
-        vy = xmy * cossu - snod * sinsu;
-        vz = sini * cossu;
+    /* -------------- update for short period periodics ------------ */
+    if satrec.method == 'd' {
+        cosisq = cosip * cosip;
+        satrec.con41 = 3.0 * cosisq - 1.0;
+        satrec.x1mth2 = 1.0 - cosisq;
+        satrec.x7thm1 = 7.0 * cosisq - 1.0;
+    }
+    mrt = rl * (1.0 - 1.5 * temp2 * betal * satrec.con41) + 0.5 * temp1 * satrec.x1mth2 * cos2u;
+    su = su - 0.25 * temp2 * satrec.x7thm1 * sin2u;
+    xnode = nodep + 1.5 * temp2 * cosip * sin2u;
+    xinc = xincp + 1.5 * temp2 * cosip * sinip * cos2u;
+    mvt = rdotl - nm * temp1 * satrec.x1mth2 * sin2u / satrec.xke;
+    rvdot = rvdotl + nm * temp1 * (satrec.x1mth2 * cos2u + 1.5 * satrec.con41) / satrec.xke;
 
-        /* --------- position and velocity (in km and km/sec) ---------- */
-        r[0] = (mrt * ux) * satrec.radiusearthkm;
-        r[1] = (mrt * uy) * satrec.radiusearthkm;
-        r[2] = (mrt * uz) * satrec.radiusearthkm;
-        v[0] = (mvt * ux + rvdot * vx) * vkmpersec;
-        v[1] = (mvt * uy + rvdot * vy) * vkmpersec;
-        v[2] = (mvt * uz + rvdot * vz) * vkmpersec;
-    } // if pl > 0
+    /* --------------------- orientation vectors ------------------- */
+    sinsu = f64::sin(su);
+    cossu = f64::cos(su);
+    snod = f64::sin(xnode);
+    cnod = f64::cos(xnode);
+    sini = f64::sin(xinc);
+    cosi = f64::cos(xinc);
+    xmx = -snod * cosi;
+    xmy = cnod * cosi;
+    ux = xmx * sinsu + cnod * cossu;
+    uy = xmy * sinsu + snod * cossu;
+    uz = sini * sinsu;
+    vx = xmx * cossu - cnod * sinsu;
+    vy = xmy * cossu - snod * sinsu;
+    vz = sini * cossu;
 
     // sgp4fix for decaying satellites
     if mrt < 1.0 {
         //         printf("# decay condition %11.6f \n",mrt);
         satrec.error = 6;
-        return false;
+        return Err(satrec.error as i32);
     }
 
+    /* --------- position and velocity (in km and km/sec) ---------- */
+    //r[0] = (mrt * ux) * satrec.radiusearthkm;
+    //r[1] = (mrt * uy) * satrec.radiusearthkm;
+    //r[2] = (mrt * uz) * satrec.radiusearthkm;
+    //v[0] = (mvt * ux + rvdot * vx) * vkmpersec;
+    //v[1] = (mvt * uy + rvdot * vy) * vkmpersec;
+    //v[2] = (mvt * uz + rvdot * vz) * vkmpersec;
+
+    return Ok((
+        [
+            (mrt * ux) * satrec.radiusearthkm,
+            (mrt * uy) * satrec.radiusearthkm,
+            (mrt * uz) * satrec.radiusearthkm,
+        ],
+        [
+            (mvt * ux + rvdot * vx) * vkmpersec,
+            (mvt * uy + rvdot * vy) * vkmpersec,
+            (mvt * uz + rvdot * vz) * vkmpersec,
+        ],
+    ));
+
     //#include "debug7.cpp"
-    return true;
 } // sgp4

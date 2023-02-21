@@ -2,9 +2,7 @@ use super::astrotime::AstroTime;
 use crate::sgp4::SatRec;
 use crate::utils::AstroResult;
 
-use std::cell::RefCell;
-
-#[derive(PartialEq, PartialOrd, Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct TLE {
     /// Name of satellite
     pub name: String,
@@ -45,7 +43,7 @@ pub struct TLE {
     /// Revolution number
     pub rev_num: i32,
 
-    pub(in crate) satrec: RefCell<Option<SatRec>>,
+    pub(crate) satrec: Option<SatRec>,
 }
 
 impl TLE {
@@ -99,7 +97,7 @@ impl TLE {
             mean_anomaly: 0.0,
             mean_motion: 0.0,
             rev_num: 0,
-            satrec: RefCell::new(None),
+            satrec: None,
         }
     }
 
@@ -303,7 +301,7 @@ impl TLE {
                     Err(_) => return Err("Could not parse rev num".to_string()),
                 }
             },
-            satrec: RefCell::new(None),
+            satrec: None,
         })
     }
 }
