@@ -29,7 +29,7 @@ chrono = "0.4.19"
 [dev-dependencies]
 
 [features]
-default = ["pybindings"]
+default = []
 pybindings = [
     "pyo3",
     "numpy",
