@@ -14,11 +14,11 @@ impl PropSettings {
     pub fn new() -> PropSettings {
         PropSettings {
             gravity_order: 6,
-            gravity_interp_dt_secs: 120.0,
-            moon_interp_dt_secs: 120.0,
-            sun_interp_dt_secs: 120.0,
-            abs_error: 1e-8,
-            rel_error: 1e-8,
+            gravity_interp_dt_secs: 60.0,
+            moon_interp_dt_secs: 60.0,
+            sun_interp_dt_secs: 60.0,
+            abs_error: 1e-9,
+            rel_error: 1e-14,
             dt_secs: 1.0,
         }
     }

@@ -144,6 +144,89 @@ impl Gravity {
         accel
     }
 
+    // Equations 7.65 to 7.69 in Montenbruck & Gill
+    fn partials_from_legendre_t<const N: usize, const NP4: usize>(
+        &self,
+        v: &Legendre<NP4>,
+        w: &Legendre<NP4>,
+    ) -> na::Matrix3<f64> {
+        let mut daxdx = 0.0;
+        let mut daxdy = 0.0;
+        let mut daxdz = 0.0;
+        let mut daydz = 0.0;
+        let mut dazdz = 0.0;
+
+        for n in 0..(N + 1) {
+            let np2 = n + 2;
+            // m = 0
+            let cnm = self.coeffs[(n, 0)];
+            let fnp1 = (n + 1) as f64;
+            let fnp21 = ((n + 2) * (n + 1)) as f64;
+            let vnp2m = v[(np2, 0)];
+            daxdx += 0.5 * cnm * (v[(np2, 2)] - fnp21 * vnp2m);
+            daxdy += 0.5 * cnm * w[(np2, 2)];
+            daxdz += fnp1 * cnm * v[(np2, 1)];
+            daydz += fnp1 * cnm * w[(np2, 1)];
+            dazdz += fnp21 * cnm * vnp2m;
+        }
+        for m in 1..(N + 1) {
+            let mm2 = m - 2;
+            let mm1 = m - 1;
+            let mp1 = m + 1;
+            let mp2 = m + 2;
+
+            for n in m..(N + 1) {
+                let np2 = n + 2;
+                let cnm = self.coeffs[(n, m)];
+                let snm = self.coeffs[(mm1, n)];
+                let fnmmp1 = (n - m + 1) as f64;
+                let fnmmp21 = (fnmmp1 + 1.) * fnmmp1;
+                let fnmmp31 = (fnmmp1 + 2.) * fnmmp21;
+                let vnp2mm1 = v[(np2, mm1)];
+                let wnp2mm1 = w[(np2, mm1)];
+                let vnp2m = v[(np2, m)];
+                let wnp2m = w[(np2, m)];
+                let wnp2mp1 = w[(np2, mp1)];
+                let vnp2mp1 = v[(np2, mp1)];
+                let vnp2mp2 = v[(np2, mp2)];
+                let wnp2mp2 = w[(np2, mp2)];
+
+                if m == 1 {
+                    daxdx += 0.25
+                        * (cnm * vnp2mp2 + snm * wnp2mp2
+                            - fnmmp21 * (3.0 * cnm * vnp2m + snm * wnp2m));
+                    daxdy += 0.25
+                        * (cnm * wnp2mp2 - snm * vnp2mp2 - fnmmp21 * (cnm * wnp2m + snm * vnp2m));
+                } else {
+                    let fnmmp41 = (fnmmp1 + 3.0) * fnmmp31;
+                    let vnp2mm2 = v[(np2, mm2)];
+                    let wnp2mm2 = w[(np2, mm2)];
+                    daxdx += 0.25
+                        * (cnm * vnp2mp2 + snm * wnp2mp2
+                            - 2.0 * fnmmp21 * (cnm * vnp2m + snm * wnp2m)
+                            + fnmmp41 * (cnm * vnp2mm2 + snm * wnp2mm2));
+                    daxdy += 0.25
+                        * (cnm * wnp2mp2
+                            - snm * vnp2mp2
+                            - fnmmp41 * (cnm * wnp2mm2 - snm * vnp2mm2));
+                }
+                daxdz += 0.5
+                    * (fnmmp1 * (cnm * vnp2mp1 + snm * wnp2mp1)
+                        - fnmmp31 * (cnm * vnp2mm1 + snm * wnp2mm1));
+                daydz += 0.5
+                    * (fnmmp1 * (cnm * wnp2mp1 - snm * vnp2mp1)
+                        + fnmmp31 * (cnm * wnp2mm1 - snm * vnp2mm1));
+                dazdz += fnmmp21 * (cnm * vnp2m + snm * wnp2m);
+            }
+        }
+
+        // From fact that laplacian is zero
+        let daydy = -daxdx - dazdz;
+        na::Matrix3::<f64>::new(
+            daxdx, daxdy, daxdz, daxdy, daydy, daydz, daxdz, daydz, dazdz,
+        )
+    }
+
     /// See Equation 3.33 in Montenbruck & Gill
     fn accel_from_legendre_t<const N: usize, const NP4: usize>(
         &self,

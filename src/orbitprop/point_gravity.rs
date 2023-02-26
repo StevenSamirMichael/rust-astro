@@ -5,8 +5,8 @@ pub fn point_gravity(body: &Vec3, sat: &Vec3, mu: f64) -> SimpleState {
     let pdiffnorm = pdiff.norm();
     let bodynorm = body.norm();
 
-    let force = mu
-        * (pdiff / (pdiffnorm * pdiffnorm * pdiffnorm) - body / (bodynorm * bodynorm * bodynorm));
+    let force = -mu
+        * (pdiff / (pdiffnorm * pdiffnorm * pdiffnorm) + body / (bodynorm * bodynorm * bodynorm));
 
     let mut statedot = SimpleState::zeros();
     statedot
