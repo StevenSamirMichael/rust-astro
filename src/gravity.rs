@@ -1,4 +1,4 @@
-use crate::utils::*;
+use crate::utils::{astroerr, datadir, AstroResult};
 use std::collections::HashMap;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
@@ -136,6 +136,52 @@ impl Gravity {
         } else {
             self.accel_t::<16, 20>(pos)
         }
+    }
+
+    pub fn accel_and_partials(&self, pos: &Vec3, order: usize) -> (Vec3, na::Matrix3<f64>) {
+        // This is tedious, but using generics allows for vectors to be
+        // allocated on the stack, which is faster
+        if order == 2 {
+            self.accel_and_partials_t::<2, 6>(pos)
+        } else if order == 3 {
+            self.accel_and_partials_t::<3, 7>(pos)
+        } else if order == 4 {
+            self.accel_and_partials_t::<4, 8>(pos)
+        } else if order == 5 {
+            self.accel_and_partials_t::<5, 9>(pos)
+        } else if order == 6 {
+            self.accel_and_partials_t::<6, 10>(pos)
+        } else if order == 7 {
+            self.accel_and_partials_t::<7, 11>(pos)
+        } else if order == 8 {
+            self.accel_and_partials_t::<8, 12>(pos)
+        } else if order == 9 {
+            self.accel_and_partials_t::<9, 13>(pos)
+        } else if order == 10 {
+            self.accel_and_partials_t::<10, 14>(pos)
+        } else if order == 11 {
+            self.accel_and_partials_t::<11, 15>(pos)
+        } else if order == 12 {
+            self.accel_and_partials_t::<12, 16>(pos)
+        } else if order == 13 {
+            self.accel_and_partials_t::<13, 17>(pos)
+        } else if order == 14 {
+            self.accel_and_partials_t::<14, 18>(pos)
+        } else if order == 15 {
+            self.accel_and_partials_t::<15, 19>(pos)
+        } else {
+            self.accel_and_partials_t::<16, 20>(pos)
+        }
+    }
+
+    fn accel_and_partials_t<const N: usize, const NP4: usize>(
+        &self,
+        pos: &Vec3,
+    ) -> (Vec3, na::Matrix3<f64>) {
+        let (v, w) = self.compute_legendre::<NP4>(pos);
+        let accel = self.accel_from_legendre_t::<N, NP4>(&v, &w);
+        let partials = self.partials_from_legendre_t::<N, NP4>(&v, &w);
+        (accel, partials)
     }
 
     fn accel_t<const N: usize, const NP4: usize>(&self, pos: &Vec3) -> Vec3 {

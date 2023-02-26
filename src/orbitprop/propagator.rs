@@ -64,12 +64,10 @@ impl<'a, const T: usize> ode_solvers::System<StateType<T>> for Propagation<'a> {
         let moon_idx: f64 = (x / self.settings.moon_interp_dt_secs).floor();
 
         let moon_gcrs = linterp_idx(&self.moon_pos_gcrs_table, moon_idx).unwrap();
-        let accel_moon = point_gravity(&pos_gcrs, &moon_gcrs, crate::univ::MU_MOON);
 
         // Get sun location & force of sun from interpolation table
         let sun_idx: f64 = x / self.settings.sun_interp_dt_secs;
         let sun_gcrs = linterp_idx(&self.sun_pos_gcrs_table, sun_idx).unwrap();
-        let accel_sun = point_gravity(&pos_gcrs, &sun_gcrs, crate::univ::MU_SUN);
 
         // Get rotation from gcrf to itrf frame from interpolation table
         let grav_idx: usize = (x / self.settings.gravity_interp_dt_secs).floor() as usize;
@@ -79,18 +77,32 @@ impl<'a, const T: usize> ode_solvers::System<StateType<T>> for Propagation<'a> {
         let qgcrs2itrf = q1.slerp(q2, t);
 
         let pos_itrf = qgcrs2itrf * pos_gcrs;
-        let gravity_itrf =
-            crate::gravity::GRAVITY_JGM3.accel(&pos_itrf, self.settings.gravity_order as usize);
-        let accel_gravity = qgcrs2itrf.conjugate() * gravity_itrf;
 
         // change in position is velocity
         dy.fixed_slice_mut::<3, 1>(0, 0).copy_from(&vel_gcrs);
 
-        // Change in velocity is acceleration
-        let accel = accel_gravity + accel_sun + accel_moon;
-        //let accel = -crate::univ::MU_EARTH * pos_gcrs / pos_gcrs.norm().powf(3.0);
+        if T == 1 {
+            let gravity_itrf =
+                crate::gravity::GRAVITY_JGM3.accel(&pos_itrf, self.settings.gravity_order as usize);
+            let accel_gravity = qgcrs2itrf.conjugate() * gravity_itrf;
+            let accel_moon = point_gravity(&pos_gcrs, &moon_gcrs, crate::univ::MU_MOON);
+            let accel_sun = point_gravity(&pos_gcrs, &sun_gcrs, crate::univ::MU_SUN);
+            // Change in velocity is acceleration
+            let accel = accel_gravity + accel_sun + accel_moon;
+            //let accel = -crate::univ::MU_EARTH * pos_gcrs / pos_gcrs.norm().powf(3.0);
 
-        dy.fixed_slice_mut::<3, 1>(3, 0).copy_from(&accel);
+            dy.fixed_slice_mut::<3, 1>(3, 0).copy_from(&accel);
+        } else {
+            let dcm = qgcrs2itrf.to_rotation_matrix();
+            let (gravity, gravity_partials) = crate::gravity::GRAVITY_JGM3
+                .accel_and_partials(&pos_itrf, self.settings.gravity_order as usize);
+            let mut dfdx = na::Matrix6::<f64>::zeros();
+            dfdx.fixed_slice_mut::<3, 3>(0, 3)
+                .copy_from(&na::Matrix3::<f64>::identity());
+            let dadr = dcm * gravity_partials * dcm.transpose();
+
+            let PhiS = y.slice((0, 1), (6, T - 1));
+        }
     }
 }
 
