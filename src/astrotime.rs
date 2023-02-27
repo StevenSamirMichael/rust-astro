@@ -173,9 +173,39 @@ impl std::ops::Sub<f64> for AstroTime {
     }
 }
 
-impl std::ops::Sub for AstroTime {
+impl std::ops::Sub<f64> for &AstroTime {
+    type Output = AstroTime;
+    fn sub(self, other: f64) -> Self::Output {
+        AstroTime {
+            mjd_tai: self.mjd_tai - other,
+        }
+    }
+}
+
+impl std::ops::Sub<AstroTime> for &AstroTime {
     type Output = f64;
     fn sub(self, other: AstroTime) -> f64 {
+        self.mjd_tai - other.mjd_tai
+    }
+}
+
+impl std::ops::Sub<&AstroTime> for &AstroTime {
+    type Output = f64;
+    fn sub(self, other: &AstroTime) -> f64 {
+        self.mjd_tai - other.mjd_tai
+    }
+}
+
+impl std::ops::Sub<AstroTime> for AstroTime {
+    type Output = f64;
+    fn sub(self, other: AstroTime) -> f64 {
+        self.mjd_tai - other.mjd_tai
+    }
+}
+
+impl std::ops::Sub<&AstroTime> for AstroTime {
+    type Output = f64;
+    fn sub(self, other: &AstroTime) -> f64 {
         self.mjd_tai - other.mjd_tai
     }
 }

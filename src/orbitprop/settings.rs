@@ -8,6 +8,7 @@ pub struct PropSettings {
     pub abs_error: f64,
     pub rel_error: f64,
     pub dt_secs: f64,
+    pub use_spaceweather: bool,
 }
 
 impl PropSettings {
@@ -20,6 +21,7 @@ impl PropSettings {
             abs_error: 1e-9,
             rel_error: 1e-14,
             dt_secs: 1.0,
+            use_spaceweather: true,
         }
     }
 }

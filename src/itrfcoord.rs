@@ -37,6 +37,33 @@ impl std::ops::Add<Vec3> for ITRFCoord {
     }
 }
 
+impl std::ops::Add<Vec3> for &ITRFCoord {
+    type Output = ITRFCoord;
+    fn add(self, other: Vec3) -> Self::Output {
+        ITRFCoord {
+            itrf: self.itrf + other,
+        }
+    }
+}
+
+impl std::ops::Add<&Vec3> for ITRFCoord {
+    type Output = Self;
+    fn add(self, other: &Vec3) -> Self::Output {
+        Self {
+            itrf: self.itrf + other,
+        }
+    }
+}
+
+impl std::ops::Add<&Vec3> for &ITRFCoord {
+    type Output = ITRFCoord;
+    fn add(self, other: &Vec3) -> Self::Output {
+        ITRFCoord {
+            itrf: self.itrf + other,
+        }
+    }
+}
+
 impl std::ops::Sub<Vec3> for ITRFCoord {
     type Output = Self;
     fn sub(self, other: Vec3) -> Self::Output {
@@ -53,10 +80,40 @@ impl std::ops::Sub<ITRFCoord> for ITRFCoord {
     }
 }
 
+impl std::ops::Sub<ITRFCoord> for &ITRFCoord {
+    type Output = Vec3;
+    fn sub(self, other: ITRFCoord) -> Vec3 {
+        self.itrf - other.itrf
+    }
+}
+
+impl std::ops::Sub<&ITRFCoord> for &ITRFCoord {
+    type Output = Vec3;
+    fn sub(self, other: &ITRFCoord) -> Vec3 {
+        self.itrf - other.itrf
+    }
+}
+
+impl std::ops::Sub<&ITRFCoord> for ITRFCoord {
+    type Output = Vec3;
+    fn sub(self, other: &ITRFCoord) -> Vec3 {
+        self.itrf - other.itrf
+    }
+}
+
 impl std::convert::From<[f64; 3]> for ITRFCoord {
     fn from(v: [f64; 3]) -> Self {
         ITRFCoord {
             itrf: Vec3::from(v),
+        }
+    }
+}
+
+impl std::convert::From<&[f64]> for ITRFCoord {
+    fn from(v: &[f64]) -> Self {
+        assert!(v.len() == 3);
+        ITRFCoord {
+            itrf: Vec3::from_row_slice(v),
         }
     }
 }
