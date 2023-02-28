@@ -26,6 +26,7 @@ cc = {version="1.0.74", features=["parallel"]}
 chrono = "0.4.19"
 
 [dev-dependencies]
+rand = "0.8.5"
 
 [features]
 default = ["pybindings"]

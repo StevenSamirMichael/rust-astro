@@ -5,6 +5,7 @@ use crate::lpephem::{moon, sun};
 use crate::astrotime::AstroTime;
 use crate::utils::{astroerr, AstroResult};
 use ode_solvers::dop853::Dop853;
+use ode_solvers::dopri5::Dopri5;
 use std::vec::Vec;
 
 use super::satproperties::SatProperties;
@@ -52,8 +53,8 @@ struct Propagation<'a> {
     satprops: Option<&'a dyn SatProperties>,
 }
 
-impl<'a> ode_solvers::System<StateType<1>> for Propagation<'a> {
-    fn system(&self, x: f64, y: &StateType<1>, dy: &mut StateType<1>) {
+impl<'a, const T: usize> ode_solvers::System<StateType<T>> for Propagation<'a> {
+    fn system(&self, x: f64, y: &StateType<T>, dy: &mut StateType<T>) {
         let tm: AstroTime = self.start + x / 86400.0;
 
         // get GCRS position & velocity;
@@ -81,60 +82,65 @@ impl<'a> ode_solvers::System<StateType<1>> for Propagation<'a> {
         // Position in ITRF coordinates
         let pos_itrf = qgcrs2itrf * pos_gcrs;
 
-        // change in position is velocity
-        dy.fixed_slice_mut::<3, 1>(0, 0).copy_from(&vel_gcrs);
+        if T == 1 {
+            // change in position is velocity
+            dy.fixed_slice_mut::<3, 1>(0, 0).copy_from(&vel_gcrs);
 
-        let gravity_itrf =
-            crate::gravity::GRAVITY_JGM3.accel(&pos_itrf, self.settings.gravity_order as usize);
-        let accel_gravity = qgcrs2itrf.conjugate() * gravity_itrf;
-        let accel_moon = point_gravity(&pos_gcrs, &moon_gcrs, crate::univ::MU_MOON);
-        let accel_sun = point_gravity(&pos_gcrs, &sun_gcrs, crate::univ::MU_SUN);
+            let gravity_itrf =
+                crate::gravity::GRAVITY_JGM3.accel(&pos_itrf, self.settings.gravity_order as usize);
+            let accel_gravity = qgcrs2itrf.conjugate() * gravity_itrf;
+            let accel_moon = point_gravity(&pos_gcrs, &moon_gcrs, crate::univ::MU_MOON);
+            let accel_sun = point_gravity(&pos_gcrs, &sun_gcrs, crate::univ::MU_SUN);
 
-        // Change in velocity is acceleration
-        let mut accel = accel_gravity + accel_sun + accel_moon;
-        //let accel = -crate::univ::MU_EARTH * pos_gcrs / pos_gcrs.norm().powf(3.0);
+            // Change in velocity is acceleration
+            let mut accel = accel_gravity + accel_sun + accel_moon;
+            //let accel = -crate::univ::MU_EARTH * pos_gcrs / pos_gcrs.norm().powf(3.0);
 
-        // Add solar pressure if that is defined in satellite properties
-        if let Some(props) = self.satprops {
-            let solarpressure =
-                -props.cr_a_over_m(&tm, &y) * 4.56e-6 * sun_gcrs / sun_gcrs.norm().powf(3.0);
-            accel += solarpressure;
+            // Add solar pressure & drag if that is defined in satellite properties
+            if let Some(props) = self.satprops {
+                // Compute solar pressure
+                let solarpressure =
+                    -props.cr_a_over_m(&tm, &y.column(0).into()) * 4.56e-6 * sun_gcrs
+                        / sun_gcrs.norm().powf(3.0);
+                accel += solarpressure;
 
-            let cd_a_over_m = props.cd_a_over_m(&tm, &y);
-            if cd_a_over_m > 1e-6 {
-                let itrf = crate::ITRFCoord::from(pos_itrf.as_slice());
-                let (density, _temperature) = crate::nrlmsise::nrlmsise(
-                    itrf.hae() / 1.0e3,
-                    Some(itrf.latitude_rad()),
-                    Some(itrf.longitude_rad()),
-                    Some(tm),
-                    self.settings.use_spaceweather,
-                );
-                const OMEGA_EARTH: na::Vector3<f64> =
-                    na::vector![0.0, 0.0, crate::univ::OMEGA_EARTH];
+                // Compute drag
+                let cd_a_over_m = props.cd_a_over_m(&tm, &y.column(0).into());
+                if cd_a_over_m > 1e-6 {
+                    let itrf = crate::ITRFCoord::from(pos_itrf.as_slice());
+                    let (density, _temperature) = crate::nrlmsise::nrlmsise(
+                        itrf.hae() / 1.0e3,
+                        Some(itrf.latitude_rad()),
+                        Some(itrf.longitude_rad()),
+                        Some(tm),
+                        self.settings.use_spaceweather,
+                    );
+                    const OMEGA_EARTH: na::Vector3<f64> =
+                        na::vector![0.0, 0.0, crate::univ::OMEGA_EARTH];
 
-                // See Vallado section 3.7.2: Velocity & Acceleration Transformations
-                let vel_itrf = qgcrs2itrf * vel_gcrs - OMEGA_EARTH.cross(&pos_itrf);
-                let dragpressure_itrf = -0.5 * cd_a_over_m * density * vel_itrf * vel_itrf.norm();
-                let dragpressure_gcrs = qgcrs2itrf.conjugate()
-                    * (dragpressure_itrf
-                        + OMEGA_EARTH.cross(&OMEGA_EARTH.cross(&pos_itrf))
-                        + 2.0 * OMEGA_EARTH.cross(&vel_itrf));
-                accel += dragpressure_gcrs;
+                    // See Vallado section 3.7.2: Velocity & Acceleration Transformations
+                    let vel_itrf = qgcrs2itrf * vel_gcrs - OMEGA_EARTH.cross(&pos_itrf);
+                    let dragpressure_itrf =
+                        -0.5 * cd_a_over_m * density * vel_itrf * vel_itrf.norm();
+                    let dragpressure_gcrs = qgcrs2itrf.conjugate()
+                        * (dragpressure_itrf
+                            + OMEGA_EARTH.cross(&OMEGA_EARTH.cross(&pos_itrf))
+                            + 2.0 * OMEGA_EARTH.cross(&vel_itrf));
+                    accel += dragpressure_gcrs;
+                }
             }
+            dy.fixed_slice_mut::<3, 1>(3, 0).copy_from(&accel);
         }
-
-        dy.fixed_slice_mut::<3, 1>(3, 0).copy_from(&accel);
     }
 }
 
-pub fn propagate(
-    state: &SimpleState,
+pub fn propagate_base<const T: usize, const TM1: usize>(
+    state: &StateType<T>,
     start: &AstroTime,
     stop: &AstroTime,
     settings: &PropSettings,
     satprops: Option<&dyn SatProperties>,
-) -> AstroResult<PropagationResult<SimpleState>> {
+) -> AstroResult<PropagationResult<StateType<T>>> {
     // Propagation structure
     let duration_days: f64 = *stop - *start;
     let duration_secs: f64 = duration_days * 86400.0;
@@ -186,12 +192,12 @@ pub fn propagate(
     println!("x_end = {x_end}");
 
     // ODE stepper object
-    let mut stepper: Dop853<StateType<1>, Propagation> = Dop853::new(
+    let mut stepper: Dopri5<StateType<T>, Propagation> = Dopri5::<StateType<T>, Propagation>::new(
         p,
         0.0,
         x_end,
         settings.dt_secs,
-        *state,
+        state.clone(),
         settings.rel_error,
         settings.abs_error,
     );

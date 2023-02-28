@@ -216,7 +216,6 @@ impl Gravity {
             dazdz += fnp21 * cnm * vnp2m;
         }
         for m in 1..(N + 1) {
-            let mm2 = m - 2;
             let mm1 = m - 1;
             let mp1 = m + 1;
             let mp2 = m + 2;
@@ -244,6 +243,7 @@ impl Gravity {
                     daxdy += 0.25
                         * (cnm * wnp2mp2 - snm * vnp2mp2 - fnmmp21 * (cnm * wnp2m + snm * vnp2m));
                 } else {
+                    let mm2 = m - 2;
                     let fnmmp41 = (fnmmp1 + 3.0) * fnmmp31;
                     let vnp2mm2 = v[(np2, mm2)];
                     let wnp2mm2 = w[(np2, mm2)];
@@ -270,7 +270,8 @@ impl Gravity {
         let daydy = -daxdx - dazdz;
         na::Matrix3::<f64>::new(
             daxdx, daxdy, daxdz, daxdy, daydy, daydz, daxdz, daydz, dazdz,
-        )
+        ) * self.gravity_constant
+            / self.radius.powf(3.0)
     }
 
     /// See Equation 3.33 in Montenbruck & Gill
@@ -523,5 +524,44 @@ mod tests {
         // Compare with reference values
         assert!(f64::abs(ew_deflection / reference_ew_deflection_asec - 1.0) < 1.0e-5);
         assert!(f64::abs(ns_deflection / reference_ns_deflection_asec - 1.0) < 1.0e-5);
+    }
+
+    #[test]
+    fn test_partials() {
+        use rand::random;
+        let g = Gravity::from_file("JGM3.gfc").unwrap();
+
+        for _idx in 0..100 {
+            // Generate a random coordinate
+            let latitude = random::<f64>() * 360.0;
+            let longitude = random::<f64>() * 180.0 - 90.0;
+            let altitude = random::<f64>() * 100.0 + 500.0;
+            let coord = ITRFCoord::from_geodetic_deg(latitude, longitude, altitude);
+
+            // generate a random shift
+            let dpos = nalgebra::Vector3::<f64>::new(
+                random::<f64>() * 100.0,
+                random::<f64>() * 100.0,
+                random::<f64>() * 100.0,
+            );
+
+            // get acceleration and partials at coordinate
+            let (accel1, partials) = g.accel_and_partials(&coord.itrf, 6);
+
+            // apply (small) random shift
+            let v2 = coord.itrf + dpos;
+
+            // get gravity accelaration at new coordinate
+            let accel2 = g.accel(&v2, 6);
+
+            // Get what would be expected from partial derivative
+            let accel3 = accel1 + partials * dpos;
+
+            // show that they are approximately equal
+            for idx in 0..3 {
+                let fracdiff = (accel3[idx] / accel2[idx] - 1.0).abs();
+                assert!(fracdiff < 1.0e-6);
+            }
+        }
     }
 }
