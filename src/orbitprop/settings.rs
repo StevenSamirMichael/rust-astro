@@ -18,8 +18,8 @@ impl PropSettings {
             gravity_interp_dt_secs: 60.0,
             moon_interp_dt_secs: 60.0,
             sun_interp_dt_secs: 60.0,
-            abs_error: 1e-9,
-            rel_error: 1e-14,
+            abs_error: 1e-10,
+            rel_error: 1e-10,
             dt_secs: 1.0,
             use_spaceweather: true,
         }

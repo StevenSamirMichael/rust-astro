@@ -5,7 +5,7 @@ use crate::lpephem::{moon, sun};
 use crate::astrotime::AstroTime;
 use crate::utils::{astroerr, AstroResult};
 use ode_solvers::dop853::Dop853;
-use ode_solvers::dopri5::Dopri5;
+//use ode_solvers::dopri5::Dopri5;
 use std::vec::Vec;
 
 use super::satproperties::SatProperties;
@@ -23,12 +23,16 @@ pub struct PropagationResult<T> {
 }
 
 // T = 1 is simple state
-// T = 7 is simple state + 6x6 state transition matrix
-pub type StateType<const T: usize> =
-    na::Matrix<f64, na::Const<6>, na::Const<T>, na::ArrayStorage<f64, 6, T>>;
+// T = 42 is simple state + 6x6 state transition matrix
+pub type StateType<const T: usize> = na::SVector<f64, T>;
 
-pub type SimpleState = StateType<1>;
-pub type CovState = StateType<7>;
+pub type SimpleState = StateType<6>;
+
+// Covariance State in includes
+// 6x1 simple state and
+// 6x6 state transition matrix
+// for total of 42 elements
+pub type CovState = StateType<42>;
 
 // Equation 3.37 in Montenbruck & Gill
 fn point_gravity(
@@ -63,7 +67,6 @@ impl<'a, const T: usize> ode_solvers::System<StateType<T>> for Propagation<'a> {
 
         // Get force of moon from interpolation table
         let moon_idx: f64 = (x / self.settings.moon_interp_dt_secs).floor();
-
         let moon_gcrs = linterp_idx(&self.moon_pos_gcrs_table, moon_idx).unwrap();
 
         // Get sun location & force of sun from interpolation table
@@ -82,30 +85,34 @@ impl<'a, const T: usize> ode_solvers::System<StateType<T>> for Propagation<'a> {
         // Position in ITRF coordinates
         let pos_itrf = qgcrs2itrf * pos_gcrs;
 
-        if T == 1 {
-            // change in position is velocity
-            dy.fixed_slice_mut::<3, 1>(0, 0).copy_from(&vel_gcrs);
-
+        // Propagating a "simple" 6-dof (position, velocity) state
+        if T == 6 {
+            // Gravity in the ITRF frame
             let gravity_itrf =
                 crate::gravity::GRAVITY_JGM3.accel(&pos_itrf, self.settings.gravity_order as usize);
+            // Gravity in the GCRS frame
             let accel_gravity = qgcrs2itrf.conjugate() * gravity_itrf;
+
+            // Acceleration due to moon
             let accel_moon = point_gravity(&pos_gcrs, &moon_gcrs, crate::univ::MU_MOON);
+
+            // Acceleration due to sun
             let accel_sun = point_gravity(&pos_gcrs, &sun_gcrs, crate::univ::MU_SUN);
 
-            // Change in velocity is acceleration
+            // Total acceleration (neglecting solar pressure & drag)
             let mut accel = accel_gravity + accel_sun + accel_moon;
-            //let accel = -crate::univ::MU_EARTH * pos_gcrs / pos_gcrs.norm().powf(3.0);
 
             // Add solar pressure & drag if that is defined in satellite properties
             if let Some(props) = self.satprops {
+                let ss = y.fixed_slice::<6, 1>(0, 0);
+
                 // Compute solar pressure
-                let solarpressure =
-                    -props.cr_a_over_m(&tm, &y.column(0).into()) * 4.56e-6 * sun_gcrs
-                        / sun_gcrs.norm().powf(3.0);
+                let solarpressure = -props.cr_a_over_m(&tm, &ss.into()) * 4.56e-6 * sun_gcrs
+                    / sun_gcrs.norm().powf(3.0);
                 accel += solarpressure;
 
                 // Compute drag
-                let cd_a_over_m = props.cd_a_over_m(&tm, &y.column(0).into());
+                let cd_a_over_m = props.cd_a_over_m(&tm, &ss.into());
                 if cd_a_over_m > 1e-6 {
                     let itrf = crate::ITRFCoord::from(pos_itrf.as_slice());
                     let (density, _temperature) = crate::nrlmsise::nrlmsise(
@@ -128,13 +135,18 @@ impl<'a, const T: usize> ode_solvers::System<StateType<T>> for Propagation<'a> {
                             + 2.0 * OMEGA_EARTH.cross(&vel_itrf));
                     accel += dragpressure_gcrs;
                 }
-            }
+            } // end of handling drag & solarpressure
+
+            // change in position is velocity
+            dy.fixed_slice_mut::<3, 1>(0, 0).copy_from(&vel_gcrs);
+
+            // Change in velocity is acceleration
             dy.fixed_slice_mut::<3, 1>(3, 0).copy_from(&accel);
         }
     }
 }
 
-pub fn propagate_base<const T: usize, const TM1: usize>(
+pub fn propagate<const T: usize>(
     state: &StateType<T>,
     start: &AstroTime,
     stop: &AstroTime,
@@ -189,10 +201,9 @@ pub fn propagate_base<const T: usize, const TM1: usize>(
 
     // Duration to end of integration, in seconds
     let x_end: f64 = (*stop - *start) * 86400.0;
-    println!("x_end = {x_end}");
 
     // ODE stepper object
-    let mut stepper: Dopri5<StateType<T>, Propagation> = Dopri5::<StateType<T>, Propagation>::new(
+    let mut stepper: Dop853<StateType<T>, Propagation> = Dop853::<StateType<T>, Propagation>::new(
         p,
         0.0,
         x_end,
@@ -228,9 +239,17 @@ mod tests {
     use crate::univ;
 
     #[test]
+    fn test_nalgebra() {
+        let v = na::SVector::<f64, 42>::from_iterator((0..42).map(|x| x as f64));
+        let v2 = v.reshape_generic(na::Const::<6>, na::Const::<7>);
+        println!("v = {}", v.transpose());
+        println!("v2 = {v2}");
+    }
+
+    #[test]
     fn test_propagate() {
-        let starttime = AstroTime::from_datetime(2012, 3, 3, 0, 0, 0.0);
-        let stoptime = starttime + 1.0;
+        let starttime = AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0);
+        let stoptime = starttime + 1.0; // - (1.0 / 365.25);
 
         let mut state: SimpleState = SimpleState::zeros();
         state[0] = univ::GEO_R;
@@ -240,11 +259,10 @@ mod tests {
         settings.gravity_order = 6;
         let state2 = propagate(&state, &starttime, &stoptime, &settings, None).unwrap();
 
-        println!("state star ttime = {:?}", starttime);
-        println!("state start = {:?}", state);
-        println!("state2 end time = {:?}", &state2.time.last().unwrap());
-        println!("dt = {}", *state2.time.last().unwrap() - starttime);
-        println!("state2 end state = {:?}", state2.state.last().unwrap());
+        println!("start time = {}", starttime);
+        println!("start = {}", state);
+        println!("end time = {}", &state2.time.last().unwrap());
+        println!("end = {}", state2.state.last().unwrap());
         let pg1 = state2.state.first().unwrap();
         let pg2 = state2.state.last().unwrap();
 
@@ -255,10 +273,11 @@ mod tests {
 
         let p1 = crate::itrfcoord::ITRFCoord::from_vec([p1itrf[0], p1itrf[1], p1itrf[2]]);
         let p2 = crate::itrfcoord::ITRFCoord::from_vec([p2itrf[0], p2itrf[1], p2itrf[2]]);
-        println!("q1 = {q1}");
-        println!("q2 = {q2}");
+
         println!("p1 = {}", p1);
         println!("p2 = {}", p2);
-        println!("pdiff = {:?}", p1itrf - p2itrf);
+        println!("pdiff = {}", p1itrf - p2itrf);
+        println!("rejected = {}", state2.rejected_steps);
+        println!("accepted = {}", state2.accepted_steps);
     }
 }
