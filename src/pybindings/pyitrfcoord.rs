@@ -52,38 +52,38 @@ impl PyITRFCoord {
     ) -> PyResult<Self> {
         if kwargs.is_some() {
             let kw = kwargs.unwrap();
-            match kw.get_item("latitude_deg") {
+            match kw.get_item("latitude_deg")? {
                 Some(v) => {
                     latitude = v.extract::<f64>()? * DEG2RAD;
                 }
                 None => (),
             }
-            match kw.get_item("longitude_deg") {
+            match kw.get_item("longitude_deg")? {
                 Some(v) => {
                     longitude = v.extract::<f64>()? * DEG2RAD;
                 }
                 None => (),
             }
 
-            match kw.get_item("latitude_rad") {
+            match kw.get_item("latitude_rad")? {
                 Some(v) => {
                     latitude = v.extract::<f64>()?;
                 }
                 None => (),
             }
-            match kw.get_item("longitude_rad") {
+            match kw.get_item("longitude_rad")? {
                 Some(v) => {
                     longitude = v.extract::<f64>()?;
                 }
                 None => (),
             }
-            match kw.get_item("altitude") {
+            match kw.get_item("altitude")? {
                 Some(v) => {
                     altitude = v.extract::<f64>()?;
                 }
                 None => (),
             }
-            match kw.get_item("height") {
+            match kw.get_item("height")? {
                 Some(v) => {
                     altitude = v.extract::<f64>()?;
                 }

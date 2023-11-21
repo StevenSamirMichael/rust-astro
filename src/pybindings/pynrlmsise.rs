@@ -34,19 +34,19 @@ pub fn nrlmsise00(alt_km: f64, option_kwds: Option<&PyDict>) -> PyResult<(f64, f
     let mut use_spaceweather: bool = true;
     if option_kwds.is_some() {
         let kwds = option_kwds.unwrap();
-        match kwds.get_item("latitude_deg") {
+        match kwds.get_item("latitude_deg")? {
             Some(v) => lat = Some(v.extract::<f64>()?),
             None => (),
         }
-        match kwds.get_item("longitude_deg") {
+        match kwds.get_item("longitude_deg")? {
             Some(v) => lon = Some(v.extract::<f64>()?),
             None => (),
         }
-        match kwds.get_item("time") {
+        match kwds.get_item("time")? {
             Some(v) => tm = Some(v.extract::<PyAstroTime>()?.inner),
             None => (),
         }
-        match kwds.get_item("use_spaceweather") {
+        match kwds.get_item("use_spaceweather")? {
             Some(v) => use_spaceweather = v.extract::<bool>()?,
             None => (),
         }

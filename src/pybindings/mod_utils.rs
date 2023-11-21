@@ -35,14 +35,14 @@ use std::path::PathBuf;
 fn update_datafiles(kwds: Option<&PyDict>) -> PyResult<()> {
     let overwrite_files = match kwds {
         None => false,
-        Some(u) => match u.get_item("overwrite") {
+        Some(u) => match u.get_item("overwrite")? {
             Some(v) => v.extract::<bool>()?,
             None => false,
         },
     };
     let datadir = match kwds {
         None => None,
-        Some(u) => match u.get_item("dir") {
+        Some(u) => match u.get_item("dir")? {
             Some(v) => Some(PathBuf::from(v.extract::<String>()?)),
             None => None,
         },
