@@ -4,7 +4,9 @@ use super::settings::PropSettings;
 use super::types::*;
 use super::utils::linterp_idx;
 
+use crate::consts::*;
 use crate::AstroTime;
+
 use nalgebra as na;
 
 use crate::lpephem::moon;
@@ -33,6 +35,7 @@ impl ForceTerm<SimpleState> for ForceMoon {
             start_time: *start_time,
             moon_interp_dt_secs: settings.moon_interp_dt_secs,
             pos_gcrf: {
+                let dt_days = settings.gravity_interp_dt_secs / SECONDS_PER_DAY;
                 (0..ntimes)
                     .into_iter()
                     .map(|x| {

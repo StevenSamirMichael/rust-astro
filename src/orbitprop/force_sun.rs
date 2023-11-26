@@ -16,6 +16,8 @@ pub struct ForceSun {
     pos_gcrf: Vec<na::Vector3<f64>>,
 }
 
+const SECONDS_PER_DAY: f64 = 86400.0;
+
 impl ForceTerm<SimpleState> for ForceSun {
     fn ydot(&self, time: &AstroTime, state: &SimpleState) -> SimpleState {
         let float_idx: f64 = (*time - self.start_time) / self.sun_interp_dt_secs;
@@ -24,7 +26,6 @@ impl ForceTerm<SimpleState> for ForceSun {
         point_gravity(&sun_pos, &pos, univ::MU_SUN)
     }
 
-    
     fn init(start_time: &AstroTime, stop_time: &AstroTime, settings: &PropSettings) -> ForceSun {
         let duration_days: f64 = *stop_time - *start_time;
         let duration_secs: f64 = duration_days * 86400.0;
@@ -33,10 +34,11 @@ impl ForceTerm<SimpleState> for ForceSun {
             start_time: *start_time,
             sun_interp_dt_secs: settings.sun_interp_dt_secs,
             pos_gcrf: {
+                let dt_days = settings.gravity_interp_dt_secs / SECONDS_PER_DAY;
                 (0..ntimes)
                     .into_iter()
                     .map(|x| {
-                        let tm: AstroTime = *start_time + x as f64 / 86400.0;
+                        let tm: AstroTime = *start_time + x as f64 * dt_days;
                         sun::pos_gcrf(&tm)
                     })
                     .collect()

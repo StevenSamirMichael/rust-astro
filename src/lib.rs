@@ -35,6 +35,12 @@ pub mod univ;
 /// Utility functions
 pub mod utils;
 
+/// ODE solver
+mod ode;
+
+/// internal consts;
+mod consts;
+
 // Objects available at crate level
 pub use astrotime::AstroTime;
 pub use astrotime::Scale as TimeScale;

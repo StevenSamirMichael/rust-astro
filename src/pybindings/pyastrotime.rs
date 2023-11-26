@@ -78,9 +78,7 @@ impl PyAstroTime {
     fn now() -> PyResult<Self> {
         match AstroTime::now() {
             Ok(v) => Ok(PyAstroTime { inner: v }),
-            Err(_) => Err(pyo3::exceptions::PyOSError::new_err(
-                "Could not get current time",
-            )),
+            Err(e) => Err(pyo3::exceptions::PyOSError::new_err(e.to_string())),
         }
     }
 
