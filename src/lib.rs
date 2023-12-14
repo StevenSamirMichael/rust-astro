@@ -35,6 +35,9 @@ pub mod univ;
 /// Utility functions
 pub mod utils;
 
+// Integrate ordinary differential equations
+pub mod ode;
+
 // Objects available at crate level
 pub use astrotime::AstroTime;
 pub use astrotime::Scale as TimeScale;
