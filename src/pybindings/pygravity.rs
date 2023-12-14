@@ -89,21 +89,17 @@ pub fn gravity(pos: &PyAny, kwds: Option<&PyDict>) -> PyResult<PyObject> {
     let mut model: GravModel = GravModel::jgm3;
     if kwds.is_some() {
         let kw = kwds.unwrap();
-        if kw.contains("model").unwrap() {
-            match kw.get_item("model").unwrap().extract::<GravModel>() {
-                Ok(v) => model = v,
-                Err(e) => return Err(e),
-            }
+        match kw.get_item("model").unwrap() {
+            Some(v) => model = v.extract::<GravModel>()?,
+            None => {}
         }
-        if kw.contains("order").unwrap() {
-            match kw.get_item("order").unwrap().extract::<usize>() {
-                Ok(v) => order = v,
-                Err(e) => return Err(e),
-            }
+        match kw.get_item("order").unwrap() {
+            Some(v) => order = v.extract::<usize>()?,
+            None => {}
         }
     }
 
-    if pos.is_instance_of::<PyITRFCoord>().unwrap() {
+    if pos.is_instance_of::<PyITRFCoord>() {
         let pyitrf: PyRef<PyITRFCoord> = pos.extract()?;
         let itrf: ITRFCoord = pyitrf.inner.into();
         let v = accel(&itrf.itrf, order, model.into());
@@ -111,7 +107,7 @@ pub fn gravity(pos: &PyAny, kwds: Option<&PyDict>) -> PyResult<PyObject> {
             let vpy: &np::PyArray1<f64> = np::PyArray1::<f64>::from_slice(py, v.as_slice());
             Ok(vpy.into_py(py))
         })
-    } else if pos.is_instance_of::<np::PyArray1<f64>>().unwrap() {
+    } else if pos.is_instance_of::<np::PyArray1<f64>>() {
         let vpy = pos.extract::<np::PyReadonlyArray1<f64>>().unwrap();
         if vpy.len() != 3 {
             return Err(pyo3::exceptions::PyValueError::new_err(

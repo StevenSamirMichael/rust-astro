@@ -185,7 +185,7 @@ impl PyAstroTime {
 
     fn __add__(&self, other: &PyAny) -> PyResult<PyObject> {
         // Numpy array of floats
-        if other.is_instance_of::<np::PyArray1<f64>>().unwrap() {
+        if other.is_instance_of::<np::PyArray1<f64>>() {
             let parr: np::PyReadonlyArray1<f64> = other.extract().unwrap();
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
                 let objarr = parr
@@ -203,7 +203,7 @@ impl PyAstroTime {
             })
         }
         // list of floats
-        else if other.is_instance_of::<pyo3::types::PyList>().unwrap() {
+        else if other.is_instance_of::<pyo3::types::PyList>() {
             let v = other.extract::<Vec<f64>>().unwrap();
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
                 let objarr = v
@@ -221,9 +221,9 @@ impl PyAstroTime {
             })
         }
         // Constant number
-        else if other.is_instance_of::<pyo3::types::PyFloat>().unwrap()
-            || other.is_instance_of::<pyo3::types::PyInt>().unwrap()
-            || other.is_instance_of::<pyo3::types::PyLong>().unwrap()
+        else if other.is_instance_of::<pyo3::types::PyFloat>()
+            || other.is_instance_of::<pyo3::types::PyInt>()
+            || other.is_instance_of::<pyo3::types::PyLong>()
         {
             let dt: f64 = other.extract::<f64>().unwrap();
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
@@ -241,7 +241,7 @@ impl PyAstroTime {
 
     fn __sub__(&self, other: &PyAny) -> PyResult<PyObject> {
         // Numpy array of floats
-        if other.is_instance_of::<np::PyArray1<f64>>().unwrap() {
+        if other.is_instance_of::<np::PyArray1<f64>>() {
             let parr: np::PyReadonlyArray1<f64> = other.extract().unwrap();
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
                 let objarr = parr
@@ -259,7 +259,7 @@ impl PyAstroTime {
             })
         }
         // list of floats
-        else if other.is_instance_of::<pyo3::types::PyList>().unwrap() {
+        else if other.is_instance_of::<pyo3::types::PyList>() {
             let v = other.extract::<Vec<f64>>().unwrap();
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
                 let objarr = v
@@ -277,9 +277,9 @@ impl PyAstroTime {
             })
         }
         // Constant number
-        else if other.is_instance_of::<pyo3::types::PyFloat>().unwrap()
-            || other.is_instance_of::<pyo3::types::PyInt>().unwrap()
-            || other.is_instance_of::<pyo3::types::PyLong>().unwrap()
+        else if other.is_instance_of::<pyo3::types::PyFloat>()
+            || other.is_instance_of::<pyo3::types::PyInt>()
+            || other.is_instance_of::<pyo3::types::PyLong>()
         {
             let dt: f64 = other.extract::<f64>().unwrap();
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
@@ -334,12 +334,12 @@ pub trait ToTimeVec {
 impl ToTimeVec for &PyAny {
     fn to_time_vec(&self) -> PyResult<Vec<AstroTime>> {
         // "Scalar" time input case
-        if self.is_instance_of::<PyAstroTime>().unwrap() {
+        if self.is_instance_of::<PyAstroTime>() {
             let tm: PyAstroTime = self.extract().unwrap();
             Ok(vec![tm.inner.clone()])
         }
         // List case
-        else if self.is_instance_of::<pyo3::types::PyList>().unwrap() {
+        else if self.is_instance_of::<pyo3::types::PyList>() {
             match self.extract::<Vec<PyAstroTime>>() {
                 Ok(v) => Ok(v.iter().map(|x| x.inner).collect::<Vec<_>>()),
                 Err(e) => Err(pyo3::exceptions::PyRuntimeError::new_err(format!(
@@ -348,7 +348,7 @@ impl ToTimeVec for &PyAny {
             }
         }
         // numpy array case
-        else if self.is_instance_of::<numpy::PyArray1<PyObject>>().unwrap() {
+        else if self.is_instance_of::<numpy::PyArray1<PyObject>>() {
             match self.extract::<numpy::PyReadonlyArray1<PyObject>>() {
                 Ok(v) => pyo3::Python::with_gil(|py| -> PyResult<Vec<AstroTime>> {
                     // Extract times from numpya array of objects

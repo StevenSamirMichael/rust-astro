@@ -106,7 +106,7 @@ impl Quaternion {
 
     fn __mul__(&self, other: &PyAny) -> PyResult<PyObject> {
         // Multiply quaternion by quaternion
-        if other.is_instance_of::<Quaternion>().unwrap() {
+        if other.is_instance_of::<Quaternion>() {
             let q: PyRef<Quaternion> = other.extract()?;
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
                 return Ok(Quaternion {
@@ -116,7 +116,7 @@ impl Quaternion {
             })
         }
         // This incorrectly matches for all PyArray types
-        else if other.is_instance_of::<np::PyArray2<f64>>().unwrap() {
+        else if other.is_instance_of::<np::PyArray2<f64>>() {
             // So, check for 2D condition
             match other.extract::<np::PyReadonlyArray2<f64>>() {
                 Ok(v) => {

@@ -1,42 +1,56 @@
+use num_traits::Zero;
 use std::fmt::Debug;
 use std::ops::{Add, Mul};
 
 pub trait ODESystem<F>
 where
-    F: Add<f64, Output = F> + Add<F, Output = F> + Mul<f64, Output = F> + Clone + Debug,
+    F: Add<F, Output = F> + Mul<f64, Output = F> + Clone + Debug + Zero,
 {
     fn ydot(&mut self, x: f64, y: &F) -> F;
 }
+
 pub trait RK<const N: usize> {
     const A: [[f64; N]; N];
     const C: [f64; N];
     const B: [f64; N];
 
-    fn step<F>(x0: f64, y0: &F, dx: f64, system: &mut impl ODESystem<F>) -> F
+    fn step<F>(x0: f64, y0: &F, h: f64, system: &mut impl ODESystem<F>) -> F
     where
-        F: Add<f64, Output = F> + Add<F, Output = F> + Mul<f64, Output = F> + Clone + Debug,
+        F: Add<F, Output = F> + Mul<f64, Output = F> + Clone + Debug + Zero,
     {
-        let h: f64 = dx;
-        let mut yarr = Vec::<F>::new();
-        // Y1
-        yarr.push(y0.clone() + system.ydot(x0, y0) + y0.clone());
-        for k in 2..N {
-            println!("k = {}", k);
-            println!("yarr = {:?}", yarr[0]);
-            let mut yk = yarr[k - 2].clone();
+        let mut karr = Vec::new();
+        karr.push(system.ydot(x0, y0));
 
-            for i in 1..k {
-                println!("i = {}", i);
-                yk = yk
-                    + h * Self::B[i]
-                    + system.ydot(
-                        x0 + Self::C[i] * h,
-                        &(y0.clone() + yarr[i - 1].clone() * h * Self::A[k][i]),
-                    );
-            }
-            yarr.push(yk);
+        // Create the "k"s
+        for k in 1..N {
+            karr.push(karr.iter().enumerate().fold(F::zero(), |acc, (idx, f)| {
+                acc + system.ydot(
+                    x0 + h * Self::C[idx],
+                    &(y0.clone() + f.clone() * Self::A[k][idx]),
+                )
+            }))
         }
-        yarr.last().unwrap().clone()
+
+        // Sum the "k"s
+        karr.into_iter()
+            .enumerate()
+            .fold(y0.clone(), |acc, (idx, k)| acc + k * Self::B[idx])
+    }
+
+    fn integrate<F>(x0: f64, xend: f64, dx: f64, y0: &F, system: &mut impl ODESystem<F>) -> Vec<F>
+    where
+        F: Add<F, Output = F> + Mul<f64, Output = F> + Clone + Debug + Zero,
+    {
+        let mut x: f64 = x0;
+        let mut v = Vec::<F>::new();
+        let mut y = y0.clone();
+        while x < xend {
+            let ynew = Self::step(x, &y, dx, system);
+            v.push(ynew.clone());
+            x += dx;
+            y = ynew;
+        }
+        v
     }
 }
 
@@ -67,6 +81,21 @@ impl<const N: usize> ODEState<N> {
         ODEState::<N> {
             inner: input.try_into().unwrap(),
         }
+    }
+}
+
+impl<const N: usize> Zero for ODEState<N> {
+    fn zero() -> ODEState<N> {
+        ODEState::<N> { inner: [0.0; N] }
+    }
+
+    fn is_zero(&self) -> bool {
+        for ix in 0..self.inner.len() {
+            if self.inner[ix].is_zero() == false {
+                return false;
+            }
+        }
+        true
     }
 }
 
