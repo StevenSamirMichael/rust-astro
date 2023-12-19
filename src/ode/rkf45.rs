@@ -53,5 +53,51 @@ impl RKAdaptive<6> for RKF45 {
 
     const ORDER: usize = 6;
 
-    const FSAL: bool = true;
+    const FSAL: bool = false;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::types::*;
+    use super::super::RKAdaptiveSettings;
+    use super::*;
+    type State = nalgebra::Vector2<f64>;
+
+    struct HarmonicOscillator {
+        k: f64,
+    }
+    impl HarmonicOscillator {
+        fn new(k: f64) -> HarmonicOscillator {
+            HarmonicOscillator { k: k }
+        }
+    }
+
+    impl ODESystem<nalgebra::U2, nalgebra::U1> for HarmonicOscillator {
+        fn ydot(&mut self, _x: f64, y: &State) -> State {
+            State::new(y[1], -self.k * y[0])
+        }
+    }
+
+    #[test]
+    fn testit() {
+        let mut system = HarmonicOscillator::new(1.0);
+        let y0 = State::new(1.0, 0.0);
+
+        use std::f64::consts::PI;
+
+        let res = RKF45::integrate(
+            0.0,
+            2.0 * PI,
+            &y0,
+            None,
+            &mut system,
+            &RKAdaptiveSettings::default(),
+        );
+        println!("res = {:?}", res);
+        // integrating this harmonic oscillator between 0 and 2PI should return to the
+        // original state
+        //let out2 = RK4::integrate(0.0, 2.0 * PI, 0.0001 * 2.0 * PI, &y0, &mut system);
+        //assert!((out2.last().unwrap()[0] - 1.0).abs() < 1.0e-6);
+        //assert!(out2.last().unwrap().abs()[1] < 1.0e-10);
+    }
 }

@@ -1,46 +1,50 @@
-use std::fmt::Debug;
-use std::ops::{Add, Mul};
+use nalgebra::{allocator::Allocator, DefaultAllocator, Dim, OMatrix};
 
+use std::fmt::Debug;
 use thiserror::Error;
 
-pub trait ODEState:
-    Add<Output = Self> + Mul<f64, Output = Self> + Clone + Debug + Iterator<Item = f64>
-{
-}
+pub type State<R, C> = OMatrix<f64, R, C>;
 
-impl<T> ODEState for T where
-    T: Add<Output = T> + Mul<f64, Output = T> + Clone + Debug + Iterator<Item = f64>
-{
-}
-
-pub trait ODESystem<F>
+pub trait ODESystem<R, C>
 where
-    F: ODEState,
+    R: Dim,
+    C: Dim,
+    DefaultAllocator: Allocator<f64, R, C>,
 {
-    fn ydot(&mut self, x: f64, y: &F) -> F;
+    fn ydot(&mut self, x: f64, y: &State<R, C>) -> State<R, C>;
 }
 
 #[derive(Debug, Error)]
 pub enum ODEError {
     #[error("Stopped at x = {x}.  Reached maximum of {steps} steps.")]
     MaxStepsReached { x: f64, steps: usize },
+    #[error("Step Size is Too Small")]
+    StepSizeTooSmall,
+    #[error("Step error not finite")]
+    StepErrorToSmall,
 }
 
 pub type ODEResult<T> = Result<T, ODEError>;
 
-pub struct DenseOutput<F>
+#[derive(Debug, Clone)]
+pub struct DenseOutput<R, C>
 where
-    F: ODEState,
+    R: Dim,
+    C: Dim,
+    DefaultAllocator: Allocator<f64, R, C>,
 {
     pub x: Vec<f64>,
-    pub y: Vec<F>,
+    pub y: Vec<State<R, C>>,
 }
 
-pub struct ODESolution<F>
+#[derive(Debug, Clone)]
+pub struct ODESolution<R, C>
 where
-    F: ODEState,
+    R: Dim,
+    C: Dim,
+    DefaultAllocator: Allocator<f64, R, C>,
 {
     pub nevals: usize,
-    pub y: F,
-    pub dense: Option<DenseOutput<F>>,
+    pub y: State<R, C>,
+    pub dense: Option<DenseOutput<R, C>>,
 }

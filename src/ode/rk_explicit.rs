@@ -1,15 +1,21 @@
-use super::types::{ODEState, ODESystem};
-use std::fmt::Debug;
-use std::ops::{Add, Mul};
+use super::types::{ODESystem, State};
+use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
 
 pub trait RK<const N: usize> {
     const A: [[f64; N]; N];
     const C: [f64; N];
     const B: [f64; N];
 
-    fn step<F>(x0: f64, y0: &F, h: f64, system: &mut impl ODESystem<F>) -> F
+    fn step<R, C>(
+        x0: f64,
+        y0: &State<R, C>,
+        h: f64,
+        system: &mut impl ODESystem<R, C>,
+    ) -> State<R, C>
     where
-        F: ODEState,
+        R: Dim,
+        C: Dim,
+        DefaultAllocator: Allocator<f64, R, C>,
     {
         let mut karr = Vec::new();
         karr.push(system.ydot(x0, y0));
@@ -30,17 +36,28 @@ pub trait RK<const N: usize> {
             .fold(y0.clone(), |acc, (idx, k)| acc + k * Self::B[idx] * h)
     }
 
-    fn integrate<F>(x0: f64, xend: f64, dx: f64, y0: &F, system: &mut impl ODESystem<F>) -> Vec<F>
+    fn integrate<R, C>(
+        x0: f64,
+        xend: f64,
+        dx: f64,
+        y0: &State<R, C>,
+        system: &mut impl ODESystem<R, C>,
+    ) -> Vec<State<R, C>>
     where
-        F: ODEState,
+        R: Dim,
+        C: Dim,
+        DefaultAllocator: Allocator<f64, R, C>,
     {
         let mut x: f64 = x0;
-        let mut v = Vec::<F>::new();
+        let mut v = Vec::new();
         let mut y = y0.clone();
         while x < xend {
             let ynew = Self::step(x, &y, dx, system);
             v.push(ynew.clone());
             x += dx;
+            if x > xend {
+                x = xend;
+            }
             y = ynew;
         }
         v
@@ -71,11 +88,8 @@ impl RK<2> for Midpoint {
 #[cfg(test)]
 mod tests {
 
-    use super::super::teststate::TestState;
-
     use super::*;
-
-    type State = TestState<2>;
+    type State = nalgebra::Vector2<f64>;
 
     struct HarmonicOscillator {
         k: f64,
@@ -86,25 +100,23 @@ mod tests {
         }
     }
 
-    impl ODESystem<State> for HarmonicOscillator {
+    impl ODESystem<nalgebra::U2, nalgebra::U1> for HarmonicOscillator {
         fn ydot(&mut self, _x: f64, y: &State) -> State {
-            State::new(&[y.inner[1], -self.k * y.inner[0]])
+            State::new(y[1], -self.k * y[0])
         }
     }
 
     #[test]
     fn testit() {
         let mut system = HarmonicOscillator::new(1.0);
-        let y0 = State::new(&[1.0, 0.0]);
+        let y0 = State::new(1.0, 0.0);
 
         use std::f64::consts::PI;
 
         // integrating this harmonic oscillator between 0 and 2PI should return to the
         // original state
         let out2 = RK4::integrate(0.0, 2.0 * PI, 0.0001 * 2.0 * PI, &y0, &mut system);
-        assert!((out2.last().unwrap().inner[0] - 1.0).abs() < 1.0e-6);
-        assert!(out2.last().unwrap().inner[1].abs() < 1.0e-10);
-        println!("last = {:?}", out2.last().unwrap());
-        println!("len = {}", out2.len());
+        assert!((out2.last().unwrap()[0] - 1.0).abs() < 1.0e-6);
+        assert!(out2.last().unwrap().abs()[1] < 1.0e-10);
     }
 }

@@ -22,6 +22,7 @@ pyo3 = { version = "0.20.0", features = ["extension-module"], optional = true }
 cty = "0.2.2"
 num-traits = "0.2"
 thiserror = "1.0"
+simba = "0.8"
 
 [build-dependencies]
 cc = { version = "1.0.74", features = ["parallel"] }
