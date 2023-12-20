@@ -1,6 +1,6 @@
 use super::rk_adaptive::RKAdaptive;
 
-struct RKF45 {}
+pub struct RKF45 {}
 impl RKAdaptive<6> for RKF45 {
     const A: [[f64; 6]; 6] = [
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -35,7 +35,7 @@ impl RKAdaptive<6> for RKF45 {
         16.0 / 135.0,
         0.0,
         6656.0 / 12825.0,
-        28561.0 / 56340.0,
+        28561.0 / 56430.0,
         -9.0 / 50.0,
         2.0 / 55.0,
     ];
@@ -51,7 +51,7 @@ impl RKAdaptive<6> for RKF45 {
 
     const C: [f64; 6] = [0.0, 0.25, 3.0 / 8.0, 12.0 / 13.0, 1.0, 0.5];
 
-    const ORDER: usize = 6;
+    const ORDER: usize = 5;
 
     const FSAL: bool = false;
 }
@@ -89,7 +89,7 @@ mod tests {
             0.0,
             2.0 * PI,
             &y0,
-            None,
+            Some(0.02),
             &mut system,
             &RKAdaptiveSettings::default(),
         );
