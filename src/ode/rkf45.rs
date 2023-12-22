@@ -40,18 +40,27 @@ impl RKAdaptive<6> for RKF45 {
         2.0 / 55.0,
     ];
 
-    const BSTAR: [f64; 6] = [
-        25.0 / 216.0,
-        0.0,
-        1408.0 / 2565.0,
-        2197.0 / 4104.0,
-        -0.2,
-        0.0,
-    ];
+    const BERR: [f64; 6] = {
+        const BSTAR: [f64; 6] = [
+            25.0 / 216.0,
+            0.0,
+            1408.0 / 2565.0,
+            2197.0 / 4104.0,
+            -0.2,
+            0.0,
+        ];
+        let mut berr = [0.0; 6];
+        let mut ix: usize = 0;
+        while ix < 6 {
+            berr[ix] = BSTAR[ix] - Self::B[ix];
+            ix += 1;
+        }
+        berr
+    };
 
     const C: [f64; 6] = [0.0, 0.25, 3.0 / 8.0, 12.0 / 13.0, 1.0, 0.5];
 
-    const ORDER: usize = 5;
+    const ORDER: usize = 4;
 
     const FSAL: bool = false;
 }
@@ -85,19 +94,12 @@ mod tests {
 
         use std::f64::consts::PI;
 
-        let res = RKF45::integrate(
-            0.0,
-            2.0 * PI,
-            &y0,
-            Some(0.02),
-            &mut system,
-            &RKAdaptiveSettings::default(),
-        );
-        println!("res = {:?}", res);
+        let mut settings = RKAdaptiveSettings::default();
+        settings.dense_output = false;
+
         // integrating this harmonic oscillator between 0 and 2PI should return to the
         // original state
-        //let out2 = RK4::integrate(0.0, 2.0 * PI, 0.0001 * 2.0 * PI, &y0, &mut system);
-        //assert!((out2.last().unwrap()[0] - 1.0).abs() < 1.0e-6);
-        //assert!(out2.last().unwrap().abs()[1] < 1.0e-10);
+        let res = RKF45::integrate(0.0, PI / 2.0, &y0, &mut system, &settings);
+        println!("res = {:?}", res);
     }
 }

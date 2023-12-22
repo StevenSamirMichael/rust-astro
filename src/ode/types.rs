@@ -22,6 +22,10 @@ pub enum ODEError {
     StepSizeTooSmall,
     #[error("Step error not finite")]
     StepErrorToSmall,
+    #[error("Dense output not provided in solution")]
+    NoDenseOutputInSolution,
+    #[error("Interpolation exceeds solution bounds")]
+    InterpExceedsSolutionBounds,
 }
 
 pub type ODEResult<T> = Result<T, ODEError>;
@@ -34,6 +38,8 @@ where
     DefaultAllocator: Allocator<f64, R, C>,
 {
     pub x: Vec<f64>,
+    pub h: Vec<f64>,
+    pub yprime: Vec<Vec<State<R, C>>>,
     pub y: Vec<State<R, C>>,
 }
 
@@ -45,6 +51,20 @@ where
     DefaultAllocator: Allocator<f64, R, C>,
 {
     pub nevals: usize,
+    pub naccept: usize,
+    pub nreject: usize,
+    pub x: f64,
     pub y: State<R, C>,
     pub dense: Option<DenseOutput<R, C>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ODEInterp<R, C>
+where
+    R: Dim,
+    C: Dim,
+    DefaultAllocator: Allocator<f64, R, C>,
+{
+    pub x: Vec<f64>,
+    pub y: Vec<State<R, C>>,
 }

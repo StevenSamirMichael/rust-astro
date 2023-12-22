@@ -6,6 +6,7 @@ pub struct RKAdaptiveSettings {
     pub safetyfac: f64,
     pub gamma: f64,
     pub dtmin: f64,
+    pub dense_output: bool,
 }
 
 impl RKAdaptiveSettings {
@@ -18,6 +19,7 @@ impl RKAdaptiveSettings {
             safetyfac: 0.9,
             gamma: 0.9,
             dtmin: 1.0e-6,
+            dense_output: false,
         }
     }
 }

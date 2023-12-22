@@ -1,36 +1,14 @@
 use super::rk_adaptive_settings::RKAdaptiveSettings;
 use super::types::*;
 
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
-
-pub struct StepOK<R, C>
-where
-    R: Dim,
-    C: Dim,
-    DefaultAllocator: Allocator<f64, R, C>,
-{
-    x: f64,
-    y: State<R, C>,
-}
-
-struct StepFail {}
-
-enum StepResult<R, C>
-where
-    R: Dim,
-    C: Dim,
-    DefaultAllocator: Allocator<f64, R, C>,
-{
-    Success(StepOK<R, C>),
-    Failure(StepFail),
-}
+use nalgebra::{allocator::Allocator, DefaultAllocator, Dim, DimName};
 
 pub trait RKAdaptive<const N: usize> {
     // Butcher Tableau Coefficients
     const A: [[f64; N]; N];
     const C: [f64; N];
     const B: [f64; N];
-    const BSTAR: [f64; N];
+    const BERR: [f64; N];
 
     // order
     const ORDER: usize;
@@ -43,23 +21,24 @@ pub trait RKAdaptive<const N: usize> {
         x0: f64,
         x_end: f64,
         y0: &State<R, C>,
-        dx: Option<f64>,
         system: &mut impl ODESystem<R, C>,
         settings: &RKAdaptiveSettings,
     ) -> ODEResult<ODESolution<R, C>>
     where
-        R: Dim,
-        C: Dim,
+        R: Dim + DimName,
+        C: Dim + DimName,
         DefaultAllocator: Allocator<f64, R, C>,
     {
         let mut nevals: usize = 0;
+        let mut naccept: usize = 0;
+        let mut nreject: usize = 0;
         let mut x = x0.clone();
         let mut y = y0.clone();
 
         let mut qold: f64 = 1.0e-4;
 
         // Take guess at initial stepsize
-        let h_init = {
+        let mut h = {
             // Adapted from OrdinaryDiffEq.jl
             let sci = (y0.abs() * settings.relerror).add_scalar(settings.abserror);
             let d0 = y0.component_div(&sci).norm();
@@ -78,15 +57,12 @@ pub trait RKAdaptive<const N: usize> {
             f64::min(100.0 * h0, h1)
         };
 
-        let mut h = match dx {
-            None => h_init,
-            Some(sdx) => f64::min(h_init, sdx),
-        };
-
-        let mut dense_output: Option<DenseOutput<R, C>> = match dx {
-            None => None,
-            Some(_) => Some(DenseOutput {
+        let mut accepted_steps: Option<DenseOutput<R, C>> = match settings.dense_output {
+            false => None,
+            true => Some(DenseOutput {
                 x: Vec::new(),
+                h: Vec::new(),
+                yprime: Vec::new(),
                 y: Vec::new(),
             }),
         };
@@ -114,15 +90,16 @@ pub trait RKAdaptive<const N: usize> {
             let ynp1 = karr.iter().enumerate().fold(y.clone(), |acc, (idx, k)| {
                 acc + k.clone() * Self::B[idx] * h
             });
-            let ynp1star = karr
-                .into_iter()
-                .enumerate()
-                .fold(y.clone(), |acc, (idx, k)| acc + k * Self::BSTAR[idx] * h);
 
-            let yerr = ynp1.clone() - ynp1star.clone();
+            let yerr = karr
+                .iter()
+                .enumerate()
+                .fold(State::<R, C>::zeros(), |acc, (idx, k)| {
+                    acc + k * Self::BERR[idx] * h
+                });
 
             let enorm = {
-                let mut ymax = settings.relerror * y0.abs().sup(&ynp1.abs());
+                let mut ymax = settings.relerror * y.abs().sup(&ynp1.abs());
                 ymax = ymax.add_scalar(settings.abserror);
                 let ydiv = yerr.component_div(&ymax);
                 //ydiv.norm() / ((y.ncols() * y.nrows()) as f64).sqrt()
@@ -147,13 +124,15 @@ pub trait RKAdaptive<const N: usize> {
 
             if (enorm < 1.0) || (h <= settings.dtmin) {
                 // If dense output requested, record dense output
-                match dx {
-                    Some(_) => {
-                        let de = dense_output.as_mut().unwrap();
-                        de.x.push(x);
-                        de.y.push(y);
+                match settings.dense_output {
+                    true => {
+                        let astep = accepted_steps.as_mut().unwrap();
+                        astep.x.push(x);
+                        astep.h.push(h);
+                        astep.yprime.push(karr);
+                        astep.y.push(y.clone());
                     }
-                    None => {}
+                    false => {}
                 }
 
                 // Adjust step size
@@ -162,12 +141,10 @@ pub trait RKAdaptive<const N: usize> {
                 y = ynp1;
                 h = h / q;
 
+                naccept += 1;
                 // If dense output, limit step size
-                match dx {
-                    Some(sdx) => h = f64::min(h, sdx),
-                    None => {}
-                }
             } else {
+                nreject += 1;
                 h = h / f64::min(1.0 / settings.minfac, q11 / settings.gamma);
             }
 
@@ -184,8 +161,11 @@ pub trait RKAdaptive<const N: usize> {
 
         Ok(ODESolution {
             nevals: nevals,
+            naccept: naccept,
+            nreject: nreject,
+            x: x,
             y: y,
-            dense: dense_output,
+            dense: accepted_steps,
         })
     }
 }
