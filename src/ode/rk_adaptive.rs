@@ -12,12 +12,12 @@ pub trait RKAdaptive<const N: usize> {
     // order
     const ORDER: usize;
 
-    // First Same as Last
-    // (first compute of next iteration is same as last compute of last iteration)
+    /// First Same as Last
+    /// (first compute of next iteration is same as last compute of last iteration)
     const FSAL: bool;
 
     fn interpolate<S: ODEState>(
-        _sol: ODESolution<S>,
+        _sol: &ODESolution<S>,
         _xstart: f64,
         _xend: f64,
         _dx: f64,
@@ -25,6 +25,34 @@ pub trait RKAdaptive<const N: usize> {
         Err(Box::new(ODEError::InterpNotImplemented))
     }
 
+    /// Convenience function to perform ODE integration
+    /// and interpolate from start to finish of integratin
+    /// at fixed intervals
+    fn integrate_dense<S: ODESystem>(
+        x0: f64,
+        x_end: f64,
+        dx: f64,
+        y0: &S::Output,
+        system: &mut S,
+        settings: &RKAdaptiveSettings,
+    ) -> ODEResult<(ODESolution<S::Output>, ODEInterp<S::Output>)> {
+        // Make sure dense output is enabled
+        let res = match settings.dense_output {
+            true => Self::integrate(x0, x_end, y0, system, settings)?,
+            false => {
+                let mut sc = (*settings).clone();
+                sc.dense_output = true;
+                Self::integrate(x0, x_end, y0, system, &sc)?
+            }
+        };
+        // Interpolate the result
+        let interp = Self::interpolate(&res, x0, x_end, dx)?;
+        Ok((res, interp))
+    }
+
+    ///
+    /// Runga-Kutta integration
+    /// with Proportional-Integral controller
     fn integrate<S: ODESystem>(
         x0: f64,
         x_end: f64,
@@ -117,7 +145,7 @@ pub trait RKAdaptive<const N: usize> {
                 return Err(Box::new(ODEError::StepErrorToSmall));
             }
 
-            // Run proportional-integral ocntroller on error
+            // Run proportional-integral controller on error
             let beta1 = 7.0 / 5.0 / Self::ORDER as f64;
             let beta2 = 2.0 / 5.0 / Self::ORDER as f64;
             let q11 = enorm.powf(beta1);

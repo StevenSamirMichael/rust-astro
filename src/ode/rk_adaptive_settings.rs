@@ -1,3 +1,4 @@
+#[derive(Clone, Debug)]
 pub struct RKAdaptiveSettings {
     pub abserror: f64,
     pub relerror: f64,

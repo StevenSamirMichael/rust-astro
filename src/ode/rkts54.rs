@@ -104,7 +104,7 @@ impl RKAdaptive<7> for RKTS54 {
     const FSAL: bool = false;
 
     fn interpolate<S: ODEState>(
-        sol: ODESolution<S>,
+        sol: &ODESolution<S>,
         xstart: f64,
         xend: f64,
         dx: f64,
@@ -187,7 +187,7 @@ mod tests {
     }
 
     #[test]
-    fn testit() {
+    fn testit() -> ODEResult<()> {
         let mut system = HarmonicOscillator::new(1.0);
         let y0 = State::new(1.0, 0.0);
 
@@ -198,26 +198,19 @@ mod tests {
         settings.abserror = 1e-12;
         settings.relerror = 1e-12;
 
-        // integrating this harmonic oscillator between 0 and 2PI should return to the
-        // original state
-        let res = RKTS54::integrate(0.0, PI / 2.0, &y0, &mut system, &settings);
-        //println!("res = {:?}", res);
+        let (sol, interp) =
+            RKTS54::integrate_dense(0.0, PI / 2.0, PI / 2.0 * 0.05, &y0, &mut system, &settings)?;
 
-        let interp = RKTS54::interpolate(res.unwrap(), 0.0, PI / 2.0, PI / 2.0 * 0.05);
+        println!("sol evals = {}", sol.nevals);
+        interp.x.iter().enumerate().for_each(|(idx, x)| {
+            // We know the exact solution for the harmonic oscillator
+            let exact = x.cos();
+            // Compare with the interpolated result
+            let diff = exact - interp.y[idx][0];
+            // we set abs and rel error to 1e-10, so lets check!
+            assert!(diff.abs() < 1e-12);
+        });
 
-        interp
-            .as_ref()
-            .unwrap()
-            .x
-            .iter()
-            .enumerate()
-            .for_each(|(idx, x)| {
-                // We know the exact solution for the harmonic oscillator
-                let exact = x.cos();
-                // Compare with the interpolated result
-                let diff = exact - interp.as_ref().unwrap().y[idx][0];
-                // we set abs and rel error to 1e-10, so lets check!
-                assert!(diff.abs() < 1e-12);
-            })
+        Ok(())
     }
 }
