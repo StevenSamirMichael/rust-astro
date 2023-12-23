@@ -1,17 +1,45 @@
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim, OMatrix};
+use num_traits::Zero;
+use std::ops::{Add, Div, Mul, Sub};
 
 use std::fmt::Debug;
 use thiserror::Error;
 
-pub type State<R, C> = OMatrix<f64, R, C>;
+pub type ODEResult<T> = Result<T, Box<dyn std::error::Error>>;
 
-pub trait ODESystem<R, C>
-where
-    R: Dim,
-    C: Dim,
-    DefaultAllocator: Allocator<f64, R, C>,
+pub trait ODEState:
+    Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<f64, Output = Self>
+    + Div<f64, Output = Self>
+    + Clone
+    + Sized
+    + Zero
 {
-    fn ydot(&mut self, x: f64, y: &State<R, C>) -> State<R, C>;
+    // Element-wise divisior of self by other
+    fn ode_elem_div(&self, other: &Self) -> Self;
+
+    // Element-wise maximum of self with other
+    fn ode_elem_max(&self, other: &Self) -> Self;
+
+    // Euclideian norm
+    fn ode_norm(&self) -> f64;
+
+    // Element-wise absolute value
+    fn ode_abs(&self) -> Self;
+
+    // Add scalar to each element
+    fn ode_scalar_add(&self, s: f64) -> Self;
+
+    // Sum of squares
+    fn ode_sumsq(&self) -> f64;
+
+    // Number of elements
+    fn ode_nelem(&self) -> usize;
+}
+
+pub trait ODESystem {
+    type Output: ODEState + Zero;
+    fn ydot(&mut self, x: f64, y: &Self::Output) -> ODEResult<Self::Output>;
 }
 
 #[derive(Debug, Error)]
@@ -26,45 +54,39 @@ pub enum ODEError {
     NoDenseOutputInSolution,
     #[error("Interpolation exceeds solution bounds")]
     InterpExceedsSolutionBounds,
+    #[error("Interpolation not implemented for this integrator")]
+    InterpNotImplemented,
 }
 
-pub type ODEResult<T> = Result<T, ODEError>;
-
 #[derive(Debug, Clone)]
-pub struct DenseOutput<R, C>
+pub struct DenseOutput<S>
 where
-    R: Dim,
-    C: Dim,
-    DefaultAllocator: Allocator<f64, R, C>,
+    S: ODEState,
 {
     pub x: Vec<f64>,
     pub h: Vec<f64>,
-    pub yprime: Vec<Vec<State<R, C>>>,
-    pub y: Vec<State<R, C>>,
+    pub yprime: Vec<Vec<S>>,
+    pub y: Vec<S>,
 }
 
 #[derive(Debug, Clone)]
-pub struct ODESolution<R, C>
+pub struct ODESolution<S>
 where
-    R: Dim,
-    C: Dim,
-    DefaultAllocator: Allocator<f64, R, C>,
+    S: ODEState,
 {
     pub nevals: usize,
     pub naccept: usize,
     pub nreject: usize,
     pub x: f64,
-    pub y: State<R, C>,
-    pub dense: Option<DenseOutput<R, C>>,
+    pub y: S,
+    pub dense: Option<DenseOutput<S>>,
 }
 
 #[derive(Debug, Clone)]
-pub struct ODEInterp<R, C>
+pub struct ODEInterp<S>
 where
-    R: Dim,
-    C: Dim,
-    DefaultAllocator: Allocator<f64, R, C>,
+    S: ODEState,
 {
     pub x: Vec<f64>,
-    pub y: Vec<State<R, C>>,
+    pub y: Vec<S>,
 }

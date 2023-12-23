@@ -81,9 +81,10 @@ mod tests {
         }
     }
 
-    impl ODESystem<nalgebra::U2, nalgebra::U1> for HarmonicOscillator {
-        fn ydot(&mut self, _x: f64, y: &State) -> State {
-            State::new(y[1], -self.k * y[0])
+    impl ODESystem for HarmonicOscillator {
+        type Output = nalgebra::Vector2<f64>;
+        fn ydot(&mut self, _x: f64, y: &nalgebra::Vector2<f64>) -> ODEResult<Self::Output> {
+            Ok(State::new(y[1], -self.k * y[0]))
         }
     }
 

@@ -1,24 +1,13 @@
-use super::types::{ODESystem, State};
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
+use super::types::{ODEResult, ODESystem};
 
 pub trait RK<const N: usize> {
     const A: [[f64; N]; N];
     const C: [f64; N];
     const B: [f64; N];
 
-    fn step<R, C>(
-        x0: f64,
-        y0: &State<R, C>,
-        h: f64,
-        system: &mut impl ODESystem<R, C>,
-    ) -> State<R, C>
-    where
-        R: Dim,
-        C: Dim,
-        DefaultAllocator: Allocator<f64, R, C>,
-    {
-        let mut karr = Vec::new();
-        karr.push(system.ydot(x0, y0));
+    fn step<S: ODESystem>(x0: f64, y0: &S::Output, h: f64, system: &mut S) -> ODEResult<S::Output> {
+        let mut karr = Vec::<S::Output>::new();
+        karr.push(system.ydot(x0, y0)?);
 
         // Create the "k"s
         for k in 1..N {
@@ -27,32 +16,28 @@ pub trait RK<const N: usize> {
                 &(karr.iter().enumerate().fold(y0.clone(), |acc, (idx, ki)| {
                     acc + ki.clone() * Self::A[k][idx] * h
                 })),
-            ));
+            )?);
         }
 
         // Sum the "k"s
-        karr.into_iter()
+        Ok(karr
+            .into_iter()
             .enumerate()
-            .fold(y0.clone(), |acc, (idx, k)| acc + k * Self::B[idx] * h)
+            .fold(y0.clone(), |acc, (idx, k)| acc + k * Self::B[idx] * h))
     }
 
-    fn integrate<R, C>(
+    fn integrate<S: ODESystem>(
         x0: f64,
         xend: f64,
         dx: f64,
-        y0: &State<R, C>,
-        system: &mut impl ODESystem<R, C>,
-    ) -> Vec<State<R, C>>
-    where
-        R: Dim,
-        C: Dim,
-        DefaultAllocator: Allocator<f64, R, C>,
-    {
+        y0: &S::Output,
+        system: &mut S,
+    ) -> ODEResult<Vec<S::Output>> {
         let mut x: f64 = x0;
         let mut v = Vec::new();
         let mut y = y0.clone();
         while x < xend {
-            let ynew = Self::step(x, &y, dx, system);
+            let ynew = Self::step(x, &y, dx, system)?;
             v.push(ynew.clone());
             x += dx;
             if x > xend {
@@ -60,7 +45,7 @@ pub trait RK<const N: usize> {
             }
             y = ynew;
         }
-        v
+        Ok(v)
     }
 }
 
@@ -100,14 +85,19 @@ mod tests {
         }
     }
 
-    impl ODESystem<nalgebra::U2, nalgebra::U1> for HarmonicOscillator {
-        fn ydot(&mut self, _x: f64, y: &State) -> State {
-            State::new(y[1], -self.k * y[0])
+    impl ODESystem for HarmonicOscillator {
+        type Output = nalgebra::Vector2<f64>;
+        fn ydot(
+            &mut self,
+            _x: f64,
+            y: &nalgebra::Vector2<f64>,
+        ) -> ODEResult<nalgebra::Vector2<f64>> {
+            Ok(State::new(y[1], -self.k * y[0]))
         }
     }
 
     #[test]
-    fn testit() {
+    fn testit() -> ODEResult<()> {
         let mut system = HarmonicOscillator::new(1.0);
         let y0 = State::new(1.0, 0.0);
 
@@ -115,8 +105,9 @@ mod tests {
 
         // integrating this harmonic oscillator between 0 and 2PI should return to the
         // original state
-        let out2 = RK4::integrate(0.0, 2.0 * PI, 0.0001 * 2.0 * PI, &y0, &mut system);
+        let out2 = RK4::integrate(0.0, 2.0 * PI, 0.0001 * 2.0 * PI, &y0, &mut system)?;
         assert!((out2.last().unwrap()[0] - 1.0).abs() < 1.0e-6);
         assert!(out2.last().unwrap().abs()[1] < 1.0e-10);
+        Ok(())
     }
 }

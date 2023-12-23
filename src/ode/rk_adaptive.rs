@@ -1,7 +1,6 @@
 use super::rk_adaptive_settings::RKAdaptiveSettings;
 use super::types::*;
-
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim, DimName};
+use num_traits::identities::Zero;
 
 pub trait RKAdaptive<const N: usize> {
     // Butcher Tableau Coefficients
@@ -17,18 +16,22 @@ pub trait RKAdaptive<const N: usize> {
     // (first compute of next iteration is same as last compute of last iteration)
     const FSAL: bool;
 
-    fn integrate<R, C>(
+    fn interpolate<S: ODEState>(
+        _sol: ODESolution<S>,
+        _xstart: f64,
+        _xend: f64,
+        _dx: f64,
+    ) -> ODEResult<ODEInterp<S>> {
+        Err(Box::new(ODEError::InterpNotImplemented))
+    }
+
+    fn integrate<S: ODESystem>(
         x0: f64,
         x_end: f64,
-        y0: &State<R, C>,
-        system: &mut impl ODESystem<R, C>,
+        y0: &S::Output,
+        system: &mut S,
         settings: &RKAdaptiveSettings,
-    ) -> ODEResult<ODESolution<R, C>>
-    where
-        R: Dim + DimName,
-        C: Dim + DimName,
-        DefaultAllocator: Allocator<f64, R, C>,
-    {
+    ) -> ODEResult<ODESolution<S::Output>> {
         let mut nevals: usize = 0;
         let mut naccept: usize = 0;
         let mut nreject: usize = 0;
@@ -40,14 +43,14 @@ pub trait RKAdaptive<const N: usize> {
         // Take guess at initial stepsize
         let mut h = {
             // Adapted from OrdinaryDiffEq.jl
-            let sci = (y0.abs() * settings.relerror).add_scalar(settings.abserror);
-            let d0 = y0.component_div(&sci).norm();
-            let ydot0 = system.ydot(x0.clone(), &y0);
-            let d1 = ydot0.component_div(&sci).norm();
+            let sci = (y0.ode_abs() * settings.relerror).ode_scalar_add(settings.abserror);
+            let d0 = y0.ode_elem_div(&sci).ode_norm();
+            let ydot0 = system.ydot(x0.clone(), &y0)?;
+            let d1 = ydot0.ode_elem_div(&sci).ode_norm();
             let h0 = 0.01 * d0 / d1;
-            let y1 = y0 + h0 * ydot0.clone();
-            let ydot1 = system.ydot(x0 + h0, &y1);
-            let d2 = (ydot1 - ydot0).component_div(&sci).norm() / h0;
+            let y1 = y0.clone() + ydot0.clone() * h0;
+            let ydot1 = system.ydot(x0 + h0, &y1)?;
+            let d2 = (ydot1 - ydot0).ode_elem_div(&sci).ode_norm() / h0;
             let dmax = f64::max(d1, d2);
             let h1 = match dmax < 1e-15 {
                 false => (0.01 / f64::max(d1, d2)).powf(1.0 / (1.0 + Self::ORDER as f64)),
@@ -57,7 +60,7 @@ pub trait RKAdaptive<const N: usize> {
             f64::min(100.0 * h0, h1)
         };
 
-        let mut accepted_steps: Option<DenseOutput<R, C>> = match settings.dense_output {
+        let mut accepted_steps: Option<DenseOutput<S::Output>> = match settings.dense_output {
             false => None,
             true => Some(DenseOutput {
                 x: Vec::new(),
@@ -74,7 +77,7 @@ pub trait RKAdaptive<const N: usize> {
             }
 
             let mut karr = Vec::new();
-            karr.push(system.ydot(x, &y));
+            karr.push(system.ydot(x, &y)?);
 
             // Create the "k"s
             for k in 1..N {
@@ -83,7 +86,7 @@ pub trait RKAdaptive<const N: usize> {
                     &(karr.iter().enumerate().fold(y.clone(), |acc, (idx, ki)| {
                         acc + ki.clone() * Self::A[k][idx] * h
                     })),
-                ));
+                )?);
             }
 
             // Sum the "k"s
@@ -91,26 +94,30 @@ pub trait RKAdaptive<const N: usize> {
                 acc + k.clone() * Self::B[idx] * h
             });
 
+            // Compute the "error" state by differencing the p and p* orders
             let yerr = karr
                 .iter()
                 .enumerate()
-                .fold(State::<R, C>::zeros(), |acc, (idx, k)| {
-                    acc + k * Self::BERR[idx] * h
+                .fold(S::Output::zero(), |acc, (idx, k)| {
+                    acc + k.clone() * Self::BERR[idx] * h
                 });
 
+            // Compute normalized error
             let enorm = {
-                let mut ymax = settings.relerror * y.abs().sup(&ynp1.abs());
-                ymax = ymax.add_scalar(settings.abserror);
-                let ydiv = yerr.component_div(&ymax);
+                let mut ymax = y.ode_abs().ode_elem_max(&ynp1.ode_abs()) * settings.relerror;
+                ymax = ymax.ode_scalar_add(settings.abserror);
+                let ydiv = yerr.ode_elem_div(&ymax);
                 //ydiv.norm() / ((y.ncols() * y.nrows()) as f64).sqrt()
-                (ydiv.map(|x| x.powf(2.0)).sum() / ((y.ncols() * y.nrows()) as f64)).sqrt()
+                //(ydiv.map(|x| x.powf(2.0)).sum() / ((y.ncols() * y.nrows()) as f64)).sqrt()
+                (ydiv.ode_sumsq() / ydiv.ode_nelem() as f64).sqrt()
             };
             nevals += N;
 
             if !enorm.is_finite() {
-                return Err(ODEError::StepErrorToSmall);
+                return Err(Box::new(ODEError::StepErrorToSmall));
             }
 
+            // Run proportional-integral ocntroller on error
             let beta1 = 7.0 / 5.0 / Self::ORDER as f64;
             let beta2 = 2.0 / 5.0 / Self::ORDER as f64;
             let q11 = enorm.powf(beta1);
