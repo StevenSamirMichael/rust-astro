@@ -2,12 +2,7 @@
 
 use super::types::ODEState;
 
-use nalgebra::{base::allocator::Allocator, DefaultAllocator, DimName};
-
-impl<R: DimName, C: DimName> ODEState for nalgebra::OMatrix<f64, R, C>
-where
-    DefaultAllocator: Allocator<f64, R, C>,
-{
+impl<const R: usize, const C: usize> ODEState for nalgebra::SMatrix<f64, R, C> {
     #[inline(always)]
     fn ode_elem_div(&self, other: &Self) -> Self {
         self.component_div(other)

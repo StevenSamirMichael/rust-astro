@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools", "setuptools-rust"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astro"
+version = "0.1"
+
+[tool.setuptools.packages]
+find = { where = ["python"] }
+
+[[tool.setuptools-rust.ext-modules]]
+features = ["pybindings"]
+args = ["--crate-type", "cdylib"]
+target = "astro/astro"
+path = "Cargo.toml"
+binding = "PyO3"
+py-limited-api = "auto"

@@ -4,7 +4,7 @@ use std::ops::{Add, Div, Mul, Sub};
 use std::fmt::Debug;
 use thiserror::Error;
 
-pub type ODEResult<T> = Result<T, Box<dyn std::error::Error>>;
+pub type ODEResult<T> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 pub trait ODEState:
     Add<Output = Self>

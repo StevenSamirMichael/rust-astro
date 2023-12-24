@@ -8,6 +8,7 @@ pub mod types;
 
 pub use rk_adaptive_settings::RKAdaptiveSettings;
 
+pub use rk_adaptive::RKAdaptive;
 pub use rkf45::RKF45;
 pub use rkts54::RKTS54;
 pub use types::*;

@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use super::pysolarsystem;
 use super::pyutils::*;
 use crate::astrotime::AstroTime;
-use crate::jplephem::JPLEPHEM;
+use crate::jplephem;
 use crate::solarsystem::SolarSystem;
 use crate::utils::AstroResult;
 use nalgebra as na;
@@ -28,15 +28,9 @@ use nalgebra as na;
 ///
 #[pyfunction]
 pub fn geocentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
-    if JPLEPHEM.is_err() {
-        return Err(pyo3::exceptions::PyFileNotFoundError::new_err(
-            "Could not load ephemeris file",
-        ));
-    }
-
     let rbody: SolarSystem = body.into();
     let f = |tm: &AstroTime| -> AstroResult<(na::Vector3<f64>, na::Vector3<f64>)> {
-        JPLEPHEM.as_ref().unwrap().geocentric_state(rbody, tm)
+        jplephem::geocentric_state(rbody, tm)
     };
     tuple_func_of_time_arr(f, tm)
 }
@@ -67,15 +61,9 @@ pub fn geocentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResu
 ///
 #[pyfunction]
 pub fn barycentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
-    if JPLEPHEM.is_err() {
-        return Err(pyo3::exceptions::PyFileNotFoundError::new_err(
-            "Could not load ephemeris file",
-        ));
-    }
-
     let rbody: SolarSystem = body.into();
     let f = |tm: &AstroTime| -> AstroResult<(na::Vector3<f64>, na::Vector3<f64>)> {
-        JPLEPHEM.as_ref().unwrap().barycentric_state(rbody, tm)
+        jplephem::barycentric_state(rbody, tm)
     };
     tuple_func_of_time_arr(f, tm)
 }
@@ -94,16 +82,9 @@ pub fn barycentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyRes
 ///
 #[pyfunction]
 pub fn geocentric_pos(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
-    if JPLEPHEM.is_err() {
-        return Err(pyo3::exceptions::PyFileNotFoundError::new_err(
-            "Could not load ephemeris file",
-        ));
-    }
-
     let rbody: SolarSystem = body.into();
-    let f = |tm: &AstroTime| -> AstroResult<na::Vector3<f64>> {
-        JPLEPHEM.as_ref().unwrap().geocentric_pos(rbody, tm)
-    };
+    let f =
+        |tm: &AstroTime| -> AstroResult<na::Vector3<f64>> { jplephem::geocentric_pos(rbody, tm) };
     py_vec3_of_time_result_arr(&f, tm)
 }
 
@@ -129,14 +110,8 @@ pub fn geocentric_pos(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult
 ///    (it will be close to origin)
 #[pyfunction]
 pub fn barycentric_pos(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
-    if JPLEPHEM.is_err() {
-        return Err(pyo3::exceptions::PyFileNotFoundError::new_err(
-            "Could not load ephemeris file",
-        ));
-    }
     let rbody: SolarSystem = body.into();
-    let f = |tm: &AstroTime| -> AstroResult<na::Vector3<f64>> {
-        JPLEPHEM.as_ref().unwrap().barycentric_pos(rbody, tm)
-    };
+    let f =
+        |tm: &AstroTime| -> AstroResult<na::Vector3<f64>> { jplephem::barycentric_pos(rbody, tm) };
     py_vec3_of_time_result_arr(&f, tm)
 }

@@ -79,17 +79,17 @@ impl std::fmt::Display for InvalidTime {
 /// positions and velocities of solar system bodies as a function
 /// of time
 #[derive(Debug)]
-pub struct JPLEphem {
-    pub de_version: i32,
+struct JPLEphem {
+    _de_version: i32,
     /// Julian date of start of ephemerides database
-    pub jd_start: f64,
+    jd_start: f64,
     /// Julian date of end of ephemerides database
-    pub jd_stop: f64,
+    jd_stop: f64,
     jd_step: f64,
     /// Length of 1 astronomical unit, km
-    pub au: f64,
+    _au: f64,
     /// Earth/Moon Ratio
-    pub emrat: f64,
+    emrat: f64,
 
     // Offset lookup table
     ipt: [[usize; 3]; 15],
@@ -100,13 +100,13 @@ pub struct JPLEphem {
 // Static representation of JPL Ephemerides
 // Loaded on demand when called for the first time
 lazy_static::lazy_static! {
-    pub static ref JPLEPHEM: AstroResult<JPLEphem> =
+    static ref JPLEPHEM: AstroResult<JPLEphem> =
        JPLEphem::from_file("linux_p1550p2650.440");
 
 }
 
 impl JPLEphem {
-    pub fn consts(&self, s: &String) -> Option<&f64> {
+    fn consts(&self, s: &String) -> Option<&f64> {
         self.consts.get(s)
     }
 
@@ -138,7 +138,7 @@ impl JPLEphem {
     /// let p = jpl.geocentric_body_pos(SolarSystem::MOON, &t).unwrap();
     /// ```
     ///
-    pub fn from_file(fname: &str) -> AstroResult<JPLEphem> {
+    fn from_file(fname: &str) -> AstroResult<JPLEphem> {
         use std::collections::HashMap;
         use std::path::PathBuf;
 
@@ -158,7 +158,6 @@ impl JPLEphem {
         if !path.is_file() {
             panic!("Cannot open JPL Ephemeris file");
         }
-        println!("loading {path:?}");
 
         // Read in bytes
         let raw = std::fs::read(path)?;
@@ -221,11 +220,11 @@ impl JPLEphem {
         };
 
         Ok(JPLEphem {
-            de_version: de_version,
+            _de_version: de_version,
             jd_start: jd_start,
             jd_stop: jd_stop,
             jd_step: jd_step,
-            au: au,
+            _au: au,
             emrat: emrat,
             ipt: ipt,
             consts: {
@@ -340,7 +339,7 @@ impl JPLEphem {
     ///  * EMB (2) is the Earth-Moon barycenter
     ///  * The sun position is relative to the solar system barycenter
     ///    (it will be close to origin)
-    pub fn barycentric_pos(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
+    fn barycentric_pos(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
         match self.ipt[body as usize][1] {
             6 => self.body_pos_optimized::<6>(body, tm),
             7 => self.body_pos_optimized::<7>(body, tm),
@@ -374,11 +373,7 @@ impl JPLEphem {
     ///  * EMB (2) is the Earth-Moon barycenter
     ///  * The sun position is relative to the solar system barycenter
     ///    (it will be close to origin)
-    pub fn barycentric_state(
-        &self,
-        body: SolarSystem,
-        tm: &AstroTime,
-    ) -> AstroResult<(Vec3, Vec3)> {
+    fn barycentric_state(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
         match self.ipt[body as usize][1] {
             6 => self.body_state_optimized::<6>(body, tm),
             7 => self.body_state_optimized::<7>(body, tm),
@@ -460,7 +455,7 @@ impl JPLEphem {
     ///
     ///    3-vector of cartesian Geocentric position in meters
     ///
-    pub fn geocentric_pos(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
+    fn geocentric_pos(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
         if body == SolarSystem::MOON {
             return self.barycentric_pos(body, tm);
         } else {
@@ -490,7 +485,7 @@ impl JPLEphem {
     ///     * 3-vector of cartesian Geocentric velocity in meters / second
     ///       Note: velocity is relative to Earth
     ///
-    pub fn geocentric_state(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
+    fn geocentric_state(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
         if body == SolarSystem::MOON {
             return self.barycentric_state(body, tm);
         } else {
@@ -507,6 +502,98 @@ impl JPLEphem {
             ))
         }
     }
+}
+
+pub fn consts(s: &String) -> Option<&f64> {
+    let jpl = JPLEPHEM.as_ref().unwrap();
+    jpl.consts(s)
+}
+
+/// Return the position of the given body in the Barycentric
+/// coordinate system (origin is solarsystem barycenter)
+///
+/// # Inputs
+///
+///  * body - the solar system body for which to return position
+///  * tm - The time at which to return position
+///
+/// # Return
+///
+///    3-vector of cartesian Heliocentric position in meters
+///
+///
+/// # Notes:
+///  * Positions for all bodies are natively relative to solar system barycenter,
+///    with exception of moon, which is computed in Geocentric system
+///  * EMB (2) is the Earth-Moon barycenter
+///  * The sun position is relative to the solar system barycenter
+///    (it will be close to origin)
+pub fn barycentric_pos(body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
+    let jpl = JPLEPHEM.as_ref().unwrap();
+    jpl.barycentric_pos(body, tm)
+}
+
+/// Return the position and velocity of the given body in
+///  Geocentric coordinate system
+///
+/// # Inputs
+///
+///  * body - the solar system body for which to return position
+///  * tm - The time at which to return position
+///
+/// # Return
+///
+///   * Tuple with following elements:
+///     * 3-vector of cartesian Geocentric position in meters
+///     * 3-vector of cartesian Geocentric velocity in meters / second
+///       Note: velocity is relative to Earth
+///
+pub fn geocentric_state(body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
+    let jpl = JPLEPHEM.as_ref().unwrap();
+    jpl.geocentric_state(body, tm)
+}
+
+/// Return the position of the given body in
+/// Geocentric coordinate system
+///
+/// # Inputs
+///
+///  * body - the solar system body for which to return position
+///  * tm - The time at which to return position
+///
+/// # Return
+///
+///    3-vector of cartesian Geocentric position in meters
+///
+pub fn geocentric_pos(body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
+    let jpl = JPLEPHEM.as_ref().unwrap();
+    jpl.geocentric_pos(body, tm)
+}
+
+/// Return the position & velocity the given body in the barycentric coordinate system
+/// (origin is solar system barycenter)
+///
+/// # Inputs
+///
+///  * body - the solar system body for which to return position
+///  * tm - The time at which to return position
+///
+/// # Return
+///
+///  * Tuple with following values:
+///    * 3-vector of cartesian Heliocentric position in meters
+///    * 3-vector of cartesian Heliocentric velocity in meters / second
+///
+///
+/// # Notes:
+///  * Positions for all bodies are natively relative to solar system barycenter,
+///    with exception of moon, which is computed in Geocentric system
+///  * EMB (2) is the Earth-Moon barycenter
+///  * The sun position is relative to the solar system barycenter
+///    (it will be close to origin)
+pub fn barycentric_state(body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
+    let jpl = JPLEPHEM.as_ref().unwrap();
+    jpl.barycentric_state(body, tm)
 }
 
 #[cfg(test)]
@@ -598,7 +685,7 @@ mod tests {
 
                 // Comparing positions
                 if coord <= 3 {
-                    let calc = (tpos - spos)[coord - 1] / jpl.au / 1.0e3;
+                    let calc = (tpos - spos)[coord - 1] / jpl._au / 1.0e3;
                     // These should be very exact
                     // Allow for errors of only ~ 1e-12
                     let maxerr = 1.0e-12;
@@ -607,7 +694,7 @@ mod tests {
                 }
                 // Comparing velocities
                 else {
-                    let calc = (tvel - svel)[coord - 4] / jpl.au / 1.0e3 * 86400.0;
+                    let calc = (tvel - svel)[coord - 4] / jpl._au / 1.0e3 * 86400.0;
                     let maxerr: f64 = 1.0e-12;
                     let err: f64 = ((truth - calc) / truth).abs();
                     assert!(err < maxerr);
