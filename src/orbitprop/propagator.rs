@@ -183,6 +183,7 @@ pub fn propagate<const C: usize>(
                 .into_iter()
                 .map(|x| {
                     let tm: AstroTime = *start + x as f64 * settings.sun_interp_dt_secs / 86400.0;
+                    // Use high-precision JPL ephemerides
                     crate::jplephem::geocentric_pos(crate::SolarSystem::SUN, &tm).unwrap()
                 })
                 .collect()
@@ -195,6 +196,7 @@ pub fn propagate<const C: usize>(
                 .into_iter()
                 .map(|x| {
                     let tm: AstroTime = *start + x as f64 * settings.moon_interp_dt_secs / 86400.0;
+                    // Use high-precision JPL ephemerides
                     crate::jplephem::geocentric_pos(crate::SolarSystem::MOON, &tm).unwrap()
                 })
                 .collect()
@@ -208,7 +210,9 @@ pub fn propagate<const C: usize>(
                 .map(|x| {
                     let tm: AstroTime =
                         *start + x as f64 * settings.gravity_interp_dt_secs / 86400.0;
-                    crate::frametransform::qgcrf2itrf_approx(&tm)
+
+                    // Use high-precision transform
+                    crate::frametransform::qgcrf2itrf(&tm)
                 })
                 .collect()
         },
@@ -218,11 +222,10 @@ pub fn propagate<const C: usize>(
     // Duration to end of integration, in seconds
     let x_end: f64 = (*stop - *start) * 86400.0;
 
-    let mut settings = crate::ode::RKAdaptiveSettings::default();
-    settings.abserror = 1.0e-2;
-    settings.relerror = 1.0e-2;
-    println!("integrating");
-    let res = crate::ode::RKV65::integrate(0.0, x_end, state, &mut p, &settings)?;
+    let mut odesettings = crate::ode::RKAdaptiveSettings::default();
+    odesettings.abserror = settings.abs_error;
+    odesettings.relerror = settings.rel_error;
+    let res = crate::ode::solvers::RKV98::integrate(0.0, x_end, state, &mut p, &odesettings)?;
 
     Ok(res)
 }
@@ -242,6 +245,8 @@ mod tests {
         state[4] = (univ::MU_EARTH / univ::GEO_R).sqrt();
 
         let mut settings = PropSettings::new();
+        settings.abs_error = 1.0e-8;
+        settings.rel_error = 1.0e-8;
         settings.dt_secs = 1.0;
         settings.gravity_order = 6;
         settings.gravity_interp_dt_secs = 60.0;

@@ -12,8 +12,6 @@
 
 use super::rk_adaptive::RKAdaptive;
 
-use super::types::*;
-
 const A32: f64 = 0.3354806554923570;
 const A42: f64 = -6.359448489975075;
 const A52: f64 = -11.74888356406283;
@@ -58,7 +56,7 @@ pub struct RKTS54 {}
 
 impl RKTS54 {}
 
-impl RKAdaptive<7> for RKTS54 {
+impl RKAdaptive<7, 4> for RKTS54 {
     const C: [f64; 7] = [0.0, 0.161, 0.327, 0.9, 0.9800255409045097, 1.0, 1.0];
 
     const B: [f64; 7] = [
@@ -103,88 +101,32 @@ impl RKAdaptive<7> for RKTS54 {
 
     const FSAL: bool = false;
 
-    fn interpolate<S: ODEState>(
-        sol: &ODESolution<S>,
-        xstart: f64,
-        xend: f64,
-        dx: f64,
-    ) -> ODEResult<ODEInterp<S>> {
-        if sol.dense.is_none() {
-            return Err(Box::new(ODEError::NoDenseOutputInSolution));
-        }
-        if sol.x > xend {
-            return Err(Box::new(ODEError::InterpExceedsSolutionBounds));
-        }
-        let dense = sol.dense.as_ref().unwrap();
-        if sol.x < dense.x[0] {
-            return Err(Box::new(ODEError::InterpExceedsSolutionBounds));
-        }
-        let n = ((xend - xstart) / dx).ceil() as usize + 1;
-        let mut xarr: Vec<f64> = (0..n).map(|v| v as f64 * dx + xstart).collect();
-        if *xarr.last().unwrap() > xend {
-            xarr.pop();
-            xarr.push(xend);
-        }
-
-        //let mut lastidx: usize = 0;
-        let yarr: Vec<S> = xarr
-            .iter()
-            .map(|v| {
-                let mut idx = match dense.x.iter().position(|x| *x >= *v) {
-                    Some(v) => v,
-                    None => dense.x.len(),
-                };
-                if idx > 0 {
-                    idx -= 1;
-                }
-
-                // t is fractional distance beween x at idx and idx+1
-                let t = (*v - dense.x[idx]) / dense.h[idx];
-                let biarr: [f64; 7] = [
-                    BI11 * t * (t + BI12) * (t * t + BI13 * t + BI14),
-                    BI21 * t * t * (t * t + BI22 * t + BI23),
-                    BI31 * t * t * (t * t + BI32 * t + BI33),
-                    BI41 * t * t * (t + BI42) * (t + BI43),
-                    BI51 * t * t * (t + BI52) * (t + BI53),
-                    BI61 * t * t * (t + BI62) * (t + BI63),
-                    BI71 * t * t * (t + BI72) * (t + BI73),
-                ];
-                let yarr = dense.yprime[idx]
-                    .iter()
-                    .enumerate()
-                    .fold(dense.y[idx].clone() / dense.h[idx], |acc, (ix, k)| {
-                        acc + k.clone() * biarr[ix]
-                    });
-                yarr * dense.h[idx]
-            })
-            .collect();
-
-        Ok(ODEInterp::<S> { x: xarr, y: yarr })
-    }
+    // From expanding expressions in Tsitorous paper...
+    const BI: [[f64; 4]; 7] = [
+        [
+            BI11 * BI12 * BI14,
+            BI11 * (BI14 + BI12 * BI13),
+            BI11 * (BI13 + BI12),
+            BI11,
+        ],
+        [0.0, BI21 * BI23, BI21 * BI22, BI21],
+        [0.0, BI31 * BI33, BI31 * BI32, BI31],
+        [0.0, BI41 * BI42 * BI43, BI41 * (BI42 + BI43), BI41],
+        [0.0, BI51 * BI52 * BI53, BI51 * (BI52 + BI53), BI51],
+        [0.0, BI61 * BI62 * BI63, BI61 * (BI62 + BI63), BI61],
+        [0.0, BI71 * BI72 * BI73, BI71 * (BI72 + BI73), BI71],
+    ];
 }
 
 #[cfg(test)]
 mod tests {
     use super::super::types::*;
+    use super::super::HarmonicOscillator;
+    use super::super::RKAdaptive;
     use super::super::RKAdaptiveSettings;
+
     use super::*;
     type State = nalgebra::Vector2<f64>;
-
-    struct HarmonicOscillator {
-        k: f64,
-    }
-    impl HarmonicOscillator {
-        fn new(k: f64) -> HarmonicOscillator {
-            HarmonicOscillator { k: k }
-        }
-    }
-
-    impl ODESystem for HarmonicOscillator {
-        type Output = nalgebra::Vector2<f64>;
-        fn ydot(&mut self, _x: f64, y: &Self::Output) -> ODEResult<Self::Output> {
-            Ok(nalgebra::Vector2::<f64>::new(y[1], -self.k * y[0]))
-        }
-    }
 
     #[test]
     fn testit() -> ODEResult<()> {
@@ -199,18 +141,21 @@ mod tests {
         settings.relerror = 1e-12;
 
         let (sol, interp) =
-            RKTS54::integrate_dense(0.0, PI / 2.0, PI / 2.0 * 0.05, &y0, &mut system, &settings)?;
+            RKTS54::integrate_dense(0.0, PI, PI / 2.0 * 0.05, &y0, &mut system, &settings)?;
 
         println!("sol evals = {}", sol.nevals);
         interp.x.iter().enumerate().for_each(|(idx, x)| {
             // We know the exact solution for the harmonic oscillator
             let exact = x.cos();
+            let exact_v = -x.sin();
             // Compare with the interpolated result
             let diff = exact - interp.y[idx][0];
-            // we set abs and rel error to 1e-10, so lets check!
-            assert!(diff.abs() < 1e-12);
+            let diff_v = exact_v - interp.y[idx][1];
+            // we set abs and rel error to 1e-12, so lets check!
+            //println!("{:+e} {:+e}", diff.abs(), diff_v.abs());
+            assert!(diff.abs() < 1e-11);
+            assert!(diff_v.abs() < 1e-11);
         });
-
         Ok(())
     }
 }

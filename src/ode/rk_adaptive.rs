@@ -2,12 +2,15 @@ use super::rk_adaptive_settings::RKAdaptiveSettings;
 use super::types::*;
 use num_traits::identities::Zero;
 
-pub trait RKAdaptive<const N: usize> {
+pub trait RKAdaptive<const N: usize, const NI: usize> {
     // Butcher Tableau Coefficients
     const A: [[f64; N]; N];
     const C: [f64; N];
     const B: [f64; N];
     const BERR: [f64; N];
+
+    // Interpolation coefficients
+    const BI: [[f64; NI]; N];
 
     // order
     const ORDER: usize;
@@ -16,17 +19,94 @@ pub trait RKAdaptive<const N: usize> {
     /// (first compute of next iteration is same as last compute of last iteration)
     const FSAL: bool;
 
+    /// Interpolate densely calculated solution onto
+    /// values that are evenly spaced in "x"
+    ///
     fn interpolate<S: ODEState>(
-        _sol: &ODESolution<S>,
-        _xstart: f64,
-        _xend: f64,
-        _dx: f64,
+        sol: &ODESolution<S>,
+        xstart: f64,
+        xend: f64,
+        dx: f64,
     ) -> ODEResult<ODEInterp<S>> {
-        Err(Box::new(ODEError::InterpNotImplemented))
+        if sol.dense.is_none() {
+            return Err(Box::new(ODEError::NoDenseOutputInSolution));
+        }
+        if sol.x > xend {
+            return Err(Box::new(ODEError::InterpExceedsSolutionBounds));
+        }
+        let dense = sol.dense.as_ref().unwrap();
+        if sol.x < dense.x[0] {
+            return Err(Box::new(ODEError::InterpExceedsSolutionBounds));
+        }
+        let n = ((xend - xstart) / dx).ceil() as usize + 1;
+        let mut xarr: Vec<f64> = (0..n).map(|v| v as f64 * dx + xstart).collect();
+        if *xarr.last().unwrap() > xend {
+            xarr.pop();
+            xarr.push(xend);
+        }
+
+        let mut lastidx: usize = 0;
+
+        let yarr: Vec<S> = xarr
+            .iter()
+            .map(|v| {
+                // We know indices are monotonically increasing, so only search from
+                // last found position in the array forward
+                let mut idx = match dense.x[lastidx..].iter().position(|x| *x >= *v) {
+                    Some(v) => v + lastidx,
+                    None => dense.x.len(),
+                };
+                lastidx = idx;
+                if idx > 0 {
+                    idx -= 1;
+                }
+
+                // t is fractional distance beween x at idx and idx+1
+                // and is in range [0,1]
+                let t = (*v - dense.x[idx]) / dense.h[idx];
+
+                // Compute interpolant coefficient as funciton of t
+                // note that t is in range [0,1]
+                //
+                // This is equation (6) of
+                // https://link.springer.com/article/10.1023/A:1021190918665
+                //
+                // Note: equation (6) of paper incorrectly has sum index "j"
+                //       starting from 0.  It should start from 1.
+                //
+                let bi: Vec<f64> = Self::BI
+                    .iter()
+                    .map(|biarr| {
+                        // Coefficients multiply increasing powers of t
+                        let mut tj = 1.0;
+                        biarr.iter().fold(0.0, |acc, bij| {
+                            tj = tj * t;
+                            acc + bij * tj
+                        })
+                    })
+                    .collect();
+
+                //
+                // Compute interpolated value
+                //
+                // This is equation(5) of:
+                // https://link.springer.com/article/10.1023/A:1021190918665
+                //
+                let yarr = dense.yprime[idx]
+                    .iter()
+                    .enumerate()
+                    .fold(dense.y[idx].clone() / dense.h[idx], |acc, (ix, k)| {
+                        acc + k.clone() * bi[ix]
+                    });
+                yarr * dense.h[idx]
+            })
+            .collect();
+
+        Ok(ODEInterp::<S> { x: xarr, y: yarr })
     }
 
     /// Convenience function to perform ODE integration
-    /// and interpolate from start to finish of integratin
+    /// and interpolate from start to finish of integration
     /// at fixed intervals
     fn integrate_dense<S: ODESystem>(
         x0: f64,
