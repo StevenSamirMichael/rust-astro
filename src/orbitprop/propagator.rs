@@ -219,10 +219,10 @@ pub fn propagate<const C: usize>(
     let x_end: f64 = (*stop - *start) * 86400.0;
 
     let mut settings = crate::ode::RKAdaptiveSettings::default();
-    settings.abserror = 1.0e-8;
-    settings.relerror = 1.0e-10;
+    settings.abserror = 1.0e-2;
+    settings.relerror = 1.0e-2;
     println!("integrating");
-    let res = crate::ode::RKTS54::integrate(0.0, x_end, state, &mut p, &settings)?;
+    let res = crate::ode::RKV65::integrate(0.0, x_end, state, &mut p, &settings)?;
 
     Ok(res)
 }
