@@ -38,6 +38,7 @@ pub fn lines_from_url(url: &str) -> Result<io::Lines<io::BufReader<std::fs::File
     Ok(b.lines())
 }
 
+#[cfg(test)]
 pub fn get_project_root() -> std::io::Result<PathBuf> {
     let path = std::env::current_dir()?;
     let mut path_ancestors = path.as_path().ancestors();

@@ -229,6 +229,7 @@ pub fn propagate<const C: usize>(
 
     match step_seconds {
         None => {
+            odesettings.dense_output = false;
             // If no interpolation, run a different integrator with same order but skipping
             // stages (& this computation time) that are only used for interpolation
             let res = crate::ode::solvers::RKV98NoInterp::integrate(
@@ -247,6 +248,7 @@ pub fn propagate<const C: usize>(
             })
         }
         Some(dx) => {
+            odesettings.dense_output = true;
             let (res, interp) = crate::ode::solvers::RKV98::integrate_dense(
                 0.0,
                 x_end,
@@ -283,15 +285,15 @@ mod tests {
         state[4] = (univ::MU_EARTH / univ::GEO_R).sqrt();
 
         let mut settings = PropSettings::new();
-        settings.abs_error = 1.0e-8;
-        settings.rel_error = 1.0e-8;
+        settings.abs_error = 1.0e-9;
+        settings.rel_error = 1.0e-9;
         settings.gravity_order = 6;
         settings.gravity_interp_dt_secs = 60.0;
         settings.moon_interp_dt_secs = 60.0;
         settings.sun_interp_dt_secs = 60.0;
 
         println!("running");
-        let res = propagate(&state, &starttime, &stoptime, Some(3600.0), &settings, None)?;
+        let res = propagate(&state, &starttime, &stoptime, None, &settings, None)?;
         println!("res = {:?}", res);
         println!("time = {}", res.time.last().unwrap());
         Ok(())

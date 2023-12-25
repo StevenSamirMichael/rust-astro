@@ -599,7 +599,7 @@ pub fn barycentric_state(body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::download_file;
+    use crate::utils::dev;
     use std::io::{self, BufRead};
 
     #[test]
@@ -620,11 +620,20 @@ mod tests {
 
         let jpl = JPLEPHEM.as_ref().unwrap();
 
-        let url = "https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/testpo.440";
-        download_file(url, &datadir::get().unwrap(), false).unwrap();
+        let testvecfile = dev::get_project_root()
+            .unwrap()
+            .join("testdata")
+            .join("testpo.440");
 
-        let fullpath = datadir::get().unwrap().join("testpo.440");
-        let file = std::fs::File::open(fullpath).unwrap();
+        if !testvecfile.is_file() {
+            panic!(
+                "Required JPL ephemeris test vectors file: \"{}\" does not exist
+                try running \"getfiles.sh\" script in $(crateroot)/testdata",
+                testvecfile.to_string_lossy()
+            );
+        }
+
+        let file = std::fs::File::open(testvecfile).unwrap();
         let b = io::BufReader::new(file);
 
         for rline in b.lines().skip(14) {
