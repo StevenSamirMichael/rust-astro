@@ -9,6 +9,8 @@ mod rkv65_table;
 mod rkv87;
 mod rkv87_table;
 mod rkv98;
+mod rkv98_nointerp;
+mod rkv98_nointerp_table;
 mod rkv98_table;
 pub mod types;
 
@@ -20,6 +22,7 @@ pub mod solvers {
     pub use super::rkv65::RKV65;
     pub use super::rkv87::RKV87;
     pub use super::rkv98::RKV98;
+    pub use super::rkv98_nointerp::RKV98NoInterp;
 }
 
 pub use types::*;

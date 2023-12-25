@@ -229,8 +229,15 @@ pub fn propagate<const C: usize>(
 
     match step_seconds {
         None => {
-            let res =
-                crate::ode::solvers::RKV98::integrate(0.0, x_end, state, &mut p, &odesettings)?;
+            // If no interpolation, run a different integrator with same order but skipping
+            // stages (& this computation time) that are only used for interpolation
+            let res = crate::ode::solvers::RKV98NoInterp::integrate(
+                0.0,
+                x_end,
+                state,
+                &mut p,
+                &odesettings,
+            )?;
             Ok(PropagationResult {
                 time: vec![stop.clone()],
                 state: vec![res.y],
