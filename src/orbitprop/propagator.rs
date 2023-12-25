@@ -165,9 +165,10 @@ pub fn propagate<const C: usize>(
     state: &StateType<C>,
     start: &AstroTime,
     stop: &AstroTime,
+    step_seconds: Option<f64>,
     settings: &PropSettings,
     satprops: Option<&dyn SatProperties>,
-) -> AstroResult<crate::ode::ODESolution<StateType<C>>> {
+) -> AstroResult<PropagationResult<StateType<C>>> {
     // Propagation structure
     let duration_days: f64 = *stop - *start;
     let duration_secs: f64 = duration_days * 86400.0;
@@ -225,9 +226,39 @@ pub fn propagate<const C: usize>(
     let mut odesettings = crate::ode::RKAdaptiveSettings::default();
     odesettings.abserror = settings.abs_error;
     odesettings.relerror = settings.rel_error;
-    let res = crate::ode::solvers::RKV98::integrate(0.0, x_end, state, &mut p, &odesettings)?;
 
-    Ok(res)
+    match step_seconds {
+        None => {
+            let res =
+                crate::ode::solvers::RKV98::integrate(0.0, x_end, state, &mut p, &odesettings)?;
+            Ok(PropagationResult {
+                time: vec![stop.clone()],
+                state: vec![res.y],
+                accepted_steps: res.naccept as u32,
+                rejected_steps: res.nreject as u32,
+                num_eval: res.nevals as u32,
+            })
+        }
+        Some(dx) => {
+            let (res, interp) = crate::ode::solvers::RKV98::integrate_dense(
+                0.0,
+                x_end,
+                dx,
+                state,
+                &mut p,
+                &odesettings,
+            )?;
+            Ok(PropagationResult {
+                time: interp.x.iter().map(|x| *start + *x / 86400.0).collect(),
+                state: interp.y,
+                accepted_steps: res.naccept as u32,
+                rejected_steps: res.nreject as u32,
+                num_eval: res.nevals as u32,
+            })
+        }
+    }
+
+    //Ok(res)
 }
 
 #[cfg(test)]
@@ -247,15 +278,15 @@ mod tests {
         let mut settings = PropSettings::new();
         settings.abs_error = 1.0e-8;
         settings.rel_error = 1.0e-8;
-        settings.dt_secs = 1.0;
         settings.gravity_order = 6;
         settings.gravity_interp_dt_secs = 60.0;
         settings.moon_interp_dt_secs = 60.0;
         settings.sun_interp_dt_secs = 60.0;
 
         println!("running");
-        let res = propagate(&state, &starttime, &stoptime, &settings, None)?;
+        let res = propagate(&state, &starttime, &stoptime, Some(3600.0), &settings, None)?;
         println!("res = {:?}", res);
+        println!("time = {}", res.time.last().unwrap());
         Ok(())
     }
 }

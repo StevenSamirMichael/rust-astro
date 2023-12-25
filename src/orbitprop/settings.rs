@@ -7,7 +7,6 @@ pub struct PropSettings {
     pub sun_interp_dt_secs: f64,
     pub abs_error: f64,
     pub rel_error: f64,
-    pub dt_secs: f64,
     pub use_spaceweather: bool,
 }
 
@@ -20,7 +19,6 @@ impl PropSettings {
             sun_interp_dt_secs: 60.0,
             abs_error: 1e-10,
             rel_error: 1e-10,
-            dt_secs: 1.0,
             use_spaceweather: true,
         }
     }
