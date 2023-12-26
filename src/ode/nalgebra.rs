@@ -33,6 +33,7 @@ impl<const R: usize, const C: usize> ODEState for nalgebra::SMatrix<f64, R, C> {
         self.add_scalar(s)
     }
 
+    #[inline(always)]
     fn ode_nelem(&self) -> usize {
         self.ncols() * self.nrows()
     }

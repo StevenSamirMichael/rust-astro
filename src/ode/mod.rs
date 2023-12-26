@@ -1,4 +1,3 @@
-mod nalgebra;
 pub mod rk_adaptive;
 pub mod rk_adaptive_settings;
 pub mod rk_explicit;
@@ -13,6 +12,12 @@ mod rkv98_nointerp;
 mod rkv98_nointerp_table;
 mod rkv98_table;
 pub mod types;
+
+// NAlgebera bindings for ODE state
+mod nalgebra;
+
+// ndarray bindings for ODE state
+// mod ndarray;
 
 pub use rk_adaptive::RKAdaptive;
 pub use rk_adaptive_settings::RKAdaptiveSettings;

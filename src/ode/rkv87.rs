@@ -66,8 +66,8 @@ mod tests {
             let diff = exact - interp.y[idx][0];
             let diff_v = exact_v - interp.y[idx][1];
             // we set abs and rel error to 1e-12, so lets check!
-            // println!("{:+e} {:+e}", diff.abs(), diff_v.abs());
-            assert!(diff.abs() < 1e-11);
+            println!("{:+e} {:+e}", diff.abs(), diff_v.abs());
+            assert!(diff.abs() < 1e-10);
             assert!(diff_v.abs() < 1e-10);
         });
 

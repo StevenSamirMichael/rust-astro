@@ -1,6 +1,6 @@
-# Astrodynamics with Rust
+# Satellite dynamics with Rust
 
-A performant astrodynamics library, written in rust, with Python bindings.
+A high-performance satellite dynamics library, written in rust, with Python bindings.
 The codes have been written with both accuracy and speed in mind.
 Sensible interfaces and defaults are provided when possible.
 

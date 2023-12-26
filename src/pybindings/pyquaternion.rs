@@ -105,7 +105,7 @@ impl Quaternion {
     }
 
     fn __mul__(&self, other: &PyAny) -> PyResult<PyObject> {
-        // Multiply quaternion by quaternion
+        // Multiply quaternion by quaternion        
         if other.is_instance_of::<Quaternion>() {
             let q: PyRef<Quaternion> = other.extract()?;
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
@@ -114,66 +114,51 @@ impl Quaternion {
                 }
                 .into_py(py));
             })
-        }
+        } 
         // This incorrectly matches for all PyArray types
-        else if other.is_instance_of::<np::PyArray2<f64>>() {
-            // So, check for 2D condition
-            match other.extract::<np::PyReadonlyArray2<f64>>() {
-                Ok(v) => {
-                    if v.dims()[1] != 3 {
-                        return Err(pyo3::exceptions::PyTypeError::new_err(
-                            "Invalid rhs. 2nd dimension must be 3 in size",
-                        ));
-                    }
-                    let rot = self.inner.to_rotation_matrix();
-                    let qmat = rot.matrix().conjugate();
-
-                    pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
-                        unsafe {
-                            let nd = np::ndarray::ArrayView2::from_shape_ptr((3, 3), qmat.as_ptr());
-                            let res = v.as_array().dot(&nd).to_pyarray(py);
-
-                            Ok(res.into_py(py))
-                        }
-                    })
-                }
-                // If not, check for 1D condition
-                Err(_) => match other.extract::<np::PyReadonlyArray1<f64>>() {
-                    Ok(v1) => {
-                        if v1.len() != 3 {
-                            return Err(pyo3::exceptions::PyValueError::new_err(
-                                "rhs 1D array must have 3 elements",
-                            ));
-                        }
-                        let mut s = Vec3::zeros();
-
-                        pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
-                            unsafe {
-                                std::ptr::copy_nonoverlapping(
-                                    v1.as_raw_array().as_ptr(),
-                                    s.as_mut_ptr(),
-                                    3,
-                                );
-
-                                let vout = self.inner * s;
-                                let vnd = np::PyArray1::<f64>::from_vec(
-                                    py,
-                                    vec![vout[0], vout[1], vout[2]],
-                                );
-                                Ok(vnd.into_py(py))
-                            }
-                        })
-                    }
-                    // Input is incorrect size...
-                    Err(_) => {
-                        return Err(pyo3::exceptions::PyIndexError::new_err(
-                            "RHS must be 1x3 or nx3",
-                        ));
-                    }
-                },
+        else if let Ok(v) = other.downcast::<np::PyArray2<f64>>() {
+            if v.dims()[1] != 3 {
+                return Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Invalid rhs. 2nd dimension must be 3 in size",
+                ));
             }
-        } else {
-            Err(pyo3::exceptions::PyTypeError::new_err("Invalid rhs"))
+            let rot = self.inner.to_rotation_matrix();
+            let qmat = rot.matrix().conjugate();
+
+            pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
+             
+                let nd = unsafe {np::ndarray::ArrayView2::from_shape_ptr((3, 3), qmat.as_ptr())};
+                let res = v.readonly().as_array().dot(&nd).to_pyarray(py);
+
+                Ok(res.into_py(py))
+                
+            })
+    
+        } 
+        else if let Ok(v1d) = other.downcast::<np::PyArray1<f64>>() {
+            if v1d.len() != 3 {
+                return Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Invalid rhs.  1D array must be of length 3",
+                ));
+            }
+
+            let storage = unsafe {
+                na::ViewStorage::<f64, na::U3, na::U1, na::U1, na::U1>::from_raw_parts(
+                    v1d.readonly().as_array().as_ptr(),
+                    (na::U3, na::U1),
+                    (na::U1, na::U1),
+                )
+            };
+            let vout = self.inner * na::Matrix::from_data(storage);
+
+            pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
+                let vnd = np::PyArray1::<f64>::from_vec(py, vec![vout[0], vout[1], vout[2]]);
+                Ok(vnd.into_py(py))
+            })
+        }
+        else {
+            let s = format!("invalid type: {}", other.get_type());
+            Err(pyo3::exceptions::PyTypeError::new_err(s))
         }
     }
 }

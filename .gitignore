@@ -4,3 +4,4 @@
 /testdata/testpo*
 .vscode
 *.whl
+build
