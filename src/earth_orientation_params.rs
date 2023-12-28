@@ -6,9 +6,10 @@ use std::sync::RwLock;
 use super::astrotime;
 use crate::utils::datadir;
 use crate::utils::download_file;
-use lazy_static;
 
 use crate::{astroerr, AstroResult};
+
+use once_cell::sync::OnceCell;
 
 #[derive(Debug)]
 struct EOPEntry {
@@ -91,8 +92,9 @@ fn load_eop_file(filename: Option<PathBuf>) -> Vec<EOPEntry> {
     eopvec
 }
 
-lazy_static::lazy_static! {
-    static ref EOP_PARAMS: RwLock<Vec<EOPEntry>> = RwLock::new(load_eop_file(None));
+fn eop_params_singleton() -> &'static RwLock<Vec<EOPEntry>> {
+    static INSTANCE: OnceCell<RwLock<Vec<EOPEntry>>> = OnceCell::new();
+    INSTANCE.get_or_init(|| RwLock::new(load_eop_file(None)))
 }
 
 /// Download new Earth Orientation Parameters file, and load it.
@@ -114,13 +116,13 @@ pub fn update() -> AstroResult<()> {
     download_file(url, &d[0], true)?;
 
     // Re-load the params
-    *EOP_PARAMS.write().unwrap() = load_eop_file(None);
+    *eop_params_singleton().write().unwrap() = load_eop_file(None);
 
     Ok(())
 }
 
 pub fn get_from_mjd_utc(mjd_utc: f64) -> Option<[f64; 4]> {
-    let eop = EOP_PARAMS.read().unwrap();
+    let eop = eop_params_singleton().read().unwrap();
 
     let idx = eop.iter().position(|x| x.mjd_utc > mjd_utc);
     match idx {
@@ -172,7 +174,10 @@ mod tests {
     /// Check that data is loaded
     #[test]
     fn loaded() {
-        assert_eq!(EOP_PARAMS.read().unwrap()[0].mjd_utc >= 0.0, true);
+        assert_eq!(
+            eop_params_singleton().read().unwrap()[0].mjd_utc >= 0.0,
+            true
+        );
     }
 
     /// Check value against manual value from file

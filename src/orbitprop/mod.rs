@@ -1,5 +1,6 @@
 pub mod propagator;
 mod satproperties;
+mod satstate;
 /// Propagator Settings
 mod settings;
 

@@ -12,7 +12,6 @@ pub mod earth_orientation_params;
 pub mod frametransform;
 /// Zonal gravity model
 pub mod gravity;
-pub mod iau2000;
 /// Internation Terrestrial Reference Frame coordinates &
 /// transformations to Geodetic, East-North-Up, North-East-Down
 pub mod itrfcoord;

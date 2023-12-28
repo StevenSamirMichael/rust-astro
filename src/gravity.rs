@@ -8,6 +8,8 @@ type CoeffTable = na::DMatrix<f64>;
 
 type DivisorTable = na::SMatrix<f64, 20, 20>;
 
+use once_cell::sync::OnceCell;
+
 ///
 /// Gravity model enumeration
 ///
@@ -22,24 +24,36 @@ pub enum GravityModel {
     ITUGrace16,
 }
 
-// Since gravity models don't change, they work well as
-// global variables.  Declare them here; they don't actually
-// get instantiated until first use.
-lazy_static::lazy_static! {
-    pub static ref GRAVITY_JGM3: Gravity = Gravity::from_file("JGM3.gfc").unwrap();
-    pub static ref GRAVITY_JGM2: Gravity = Gravity::from_file("JGM2.gfc").unwrap();
-    pub static ref GRAVITY_EGM96: Gravity = Gravity::from_file("EGM96.gfc").unwrap();
-    pub static ref GRAVITY_ITUGRACE16: Gravity = Gravity::from_file("ITU_GRACE16.gfc").unwrap();
+pub fn jgm3() -> &'static Gravity {
+    static INSTANCE: OnceCell<Gravity> = OnceCell::new();
+    INSTANCE.get_or_init(|| Gravity::from_file("JGM3.jfc").unwrap())
+}
 
-    static ref GRAVHASH: HashMap<GravityModel, &'static Gravity> = {
+pub fn jgm2() -> &'static Gravity {
+    static INSTANCE: OnceCell<Gravity> = OnceCell::new();
+    INSTANCE.get_or_init(|| Gravity::from_file("JGM2.jfc").unwrap())
+}
+
+pub fn egm96() -> &'static Gravity {
+    static INSTANCE: OnceCell<Gravity> = OnceCell::new();
+    INSTANCE.get_or_init(|| Gravity::from_file("EGM96.jfc").unwrap())
+}
+
+pub fn itu_grace16() -> &'static Gravity {
+    static INSTANCE: OnceCell<Gravity> = OnceCell::new();
+    INSTANCE.get_or_init(|| Gravity::from_file("ITU_GRACE16.jfc").unwrap())
+}
+
+pub fn gravhash() -> &'static HashMap<GravityModel, &'static Gravity> {
+    static INSTANCE: OnceCell<HashMap<GravityModel, &'static Gravity>> = OnceCell::new();
+    INSTANCE.get_or_init(|| {
         let mut m = HashMap::new();
-        let g1: &Gravity = &GRAVITY_JGM3;
-        m.insert(GravityModel::JGM3, g1);
-        m.insert(GravityModel::JGM2, &GRAVITY_JGM2);
-        m.insert(GravityModel::EGM96, &GRAVITY_EGM96);
-        m.insert(GravityModel::ITUGrace16, &GRAVITY_ITUGRACE16);
+        m.insert(GravityModel::JGM3, jgm3());
+        m.insert(GravityModel::JGM2, jgm2());
+        m.insert(GravityModel::EGM96, egm96());
+        m.insert(GravityModel::ITUGrace16, itu_grace16());
         m
-    };
+    })
 }
 
 ///
@@ -64,11 +78,11 @@ lazy_static::lazy_static! {
 ///               O. Montenbruck and B. Gill, Springer, 2012.
 ///
 pub fn accel(pos_itrf: &Vec3, order: usize, model: GravityModel) -> Vec3 {
-    GRAVHASH.get(&model).unwrap().accel(pos_itrf, order)
+    gravhash().get(&model).unwrap().accel(pos_itrf, order)
 }
 
 pub fn accel_jgm3(pos_itrf: &Vec3, order: usize) -> Vec3 {
-    GRAVITY_JGM3.accel(pos_itrf, order)
+    jgm3().accel(pos_itrf, order)
 }
 
 #[derive(Debug, Clone)]

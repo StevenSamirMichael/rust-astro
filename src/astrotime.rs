@@ -64,6 +64,8 @@ pub const JD2MJD: f64 = -2400000.5;
 /// Conversion from Modified Julian Date to Julian Date
 pub const MJD2JD: f64 = 2400000.5;
 
+use once_cell::sync::OnceCell;
+
 /*
 const DELTAAT_OLD: [[f64; 4]; 15] = [
     [36204., 0., 36204., 0.],
@@ -103,9 +105,9 @@ pub enum Scale {
     TDB = 6,
 }
 
-lazy_static::lazy_static! {
-    #[derive(Debug)]
-    static ref DELTAAT_NEW: Vec<[u64; 2]> = {
+fn deltaat_new() -> &'static Vec<[u64; 2]> {
+    static INSTANCE: OnceCell<Vec<[u64; 2]>> = OnceCell::new();
+    INSTANCE.get_or_init(|| {
         let path = datadir::get()
             .unwrap_or(PathBuf::from("."))
             .join("leap-seconds.list");
@@ -139,7 +141,7 @@ lazy_static::lazy_static! {
         }
         leapvec.reverse();
         leapvec
-    };
+    })
 }
 
 impl std::fmt::Display for AstroTime {
@@ -494,7 +496,7 @@ impl AstroTime {
 fn mjd_utc2tai_seconds(mjd_utc: f64) -> f64 {
     if mjd_utc > UTC1972 {
         let utc1900: u64 = (mjd_utc as u64 - 15020) * 86400;
-        let val = DELTAAT_NEW.iter().find(|&&x| x[0] < utc1900);
+        let val = deltaat_new().iter().find(|&&x| x[0] < utc1900);
         val.unwrap_or(&[0, 0])[1] as f64
     } else {
         0.0
@@ -504,7 +506,7 @@ fn mjd_utc2tai_seconds(mjd_utc: f64) -> f64 {
 fn mjd_tai2utc_seconds(mjd_tai: f64) -> f64 {
     if mjd_tai > TAI1972 {
         let tai1900: u64 = (mjd_tai as u64 - 15020) * 86400;
-        let val = DELTAAT_NEW.iter().find(|&&x| (x[0] + x[1]) < tai1900);
+        let val = deltaat_new().iter().find(|&&x| (x[0] + x[1]) < tai1900);
         -(val.unwrap_or(&[0, 0])[1] as f64)
     } else {
         0.0
@@ -572,11 +574,10 @@ fn date2mjd_utc(year: u32, month: u32, day: u32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::astrotime::DELTAAT_NEW;
 
     #[test]
     fn datadir() {
-        println!("deltaat = {:?}", DELTAAT_NEW[1]);
+        println!("deltaat = {:?}", deltaat_new()[1]);
         assert_eq!(1, 1);
     }
 

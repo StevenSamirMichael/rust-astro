@@ -2,21 +2,28 @@ use nalgebra as na;
 
 use super::ierstable::IERSTable;
 use crate::astrotime::{AstroTime, Scale};
-use crate::frametransform::{qroty, qrotz};
+use crate::frametransform::{qrot_ycoord, qrot_zcoord};
 
 type Quat = na::UnitQuaternion<f64>;
 type Delaunay = na::SVector<f64, 14>;
 
 use std::f64::consts::PI;
 
-// Read-only tables used for CIRS to GCRS rotation...
-lazy_static::lazy_static! {
-    static ref TABLE5A: IERSTable =
-        IERSTable::from_file("tab5.2a.txt").unwrap();
-    static ref TABLE5B: IERSTable =
-        IERSTable::from_file("tab5.2b.txt").unwrap();
-    static ref TABLE5D: IERSTable =
-        IERSTable::from_file("tab5.2d.txt").unwrap();
+use once_cell::sync::OnceCell;
+
+fn table5a_singleton() -> &'static IERSTable {
+    static INSTANCE: OnceCell<IERSTable> = OnceCell::new();
+    INSTANCE.get_or_init(|| IERSTable::from_file("tab5.2a.txt").unwrap())
+}
+
+fn table5b_singleton() -> &'static IERSTable {
+    static INSTANCE: OnceCell<IERSTable> = OnceCell::new();
+    INSTANCE.get_or_init(|| IERSTable::from_file("tab5.2b.txt").unwrap())
+}
+
+fn table5d_singleton() -> &'static IERSTable {
+    static INSTANCE: OnceCell<IERSTable> = OnceCell::new();
+    INSTANCE.get_or_init(|| IERSTable::from_file("tab5.2d.txt").unwrap())
 }
 
 pub fn qcirs2gcrs(tm: &AstroTime) -> Quat {
@@ -87,9 +94,9 @@ pub fn qcirs2gcrs(tm: &AstroTime) -> Quat {
     let s0 = 94.0
         + t_tt * (3808.65 + t_tt * (-122.68 + t_tt * (-72574.11 + t_tt * (27.98 + t_tt * 15.62))));
 
-    let xsums = TABLE5A.compute(t_tt, &delaunay);
-    let ysums = TABLE5B.compute(t_tt, &delaunay);
-    let ssums = TABLE5D.compute(t_tt, &delaunay);
+    let xsums = table5a_singleton().compute(t_tt, &delaunay);
+    let ysums = table5b_singleton().compute(t_tt, &delaunay);
+    let ssums = table5d_singleton().compute(t_tt, &delaunay);
     let x = (x0 + xsums * 1.0e-6) * ASEC2RAD;
     let y = (y0 + ysums * 1.0e-6) * ASEC2RAD;
     let s = (s0 + ssums) * 1.0e-6 * ASEC2RAD - x * y / 2.0;
@@ -99,5 +106,5 @@ pub fn qcirs2gcrs(tm: &AstroTime) -> Quat {
     // Equations 5.6 & 5.7 of IERS technical note 36
     let e = f64::atan2(y, x);
     let d = f64::atan(f64::sqrt((x * x + y * y) / (1.0 - x * x - y * y)));
-    qrotz(-e) * qroty(-d) * qrotz(e + s)
+    qrot_zcoord(-e) * qrot_ycoord(-d) * qrot_zcoord(e + s)
 }

@@ -24,7 +24,7 @@ use nalgebra as na;
 ///
 #[inline]
 pub fn pos_gcrf(time: &AstroTime) -> na::Vector3<f64> {
-    crate::frametransform::qmod2gcrs(time) * pos_mod(time)
+    crate::frametransform::qmod2gcrf(time) * pos_mod(time)
 }
 
 ///

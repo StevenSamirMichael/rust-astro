@@ -8,7 +8,7 @@ use crate::utils::{astroerr, datadir, download_file, AstroResult};
 
 use std::sync::RwLock;
 
-use lazy_static;
+use once_cell::sync::OnceCell;
 
 #[derive(Debug, Clone)]
 pub struct SpaceWeatherRecord {
@@ -142,14 +142,13 @@ fn load_space_weather() -> AstroResult<Vec<SpaceWeatherRecord>> {
     Ok(sw)
 }
 
-lazy_static::lazy_static! {
-
-static ref SPACE_WEATHER_DATA: RwLock<AstroResult<Vec<SpaceWeatherRecord>>> = RwLock::new(load_space_weather());
-
+fn space_weather_singleton() -> &'static RwLock<AstroResult<Vec<SpaceWeatherRecord>>> {
+    static INSTANCE: OnceCell<RwLock<AstroResult<Vec<SpaceWeatherRecord>>>> = OnceCell::new();
+    INSTANCE.get_or_init(|| RwLock::new(load_space_weather()))
 }
 
 pub fn get(tm: AstroTime) -> AstroResult<SpaceWeatherRecord> {
-    let sw_lock = SPACE_WEATHER_DATA.read().unwrap();
+    let sw_lock = space_weather_singleton().read().unwrap();
     let sw = sw_lock.as_ref().unwrap();
 
     // First, try simple indexing
@@ -186,7 +185,7 @@ pub fn reload() -> AstroResult<()> {
     let url = "https://celestrak.org/SpaceData/sw19571001.txt";
     download_file(url, &d[0], true)?;
 
-    *SPACE_WEATHER_DATA.write().unwrap() = load_space_weather();
+    *space_weather_singleton().write().unwrap() = load_space_weather();
     Ok(())
 }
 

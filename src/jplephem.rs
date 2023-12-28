@@ -30,6 +30,8 @@ pub type Quat = na::UnitQuaternion<f64>;
 use crate::utils::datadir;
 use crate::utils::AstroResult;
 
+use once_cell::sync::OnceCell;
+
 use super::astrotime::{AstroTime, Scale};
 
 impl TryFrom<i32> for SolarSystem {
@@ -97,12 +99,9 @@ struct JPLEphem {
     cheby: DMatrix<f64>,
 }
 
-// Static representation of JPL Ephemerides
-// Loaded on demand when called for the first time
-lazy_static::lazy_static! {
-    static ref JPLEPHEM: AstroResult<JPLEphem> =
-       JPLEphem::from_file("linux_p1550p2650.440");
-
+fn jplephem_singleton() -> &'static AstroResult<JPLEphem> {
+    static INSTANCE: OnceCell<AstroResult<JPLEphem>> = OnceCell::new();
+    INSTANCE.get_or_init(|| JPLEphem::from_file("linux_p1550p2650.440"))
 }
 
 impl JPLEphem {
@@ -505,8 +504,7 @@ impl JPLEphem {
 }
 
 pub fn consts(s: &String) -> Option<&f64> {
-    let jpl = JPLEPHEM.as_ref().unwrap();
-    jpl.consts(s)
+    jplephem_singleton().as_ref().unwrap().consts(s)
 }
 
 /// Return the position of the given body in the Barycentric
@@ -529,8 +527,10 @@ pub fn consts(s: &String) -> Option<&f64> {
 ///  * The sun position is relative to the solar system barycenter
 ///    (it will be close to origin)
 pub fn barycentric_pos(body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
-    let jpl = JPLEPHEM.as_ref().unwrap();
-    jpl.barycentric_pos(body, tm)
+    jplephem_singleton()
+        .as_ref()
+        .unwrap()
+        .barycentric_pos(body, tm)
 }
 
 /// Return the position and velocity of the given body in
@@ -549,8 +549,10 @@ pub fn barycentric_pos(body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
 ///       Note: velocity is relative to Earth
 ///
 pub fn geocentric_state(body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
-    let jpl = JPLEPHEM.as_ref().unwrap();
-    jpl.geocentric_state(body, tm)
+    jplephem_singleton()
+        .as_ref()
+        .unwrap()
+        .geocentric_state(body, tm)
 }
 
 /// Return the position of the given body in
@@ -566,8 +568,10 @@ pub fn geocentric_state(body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3,
 ///    3-vector of cartesian Geocentric position in meters
 ///
 pub fn geocentric_pos(body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
-    let jpl = JPLEPHEM.as_ref().unwrap();
-    jpl.geocentric_pos(body, tm)
+    jplephem_singleton()
+        .as_ref()
+        .unwrap()
+        .geocentric_pos(body, tm)
 }
 
 /// Return the position & velocity the given body in the barycentric coordinate system
@@ -592,8 +596,10 @@ pub fn geocentric_pos(body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
 ///  * The sun position is relative to the solar system barycenter
 ///    (it will be close to origin)
 pub fn barycentric_state(body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
-    let jpl = JPLEPHEM.as_ref().unwrap();
-    jpl.barycentric_state(body, tm)
+    jplephem_singleton()
+        .as_ref()
+        .unwrap()
+        .barycentric_state(body, tm)
 }
 
 #[cfg(test)]
@@ -605,7 +611,7 @@ mod tests {
     #[test]
     fn load_test() {
         //let tm = &AstroTime::from_date(2010, 3, 1);
-        let jpl = JPLEPHEM.as_ref().unwrap();
+        let jpl = jplephem_singleton().as_ref().unwrap();
 
         let tm = AstroTime::from_jd(2451545.0, Scale::TT);
         //let tm = &AstroTime::from_jd(2451545.0, Scale::UTC);
@@ -618,7 +624,7 @@ mod tests {
     fn testvecs() {
         // Read in test vectors from the NASA JPL web site
 
-        let jpl = JPLEPHEM.as_ref().unwrap();
+        let jpl = jplephem_singleton().as_ref().unwrap();
 
         let testvecfile = dev::get_project_root()
             .unwrap()
@@ -661,23 +667,23 @@ mod tests {
                 // (this took me a long time to figure out...)
                 if tar == 3 {
                     tpos = Vec3::zeros();
-                    let (_mpos, mvel): (Vec3, Vec3) = JPLEPHEM
+                    let (_mpos, mvel): (Vec3, Vec3) = jplephem_singleton()
                         .as_ref()
                         .unwrap()
                         .geocentric_state(SolarSystem::MOON, &tm)
                         .unwrap();
                     // Scale Earth velocity
-                    tvel = tvel - mvel / (1.0 + JPLEPHEM.as_ref().unwrap().emrat);
+                    tvel = tvel - mvel / (1.0 + jplephem_singleton().as_ref().unwrap().emrat);
                 }
                 if src == 3 {
                     spos = Vec3::zeros();
-                    let (_mpos, mvel): (Vec3, Vec3) = JPLEPHEM
+                    let (_mpos, mvel): (Vec3, Vec3) = jplephem_singleton()
                         .as_ref()
                         .unwrap()
                         .geocentric_state(SolarSystem::MOON, &tm)
                         .unwrap();
                     //Scale Earth velocity
-                    svel = svel - mvel / (1.0 + JPLEPHEM.as_ref().unwrap().emrat);
+                    svel = svel - mvel / (1.0 + jplephem_singleton().as_ref().unwrap().emrat);
                 }
                 if src == 10 {
                     // Compute moon velocity in barycentric frame (not relative to Earth)

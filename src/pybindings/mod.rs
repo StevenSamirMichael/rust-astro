@@ -10,7 +10,6 @@ mod pyjplephem;
 mod pylpephem_moon;
 mod pylpephem_sun;
 mod pynrlmsise;
-mod pyode;
 mod pyquaternion;
 mod pysgp4;
 mod pysolarsystem;

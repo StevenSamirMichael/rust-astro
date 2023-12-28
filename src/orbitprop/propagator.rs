@@ -96,7 +96,7 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
         if C == 1 {
             // Gravity in the ITRF frame
             let gravity_itrf =
-                crate::gravity::GRAVITY_JGM3.accel(&pos_itrf, self.settings.gravity_order as usize);
+                crate::gravity::jgm3().accel(&pos_itrf, self.settings.gravity_order as usize);
 
             // Gravity in the GCRS frame
             let accel_gravity = qgcrs2itrf.conjugate() * gravity_itrf;

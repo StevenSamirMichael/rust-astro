@@ -1,3 +1,5 @@
+mod iau2000;
+
 use super::astrotime::{AstroTime, Scale};
 use std::f64::consts::PI;
 
@@ -6,27 +8,27 @@ type Vec3 = na::Vector3<f64>;
 pub type Quat = na::UnitQuaternion<f64>;
 
 use super::earth_orientation_params;
-pub use crate::iau2000::qcirs2gcrs;
+pub use iau2000::qcirs2gcrs;
 
 /// Right-handed rotation of coordinate sytstem about x axis
 /// (left-handed rotation of vector)
 #[inline]
-pub(crate) fn qrotx(theta: f64) -> Quat {
+pub(crate) fn qrot_xcoord(theta: f64) -> Quat {
     Quat::from_axis_angle(&Vec3::x_axis(), -theta)
 }
 
 /// Right-handed rotation of coordinate sytstem about y axis
 /// (left-handed rotation of vector)
 #[inline]
-pub(crate) fn qroty(theta: f64) -> Quat {
+pub(crate) fn qrot_ycoord(theta: f64) -> Quat {
     Quat::from_axis_angle(&Vec3::y_axis(), -theta)
 }
 
 /// Right-handed rotation of coordinate sytstem about z axis
 /// (left-handed rotation of vector)
 #[inline]
-pub(crate) fn qrotz(theta: f64) -> Quat {
-    Quat::from_axis_angle(&Vec3::z_axis(), -theta)
+pub(crate) fn qrot_zcoord(theta: f64) -> Quat {
+    Quat::from_axis_angle(&Vec3::z_axis(), theta)
 }
 
 ///
@@ -119,7 +121,7 @@ pub fn qitrf2tirs(tm: &AstroTime) -> Quat {
     let yp = eop[2] * ASEC2RAD;
     let t_tt = (tm.to_mjd(Scale::TT) - 51544.5) / 36525.0;
     let sp = -47.0e-6 * ASEC2RAD * t_tt;
-    qrotz(-sp) * qroty(xp) * qrotx(yp)
+    qrot_zcoord(-sp) * qrot_ycoord(xp) * qrot_xcoord(yp)
 }
 
 ///
@@ -141,7 +143,7 @@ pub fn qitrf2tirs(tm: &AstroTime) -> Quat {
 /// * This is Equation 3-90 in Vallado
 ///
 pub fn qteme2itrf(tm: &AstroTime) -> Quat {
-    qitrf2tirs(tm).conjugate() * qrotz(gmst(tm))
+    qitrf2tirs(tm).conjugate() * qrot_zcoord(gmst(tm))
 }
 
 ///
@@ -159,7 +161,7 @@ pub fn qteme2itrf(tm: &AstroTime) -> Quat {
 ///
 /// Equations 3-88 and 3-89 in Vallado
 ///
-pub fn qmod2gcrs(tm: &AstroTime) -> Quat {
+pub fn qmod2gcrf(tm: &AstroTime) -> Quat {
     const ASEC2RAD: f64 = PI / 180.0 / 3600.0;
     let tt = (tm.to_mjd(Scale::TT) - 51544.5) / 36525.0;
 
@@ -173,7 +175,9 @@ pub fn qmod2gcrs(tm: &AstroTime) -> Quat {
         * (2004.191903
             + tt * (-0.42949342 + tt * (-0.04182264 + tt * (-0.000007089 + tt * -0.0000001274))));
 
-    return qrotz(zeta * ASEC2RAD) * qroty(-theta * ASEC2RAD) * qrotz(z * ASEC2RAD);
+    return qrot_zcoord(zeta * ASEC2RAD)
+        * qrot_ycoord(-theta * ASEC2RAD)
+        * qrot_zcoord(z * ASEC2RAD);
 }
 
 ///
@@ -186,9 +190,9 @@ pub fn qmod2gcrs(tm: &AstroTime) -> Quat {
 ///
 pub fn qgcrf2itrf_approx(tm: &AstroTime) -> Quat {
     // Neglecting polar motion
-    let qitrf2tod_approx: Quat = qrotz(-gast(tm));
+    let qitrf2tod_approx: Quat = qrot_zcoord(-gast(tm));
 
-    qmod2gcrs(tm) * qtod2mod_approx(tm) * qitrf2tod_approx
+    qmod2gcrf(tm) * qtod2mod_approx(tm) * qitrf2tod_approx
 }
 
 /// Approximate rotation from
@@ -218,7 +222,7 @@ pub fn qtod2mod_approx(tm: &AstroTime) -> Quat {
                     + t * (0.00200340 / 3600.0
                         + t * (-5.76e-7 / 3600.0 + t * -4.34E-8 / 3600.0)))));
     let epsilon = epsilon_a + delta_epsilon;
-    qrotx(-epsilon_a) * qrotz(delta_psi) * qrotx(epsilon)
+    qrot_xcoord(-epsilon_a) * qrot_zcoord(delta_psi) * qrot_xcoord(epsilon)
 }
 
 ///
@@ -242,6 +246,10 @@ pub fn qtod2mod_approx(tm: &AstroTime) -> Quat {
 ///
 ///  * This is **very** computationally expensive; for most
 /// applications, the approximate rotation will work just fine
+///
+/// Note: this computatation does not include impact of the
+///       Earth solid tides, but it does include polar motion,
+///       precession, and nutation
 ///
 pub fn qitrf2gcrf(tm: &AstroTime) -> Quat {
     let w = qitrf2tirs(tm);
@@ -289,7 +297,7 @@ pub fn qgcrf2itrf(tm: &AstroTime) -> Quat {
 ///
 #[inline]
 pub fn qtirs2cirs(tm: &AstroTime) -> Quat {
-    qrotz(-earth_rotation_angle(tm))
+    qrot_zcoord(-earth_rotation_angle(tm))
 }
 
 #[cfg(test)]
@@ -337,7 +345,7 @@ mod tests {
         assert!((ptirs[2] - 6380.3445327).abs() < 1.0e-4);
         let era = earth_rotation_angle(&tm);
         assert!((era * 180.0 / PI - 312.7552829).abs() < 1.0e-5);
-        let pcirs = qrotz(-era) * ptirs;
+        let pcirs = qrot_zcoord(-era) * ptirs;
         assert!((pcirs[0] - 5100.0184047).abs() < 1e-3);
         assert!((pcirs[1] - 6122.7863648).abs() < 1e-3);
         assert!((pcirs[2] - 6380.3446237).abs() < 1e-3);

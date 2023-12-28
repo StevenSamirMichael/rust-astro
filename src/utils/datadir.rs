@@ -1,9 +1,8 @@
 use crate::astroerr;
 use crate::AstroResult;
+use once_cell::sync::OnceCell;
 use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
-
-use lazy_static;
 
 #[inline]
 fn get_dylib_path() -> Option<PathBuf> {
@@ -78,23 +77,6 @@ pub fn get_testdirs() -> Vec<PathBuf> {
     testdirs
 }
 
-lazy_static::lazy_static! {
-    static ref DATADIR: AstroResult<PathBuf> = {
-        /*
-        Go through possible data directories
-           and return if "tab5.2a.txt" is found
-           in directory
-        */
-        for ref dir in get_testdirs() {
-            let p = PathBuf::from(&dir).join("tab5.2a.txt");
-            if p.is_file() {
-                return Ok(dir.to_path_buf().clone());
-            }
-        }
-        astroerr!("Could not find valid data directory.")
-    };
-}
-
 /// Get directory where astronomy data is stored
 ///
 /// Tries the following paths in order, and stops when the
@@ -114,9 +96,19 @@ lazy_static::lazy_static! {
 ///    where files are stored
 ///
 pub fn get() -> AstroResult<PathBuf> {
-    match DATADIR.as_ref() {
+    static INSTANCE: OnceCell<AstroResult<PathBuf>> = OnceCell::new();
+    let res = INSTANCE.get_or_init(|| {
+        for ref dir in get_testdirs() {
+            let p = PathBuf::from(&dir).join("tab5.2a.txt");
+            if p.is_file() {
+                return Ok(dir.to_path_buf().clone());
+            }
+        }
+        astroerr!("Could not find valid data directory.")
+    });
+    match res.as_ref() {
         Ok(v) => Ok(v.clone()),
-        Err(_e) => astroerr!("No data directory found"),
+        Err(_e) => astroerr!("Could not find valid data directory."),
     }
 }
 
