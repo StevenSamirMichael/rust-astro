@@ -28,7 +28,7 @@ pub(crate) fn qrot_ycoord(theta: f64) -> Quat {
 /// (left-handed rotation of vector)
 #[inline]
 pub(crate) fn qrot_zcoord(theta: f64) -> Quat {
-    Quat::from_axis_angle(&Vec3::z_axis(), theta)
+    Quat::from_axis_angle(&Vec3::z_axis(), -theta)
 }
 
 ///
