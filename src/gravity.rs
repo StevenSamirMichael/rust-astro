@@ -26,22 +26,22 @@ pub enum GravityModel {
 
 pub fn jgm3() -> &'static Gravity {
     static INSTANCE: OnceCell<Gravity> = OnceCell::new();
-    INSTANCE.get_or_init(|| Gravity::from_file("JGM3.jfc").unwrap())
+    INSTANCE.get_or_init(|| Gravity::from_file("JGM3.gfc").unwrap())
 }
 
 pub fn jgm2() -> &'static Gravity {
     static INSTANCE: OnceCell<Gravity> = OnceCell::new();
-    INSTANCE.get_or_init(|| Gravity::from_file("JGM2.jfc").unwrap())
+    INSTANCE.get_or_init(|| Gravity::from_file("JGM2.gfc").unwrap())
 }
 
 pub fn egm96() -> &'static Gravity {
     static INSTANCE: OnceCell<Gravity> = OnceCell::new();
-    INSTANCE.get_or_init(|| Gravity::from_file("EGM96.jfc").unwrap())
+    INSTANCE.get_or_init(|| Gravity::from_file("EGM96.gfc").unwrap())
 }
 
 pub fn itu_grace16() -> &'static Gravity {
     static INSTANCE: OnceCell<Gravity> = OnceCell::new();
-    INSTANCE.get_or_init(|| Gravity::from_file("ITU_GRACE16.jfc").unwrap())
+    INSTANCE.get_or_init(|| Gravity::from_file("ITU_GRACE16.gfc").unwrap())
 }
 
 pub fn gravhash() -> &'static HashMap<GravityModel, &'static Gravity> {
