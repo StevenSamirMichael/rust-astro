@@ -1,4 +1,5 @@
-mod iau2000;
+mod ierstable;
+mod qcirs2gcrs;
 
 use super::astrotime::{AstroTime, Scale};
 use std::f64::consts::PI;
@@ -8,7 +9,7 @@ type Vec3 = na::Vector3<f64>;
 pub type Quat = na::UnitQuaternion<f64>;
 
 use super::earth_orientation_params;
-pub use iau2000::qcirs2gcrs;
+use qcirs2gcrs::qcirs2gcrs;
 
 /// Right-handed rotation of coordinate sytstem about x axis
 /// (left-handed rotation of vector)
