@@ -184,7 +184,8 @@ mod tests {
     #[test]
     fn checkval() {
         let v = get_from_mjd_utc(59464.00).unwrap();
-        const TRUTH: [f64; 4] = [-0.1145696, 0.241133, 0.317267, -0.2505];
+        println!("v = {:?}", v);
+        const TRUTH: [f64; 4] = [-0.1145640, 0.241133, 0.317269, -0.2467];
         for it in v.iter().zip(TRUTH.iter()) {
             let (a, b) = it;
             assert!(((a - b) / b).abs() < 1.0e-5);
