@@ -346,10 +346,12 @@ mod tests {
         let era = earth_rotation_angle(&tm);
         assert!((era * 180.0 / PI - 312.7552829).abs() < 1.0e-5);
         let pcirs = qrot_zcoord(-era) * ptirs;
+        println!("pcirs = {:?}", pcirs);
         assert!((pcirs[0] - 5100.0184047).abs() < 1e-3);
         assert!((pcirs[1] - 6122.7863648).abs() < 1e-3);
         assert!((pcirs[2] - 6380.3446237).abs() < 1e-3);
         let pgcrf = qcirs2gcrs(tm) * pcirs;
+        println!("pgcrf = {:?}", pgcrf);
         assert!((pgcrf[0] - 5102.508959).abs() < 1e-3);
         assert!((pgcrf[1] - 6123.011403).abs() < 1e-3);
         assert!((pgcrf[2] - 6378.136925).abs() < 1e-3);
