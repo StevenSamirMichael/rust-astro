@@ -27,6 +27,7 @@ use nalgebra as na;
 pub type Vec3 = na::Vector3<f64>;
 pub type Quat = na::UnitQuaternion<f64>;
 
+use crate::astroerr;
 use crate::utils::datadir;
 use crate::utils::AstroResult;
 
@@ -155,7 +156,7 @@ impl JPLEphem {
         // Open the file
         let path = datadir::get().unwrap_or(PathBuf::from(".")).join(fname);
         if !path.is_file() {
-            panic!("Cannot open JPL Ephemeris file");
+            return astroerr!("Cannot open JPL Ephemeris file");
         }
 
         // Read in bytes
@@ -605,7 +606,7 @@ pub fn barycentric_state(body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::dev;
+    use crate::utils::test;
     use std::io::{self, BufRead};
 
     #[test]
@@ -626,7 +627,7 @@ mod tests {
 
         let jpl = jplephem_singleton().as_ref().unwrap();
 
-        let testvecfile = dev::get_project_root()
+        let testvecfile = test::get_project_root()
             .unwrap()
             .join("testdata")
             .join("testpo.440");

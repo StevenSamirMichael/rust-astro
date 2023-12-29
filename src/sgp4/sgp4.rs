@@ -144,7 +144,7 @@ pub fn sgp4_full<'a>(
 mod tests {
     use super::*;
     use crate::tle::TLE;
-    use crate::utils::dev;
+    use crate::utils::test;
     use std::io::BufRead;
 
     #[test]
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn vallado_testvecs() {
-        let testdir = dev::get_project_root()
+        let testdir = test::get_project_root()
             .unwrap()
             .join("testdata")
             .join("vallado")

@@ -20,6 +20,7 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> Astr
             d[0].clone()
         }
     };
+    println!("Downloading to {}", downloaddir.to_str().unwrap());
 
     // List of files to download
     let urls: Vec<&str> = vec![
@@ -30,7 +31,7 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> Astr
         "https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2a.txt",
         "https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2b.txt",
         "https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2d.txt",
-        "https://www.ietf.org/timezones/data/leap-seconds.list",
+        "https://ftp.iana.org/tz/tzdb-2020a/leap-seconds.list",
         "https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/linux_p1550p2650.440",
     ];
 

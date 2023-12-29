@@ -6,7 +6,7 @@ mod astroerr;
 pub mod datadir;
 
 #[cfg(test)]
-pub mod dev;
+pub mod test;
 
 mod update_data;
 pub use update_data::update_datafiles;

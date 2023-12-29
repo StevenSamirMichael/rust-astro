@@ -1,5 +1,4 @@
 use crate::AstroResult;
-use reqwest;
 use std::path::PathBuf;
 
 pub fn download_file(
@@ -13,11 +12,10 @@ pub fn download_file(
         Ok(false)
     } else {
         println!("Downloading {}", fname.to_str().unwrap());
-        let resp = reqwest::blocking::get(url)?;
+        let resp = ureq::get(url).call()?;
 
         let mut dest = std::fs::File::create(fullpath)?;
-        let content = resp.text()?;
-        std::io::copy(&mut content.as_bytes(), &mut dest)?;
+        std::io::copy(resp.into_reader().as_mut(), &mut dest)?;
         Ok(true)
     }
 }

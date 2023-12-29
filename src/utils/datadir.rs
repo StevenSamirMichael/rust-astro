@@ -98,7 +98,7 @@ pub fn get_testdirs() -> Vec<PathBuf> {
 pub fn get() -> AstroResult<PathBuf> {
     static INSTANCE: OnceCell<AstroResult<PathBuf>> = OnceCell::new();
     let res = INSTANCE.get_or_init(|| {
-        for ref dir in get_testdirs() {
+        for ref dir in get_testdirs() {            
             let p = PathBuf::from(&dir).join("tab5.2a.txt");
             if p.is_file() {
                 return Ok(dir.to_path_buf().clone());
