@@ -1,8 +1,12 @@
 use super::settings::PropSettings;
 
 use crate::astrotime::AstroTime;
+use crate::earthgravity;
+use crate::frametransform;
+use crate::jplephem;
 use crate::ode;
 use crate::ode::RKAdaptive;
+use crate::SolarSystem;
 
 use crate::utils::AstroResult;
 
@@ -10,7 +14,6 @@ use num_traits::identities::Zero;
 
 use std::vec::Vec;
 
-use super::utils::linterp_idx;
 use crate::orbitprop::SatProperties;
 
 use thiserror::Error;
@@ -59,25 +62,28 @@ struct Propagation<'a, const C: usize> {
     moon_pos_gcrs_table: Vec<na::Vector3<f64>>,
     qgcrs2itrf_table: Vec<na::UnitQuaternion<f64>>,
     satprops: Option<&'a dyn SatProperties>,
+    timedir: f64,
 }
 
 impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
     type Output = StateType<C>;
 
     fn ydot(&mut self, x: f64, y: &Self::Output) -> ode::ODEResult<Self::Output> {
-        let tm: AstroTime = self.start + x / 86400.0;
+        let tm: AstroTime = self.start + x * self.timedir / 86400.0;
 
         // get GCRS position & velocity;
         let pos_gcrs: na::Vector3<f64> = y.fixed_view::<3, 1>(0, 0).into();
         let vel_gcrs: na::Vector3<f64> = y.fixed_view::<3, 1>(3, 0).into();
 
         // Get force of moon from interpolation table
-        let moon_idx: f64 = (x / self.settings.moon_interp_dt_secs).floor();
-        let moon_gcrs = linterp_idx(&self.moon_pos_gcrs_table, moon_idx).unwrap();
+        //let moon_idx: f64 = (x / self.settings.moon_interp_dt_secs).floor();
+        //let moon_gcrs = linterp_idx(&self.moon_pos_gcrs_table, moon_idx).unwrap();
+        let moon_gcrs = jplephem::geocentric_pos(SolarSystem::MOON, &tm).unwrap();
 
         // Get sun location & force of sun from interpolation table
-        let sun_idx: f64 = x / self.settings.sun_interp_dt_secs;
-        let sun_gcrs = linterp_idx(&self.sun_pos_gcrs_table, sun_idx).unwrap();
+        //let sun_idx: f64 = x / self.settings.sun_interp_dt_secs;
+        //let sun_gcrs = linterp_idx(&self.sun_pos_gcrs_table, sun_idx).unwrap();
+        let sun_gcrs = jplephem::geocentric_pos(SolarSystem::SUN, &tm).unwrap();
 
         // Get rotation from gcrf to itrf frame from interpolation table
         let grav_idx: usize = (x / self.settings.gravity_interp_dt_secs).floor() as usize;
@@ -87,28 +93,29 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
         let q1 = &self.qgcrs2itrf_table[grav_idx];
         let q2 = &self.qgcrs2itrf_table[grav_idx + 1];
         // Quaternion to go from inertial to terrestrial frame
-        let qgcrs2itrf = q1.slerp(q2, t);
+        let qgcrf2itrf = q1.slerp(q2, t);
+        let qitrf2gcrf = qgcrf2itrf.conjugate();
+        //let qgcrf2itrf = frametransform::qgcrf2itrf_approx(&tm);
 
         // Position in ITRF coordinates
-        let pos_itrf = qgcrs2itrf * pos_gcrs;
+        let pos_itrf = qgcrf2itrf * pos_gcrs;
 
         // Propagating a "simple" 6-dof (position, velocity) state
         if C == 1 {
+            let mut accel = na::Vector3::<f64>::zeros();
+
             // Gravity in the ITRF frame
             let gravity_itrf =
-                crate::gravity::jgm3().accel(&pos_itrf, self.settings.gravity_order as usize);
+                earthgravity::jgm3().accel(&pos_itrf, self.settings.gravity_order as usize);
 
             // Gravity in the GCRS frame
-            let accel_gravity = qgcrs2itrf.conjugate() * gravity_itrf;
+            accel += qitrf2gcrf * gravity_itrf;
 
             // Acceleration due to moon
-            let accel_moon = point_gravity(&pos_gcrs, &moon_gcrs, crate::univ::MU_MOON);
+            accel += point_gravity(&pos_gcrs, &moon_gcrs, crate::univ::MU_MOON);
 
             // Acceleration due to sun
-            let accel_sun = point_gravity(&pos_gcrs, &sun_gcrs, crate::univ::MU_SUN);
-
-            // Total acceleration (neglecting solar pressure & drag)
-            let mut accel = accel_gravity - accel_sun - accel_moon;
+            accel += point_gravity(&pos_gcrs, &sun_gcrs, crate::univ::MU_SUN);
 
             // Add solar pressure & drag if that is defined in satellite properties
             if let Some(props) = self.satprops {
@@ -135,11 +142,11 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
                         na::vector![0.0, 0.0, crate::univ::OMEGA_EARTH];
 
                     // See Vallado section 3.7.2: Velocity & Acceleration Transformations
-                    let vel_itrf = qgcrs2itrf * vel_gcrs - OMEGA_EARTH.cross(&pos_itrf);
+                    let vel_itrf = qgcrf2itrf * vel_gcrs - OMEGA_EARTH.cross(&pos_itrf);
 
                     let dragpressure_itrf =
                         -0.5 * cd_a_over_m * density * vel_itrf * vel_itrf.norm();
-                    let dragpressure_gcrs = qgcrs2itrf.conjugate()
+                    let dragpressure_gcrs = qgcrf2itrf.conjugate()
                         * (dragpressure_itrf
                             + OMEGA_EARTH.cross(&OMEGA_EARTH.cross(&pos_itrf))
                             + 2.0 * OMEGA_EARTH.cross(&vel_itrf));
@@ -170,11 +177,20 @@ pub fn propagate<const C: usize>(
     satprops: Option<&dyn SatProperties>,
 ) -> AstroResult<PropagationResult<StateType<C>>> {
     // Propagation structure
-    let duration_days: f64 = *stop - *start;
+    let duration_days: f64 = (*stop - *start).abs();
     let duration_secs: f64 = duration_days * 86400.0;
 
+    // Direction of time
+    let tdir = match *stop > *start {
+        true => 1.0,
+        false => -1.0,
+    };
+
     let mut p: Propagation<C> = Propagation::<C> {
-        start: *start,
+        start: match *stop > *start {
+            true => *start,
+            false => *stop,
+        },
         settings: settings,
 
         // Sun positions for interpolation
@@ -183,9 +199,14 @@ pub fn propagate<const C: usize>(
             (0..ntimes)
                 .into_iter()
                 .map(|x| {
-                    let tm: AstroTime = *start + x as f64 * settings.sun_interp_dt_secs / 86400.0;
+                    let startinterp = match stop > start {
+                        true => start,
+                        false => stop,
+                    };
+                    let tm: AstroTime =
+                        *startinterp + x as f64 * tdir * settings.sun_interp_dt_secs / 86400.0;
                     // Use high-precision JPL ephemerides
-                    crate::jplephem::geocentric_pos(crate::SolarSystem::SUN, &tm).unwrap()
+                    jplephem::geocentric_pos(SolarSystem::SUN, &tm).unwrap()
                 })
                 .collect()
         },
@@ -196,9 +217,14 @@ pub fn propagate<const C: usize>(
             (0..ntimes)
                 .into_iter()
                 .map(|x| {
-                    let tm: AstroTime = *start + x as f64 * settings.moon_interp_dt_secs / 86400.0;
+                    let startinterp = match stop > start {
+                        true => start,
+                        false => stop,
+                    };
+                    let tm: AstroTime =
+                        *startinterp + x as f64 * tdir * settings.moon_interp_dt_secs / 86400.0;
                     // Use high-precision JPL ephemerides
-                    crate::jplephem::geocentric_pos(crate::SolarSystem::MOON, &tm).unwrap()
+                    jplephem::geocentric_pos(SolarSystem::MOON, &tm).unwrap()
                 })
                 .collect()
         },
@@ -209,15 +235,18 @@ pub fn propagate<const C: usize>(
             (0..ntimes)
                 .into_iter()
                 .map(|x| {
+                    let startinterp = match stop > start {
+                        true => start,
+                        false => stop,
+                    };
                     let tm: AstroTime =
-                        *start + x as f64 * settings.gravity_interp_dt_secs / 86400.0;
-
-                    // Use high-precision transform
+                        *startinterp + x as f64 * tdir * settings.gravity_interp_dt_secs / 86400.0; // Use high-precision transform
                     crate::frametransform::qgcrf2itrf(&tm)
                 })
                 .collect()
         },
         satprops: satprops,
+        timedir: tdir,
     };
 
     // Duration to end of integration, in seconds
@@ -274,6 +303,7 @@ pub fn propagate<const C: usize>(
 mod tests {
     use super::*;
     use crate::univ;
+    use crate::TimeScale;
 
     #[test]
     fn test_propagate() -> AstroResult<()> {
@@ -284,18 +314,27 @@ mod tests {
         state[0] = univ::GEO_R;
         state[4] = (univ::MU_EARTH / univ::GEO_R).sqrt();
 
-        let mut settings = PropSettings::new();
-        settings.abs_error = 1.0e-9;
-        settings.rel_error = 1.0e-9;
-        settings.gravity_order = 6;
-        settings.gravity_interp_dt_secs = 60.0;
+        let mut settings = PropSettings::default();
+        settings.abs_error = 1.0e-6;
+        settings.rel_error = 1.0e-6;
+        settings.gravity_order = 4;
+        settings.gravity_interp_dt_secs = 300.0;
         settings.moon_interp_dt_secs = 60.0;
         settings.sun_interp_dt_secs = 60.0;
 
+        println!("starttime mjd = {:.9}", starttime.to_mjd(TimeScale::UTC));
+        let q = frametransform::qgcrf2itrf(&starttime);
+        println!("q = {}", q);
+        println!("state0 = {}", state);
         println!("running");
         let res = propagate(&state, &starttime, &stoptime, None, &settings, None)?;
         println!("res = {:?}", res);
         println!("time = {}", res.time.last().unwrap());
+
+        // Try to propagate back to original time
+        let res2 = propagate(&res.state[0], &stoptime, &starttime, None, &settings, None);
+        println!("res2 = {:?}", res2);
+
         Ok(())
     }
 }

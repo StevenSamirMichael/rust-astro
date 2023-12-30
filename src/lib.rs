@@ -8,10 +8,10 @@ pub mod types;
 pub mod astrotime;
 /// Earth orientation parameters (polar motion, delta-UT1, lenth of day)
 pub mod earth_orientation_params;
+/// Zonal gravity model
+pub mod earthgravity;
 /// Conversion between coordinate frames
 pub mod frametransform;
-/// Zonal gravity model
-pub mod gravity;
 /// Internation Terrestrial Reference Frame coordinates &
 /// transformations to Geodetic, East-North-Up, North-East-Down
 pub mod itrfcoord;

@@ -12,7 +12,11 @@ pub fn download_file(
         Ok(false)
     } else {
         println!("Downloading {}", fname.to_str().unwrap());
-        let resp = ureq::get(url).call()?;
+
+        // Try to set proxy, if any, from environment variables
+        let agent = ureq::AgentBuilder::new().try_proxy_from_env(true).build();
+
+        let resp = agent.get(url).call()?;
 
         let mut dest = std::fs::File::create(fullpath)?;
         std::io::copy(resp.into_reader().as_mut(), &mut dest)?;

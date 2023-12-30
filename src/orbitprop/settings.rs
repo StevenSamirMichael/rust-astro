@@ -11,14 +11,14 @@ pub struct PropSettings {
 }
 
 impl PropSettings {
-    pub fn new() -> PropSettings {
+    pub fn default() -> PropSettings {
         PropSettings {
             gravity_order: 6,
             gravity_interp_dt_secs: 60.0,
             moon_interp_dt_secs: 60.0,
             sun_interp_dt_secs: 60.0,
-            abs_error: 1e-10,
-            rel_error: 1e-10,
+            abs_error: 1e-8,
+            rel_error: 1e-8,
             use_spaceweather: true,
         }
     }

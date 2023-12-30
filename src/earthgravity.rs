@@ -489,12 +489,23 @@ impl Gravity {
 
 mod tests {
 
-    use super::Gravity;
+    use super::*;
 
     use crate::itrfcoord::ITRFCoord;
     use crate::types::Vec3;
     use crate::univ::OMEGA_EARTH;
     use std::f64::consts::PI;
+
+    #[test]
+    fn test_gravity2() {
+        // Lexington, ma
+        let latitude: f64 = 42.4473;
+        let longitude: f64 = -71.2272;
+        let altitude: f64 = 0.0;
+        let coord = ITRFCoord::from_geodetic_deg(latitude, longitude, altitude);
+        let gaccel: Vec3 = jgm3().accel(&coord.into(), 6);
+        println!("gaccel = {}", gaccel);
+    }
 
     #[test]
     fn test_gravity() {

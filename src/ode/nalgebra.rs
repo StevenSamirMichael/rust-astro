@@ -15,7 +15,7 @@ impl<const R: usize, const C: usize> ODEState for nalgebra::SMatrix<f64, R, C> {
 
     #[inline(always)]
     fn ode_norm(&self) -> f64 {
-        self.norm()
+        self.norm() / (self.ode_nelem() as f64).sqrt()
     }
 
     #[inline(always)]

@@ -11,7 +11,7 @@ const NI: usize = 8;
 pub struct RKV98 {}
 
 impl RKAdaptive<N, NI> for RKV98 {
-    const ORDER: usize = 8;
+    const ORDER: usize = 9;
 
     const FSAL: bool = false;
 

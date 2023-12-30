@@ -134,8 +134,8 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
     /// Runga-Kutta integration
     /// with Proportional-Integral controller
     fn integrate<S: ODESystem>(
-        x0: f64,
-        x_end: f64,
+        xstart: f64,
+        xend: f64,
         y0: &S::Output,
         system: &mut S,
         settings: &RKAdaptiveSettings,
@@ -143,31 +143,37 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
         let mut nevals: usize = 0;
         let mut naccept: usize = 0;
         let mut nreject: usize = 0;
-        let mut x = x0.clone();
+        let mut x = xstart.clone();
         let mut y = y0.clone();
 
         let mut qold: f64 = 1.0e-4;
+        let tdir = match xend > xstart {
+            true => 1.0,
+            false => -1.0,
+        };
 
         // Take guess at initial stepsize
         let mut h = {
             // Adapted from OrdinaryDiffEq.jl
             let sci = (y0.ode_abs() * settings.relerror).ode_scalar_add(settings.abserror);
             let d0 = y0.ode_elem_div(&sci).ode_norm();
-            let ydot0 = system.ydot(x0.clone(), &y0)?;
+            let ydot0 = system.ydot(xstart.clone(), &y0)?;
             let d1 = ydot0.ode_elem_div(&sci).ode_norm();
-            let h0 = 0.01 * d0 / d1;
+            let h0 = 0.01 * d0 / d1 * tdir;
             let y1 = y0.clone() + ydot0.clone() * h0;
-            let ydot1 = system.ydot(x0 + h0, &y1)?;
+            let ydot1 = system.ydot(xstart + h0, &y1)?;
             let d2 = (ydot1 - ydot0).ode_elem_div(&sci).ode_norm() / h0;
             let dmax = f64::max(d1, d2);
             let h1 = match dmax < 1e-15 {
-                false => (0.01 / f64::max(d1, d2)).powf(1.0 / (1.0 + Self::ORDER as f64)),
-                true => f64::max(1e-6, h0 * 1e-3),
+                false => {
+                    (0.01 / f64::max(d1.abs(), d2.abs())).powf(1.0 / (1.0 + Self::ORDER as f64))
+                }
+                true => f64::max(1e-6, h0.abs() * 1e-3),
             };
             nevals += 2;
-            f64::min(100.0 * h0, h1)
+            f64::min(100.0 * h0.abs(), h1.abs()) * tdir
         };
-
+        println!("h init = {}", h);
         let mut accepted_steps: Option<DenseOutput<S::Output>> = match settings.dense_output {
             false => None,
             true => Some(DenseOutput {
@@ -179,9 +185,11 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
         };
 
         // OK ... lets integrate!
-        while x < x_end {
-            if x + h > x_end {
-                h = x_end - x;
+        let mut runloop: bool = true;
+        while runloop {
+            if (tdir > 0.0 && x + h > xend) || (tdir < 0.0 && x + h < xend) {
+                h = xend - x;
+                runloop = false;
             }
 
             let mut karr = Vec::new();
@@ -190,7 +198,7 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
             // Create the "k"s
             for k in 1..N {
                 karr.push(system.ydot(
-                    x0 + h * Self::C[k],
+                    xstart + h * Self::C[k],
                     &(karr.iter().enumerate().fold(y.clone(), |acc, (idx, ki)| {
                         acc + ki.clone() * Self::A[k][idx] * h
                     })),
@@ -224,10 +232,9 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
             if !enorm.is_finite() {
                 return Err(Box::new(ODEError::StepErrorToSmall));
             }
-
             // Run proportional-integral controller on error
-            let beta1 = 7.0 / 5.0 / Self::ORDER as f64;
-            let beta2 = 2.0 / 5.0 / Self::ORDER as f64;
+            let beta1 = 7.0 / (4.0 * Self::ORDER as f64);
+            let beta2 = 2.0 / (5.0 * Self::ORDER as f64);
             let q11 = enorm.powf(beta1);
             let q = {
                 let q = q11 / qold.powf(beta2);
@@ -237,7 +244,7 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
                 )
             };
 
-            if (enorm < 1.0) || (h <= settings.dtmin) {
+            if (enorm < 1.0) || (h.abs() <= settings.dtmin) {
                 // If dense output requested, record dense output
                 match settings.dense_output {
                     true => {
@@ -262,7 +269,6 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
                 nreject += 1;
                 h = h / f64::min(1.0 / settings.minfac, q11 / settings.gamma);
             }
-
             /*
             h = h * f64::min(
                 settings.maxfac,
