@@ -185,7 +185,7 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
         // OK ... lets integrate!
         let mut runloop: bool = true;
         while runloop {
-            if (tdir > 0.0 && x + h > xend) || (tdir < 0.0 && x + h < xend) {
+            if (tdir > 0.0 && x + h >= xend) || (tdir < 0.0 && x + h <= xend) {
                 h = xend - x;
                 runloop = false;
             }

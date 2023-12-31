@@ -8,8 +8,6 @@ use crate::ode;
 use crate::ode::RKAdaptive;
 use crate::SolarSystem;
 
-use super::utils::linterp_idx;
-
 use crate::utils::AstroResult;
 
 use num_traits::identities::Zero;
@@ -60,8 +58,6 @@ pub enum PropagationError {
 struct Propagation<'a, const C: usize> {
     start: AstroTime,
     settings: &'a PropSettings,
-    sun_pos_gcrs_table: Vec<na::Vector3<f64>>,
-    moon_pos_gcrs_table: Vec<na::Vector3<f64>>,
     qgcrs2itrf_table: Vec<na::UnitQuaternion<f64>>,
     satprops: Option<&'a dyn SatProperties>,
 }
@@ -77,15 +73,9 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
         let pos_gcrs: na::Vector3<f64> = y.fixed_view::<3, 1>(0, 0).into();
         let vel_gcrs: na::Vector3<f64> = y.fixed_view::<3, 1>(3, 0).into();
 
-        // Get force of moon from interpolation table
-        //let moon_idx: f64 = x.abs() / self.settings.moon_interp_dt_secs;
-        //let moon_gcrf = linterp_idx(&self.moon_pos_gcrs_table, moon_idx).unwrap();
+        // Moon position
         let moon_gcrf = jplephem::geocentric_pos(SolarSystem::MOON, &tm).unwrap();
-
-        // Get sun location & force of sun from interpolation table
-        //let sun_idx: f64 = x.abs() / self.settings.sun_interp_dt_secs;
-        //let sun_gcrf = linterp_idx(&self.sun_pos_gcrs_table, sun_idx).unwrap();
-        //let sun_gcrf = self.sun_pos_gcrs_table[sun_idx as usize].slerp()
+        // Sun position
         let sun_gcrf = jplephem::geocentric_pos(crate::SolarSystem::SUN, &tm).unwrap();
 
         // Get rotation from gcrf to itrf frame from interpolation table
@@ -193,34 +183,6 @@ pub fn propagate<const C: usize>(
         start: *start,
         settings: settings,
 
-        // Sun positions for interpolation
-        sun_pos_gcrs_table: {
-            let ntimes: u32 = 2 + (duration_secs / settings.sun_interp_dt_secs).ceil() as u32;
-            (0..ntimes)
-                .into_iter()
-                .map(|x| {
-                    let tm: AstroTime =
-                        *start + x as f64 * tdir * settings.sun_interp_dt_secs / 86400.0;
-                    // Use high-precision JPL ephemerides
-                    jplephem::geocentric_pos(SolarSystem::SUN, &tm).unwrap()
-                })
-                .collect()
-        },
-
-        // Moon positions for interpolation
-        moon_pos_gcrs_table: {
-            let ntimes: u32 = 2 + (duration_secs / settings.moon_interp_dt_secs).ceil() as u32;
-            (0..ntimes)
-                .into_iter()
-                .map(|x| {
-                    let tm: AstroTime =
-                        *start + x as f64 * tdir * settings.moon_interp_dt_secs / 86400.0;
-                    // Use high-precision JPL ephemerides
-                    jplephem::geocentric_pos(SolarSystem::MOON, &tm).unwrap()
-                })
-                .collect()
-        },
-
         // qGCRS2ITRf
         qgcrs2itrf_table: {
             let ntimes: u32 = 2 + (duration_secs / settings.gravity_interp_dt_secs).ceil() as u32;
@@ -305,8 +267,6 @@ mod tests {
         settings.rel_error = 1.0e-14;
         settings.gravity_order = 4;
         settings.gravity_interp_dt_secs = 300.0;
-        settings.moon_interp_dt_secs = 300.0;
-        settings.sun_interp_dt_secs = 300.0;
 
         println!("state0 = {}", state.transpose());
         println!("running");
