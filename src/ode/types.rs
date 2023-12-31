@@ -13,7 +13,6 @@ pub trait ODEState:
     + Div<f64, Output = Self>
     + Clone
     + Sized
-    + Zero
     + Debug
 {
     // Element-wise divisior of self by other

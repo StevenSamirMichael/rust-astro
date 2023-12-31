@@ -3,8 +3,6 @@ mod satproperties;
 /// Propagator Settings
 mod settings;
 
-mod utils;
-
 mod satstate;
 
 pub use propagator::*;

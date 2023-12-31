@@ -1,4 +1,4 @@
-//! Implmeent ODEState for NAlgebra OMatrix (owned matrix)
+//! Implmeent ODEState for NAlgebra SMatrix (static matrix)
 
 use super::types::ODEState;
 
