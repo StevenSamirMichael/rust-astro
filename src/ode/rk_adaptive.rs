@@ -189,7 +189,6 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
                 h = xend - x;
                 runloop = false;
             }
-
             let mut karr = Vec::new();
             karr.push(system.ydot(x, &y)?);
 
@@ -230,9 +229,6 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
                 let mut ymax = y.ode_abs().ode_elem_max(&ynp1.ode_abs()) * settings.relerror;
                 ymax = ymax.ode_scalar_add(settings.abserror);
                 let ydiv = yerr.ode_elem_div(&ymax);
-                //ydiv.norm() / ((y.ncols() * y.nrows()) as f64).sqrt()
-                //(ydiv.map(|x| x.powf(2.0)).sum() / ((y.ncols() * y.nrows()) as f64)).sqrt()
-                //(ydiv.ode_sumsq() / ydiv.ode_nelem() as f64).sqrt()
                 ydiv.ode_norm()
             };
             nevals += N;

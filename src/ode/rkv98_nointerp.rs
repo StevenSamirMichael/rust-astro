@@ -72,11 +72,11 @@ mod tests {
 
         let res = RKV98NoInterp::integrate(0.0, 2.0 * PI, &y0, &mut system, &settings)?;
         println!("res = {:?}", res);
-        //let res2 = RKV98NoInterp::integrate(0.0, -2.0 * PI, &y0, &mut system, &settings)?;
-        // dprintln!("res2 = {:?}", res2);
+        let res2 = RKV98NoInterp::integrate(0.0, -2.0 * PI, &y0, &mut system, &settings)?;
+        println!("res2 = {:?}", res2);
 
-        //assert!((res.y[0] - 1.0).abs() < 1.0e-11);
-        //assert!(res.y[1].abs() < 1.0e-11);
+        assert!((res.y[0] - 1.0).abs() < 1.0e-11);
+        assert!(res.y[1].abs() < 1.0e-11);
 
         Ok(())
     }
