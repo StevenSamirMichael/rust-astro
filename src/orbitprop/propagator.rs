@@ -8,6 +8,8 @@ use crate::ode;
 use crate::ode::RKAdaptive;
 use crate::SolarSystem;
 
+use super::utils::linterp_idx;
+
 use crate::utils::AstroResult;
 
 use num_traits::identities::Zero;
@@ -77,13 +79,13 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
 
         // Get force of moon from interpolation table
         //let moon_idx: f64 = (x / self.settings.moon_interp_dt_secs).floor();
-        //let moon_gcrs = linterp_idx(&self.moon_pos_gcrs_table, moon_idx).unwrap();
-        let moon_gcrs = jplephem::geocentric_pos(SolarSystem::MOON, &tm).unwrap();
+        //let moon_gcrf = linterp_idx(&self.moon_pos_gcrs_table, moon_idx).unwrap();
+        let moon_gcrf = jplephem::geocentric_pos(SolarSystem::MOON, &tm).unwrap();
 
         // Get sun location & force of sun from interpolation table
         //let sun_idx: f64 = x / self.settings.sun_interp_dt_secs;
-        //let sun_gcrs = linterp_idx(&self.sun_pos_gcrs_table, sun_idx).unwrap();
-        let sun_gcrs = jplephem::geocentric_pos(SolarSystem::SUN, &tm).unwrap();
+        //let sun_gcrf = linterp_idx(&self.sun_pos_gcrs_table, sun_idx).unwrap();
+        let sun_gcrf = jplephem::geocentric_pos(crate::SolarSystem::SUN, &tm).unwrap();
 
         // Get rotation from gcrf to itrf frame from interpolation table
         let grav_idx: usize = (x / self.settings.gravity_interp_dt_secs).floor() as usize;
@@ -94,8 +96,8 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
         let q2 = &self.qgcrs2itrf_table[grav_idx + 1];
         // Quaternion to go from inertial to terrestrial frame
         let qgcrf2itrf = q1.slerp(q2, t);
-        let qitrf2gcrf = qgcrf2itrf.conjugate();
         //let qgcrf2itrf = frametransform::qgcrf2itrf_approx(&tm);
+        let qitrf2gcrf = qgcrf2itrf.conjugate();
 
         // Position in ITRF coordinates
         let pos_itrf = qgcrf2itrf * pos_gcrs;
@@ -112,18 +114,18 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
             accel += qitrf2gcrf * gravity_itrf;
 
             // Acceleration due to moon
-            accel += point_gravity(&pos_gcrs, &moon_gcrs, crate::univ::MU_MOON);
+            accel += point_gravity(&pos_gcrs, &moon_gcrf, crate::univ::MU_MOON);
 
             // Acceleration due to sun
-            accel += point_gravity(&pos_gcrs, &sun_gcrs, crate::univ::MU_SUN);
+            accel += point_gravity(&pos_gcrs, &sun_gcrf, crate::univ::MU_SUN);
 
             // Add solar pressure & drag if that is defined in satellite properties
             if let Some(props) = self.satprops {
                 let ss = y.fixed_view::<6, 1>(0, 0);
 
                 // Compute solar pressure
-                let solarpressure = -props.cr_a_over_m(&tm, &ss.into()) * 4.56e-6 * sun_gcrs
-                    / sun_gcrs.norm().powf(3.0);
+                let solarpressure = -props.cr_a_over_m(&tm, &ss.into()) * 4.56e-6 * sun_gcrf
+                    / sun_gcrf.norm().powf(3.0);
                 accel += solarpressure;
 
                 // Compute drag
@@ -241,7 +243,7 @@ pub fn propagate<const C: usize>(
                     };
                     let tm: AstroTime =
                         *startinterp + x as f64 * tdir * settings.gravity_interp_dt_secs / 86400.0; // Use high-precision transform
-                    crate::frametransform::qgcrf2itrf(&tm)
+                    frametransform::qgcrf2itrf(&tm)
                 })
                 .collect()
         },
@@ -315,14 +317,15 @@ mod tests {
         state[4] = (univ::MU_EARTH / univ::GEO_R).sqrt();
 
         let mut settings = PropSettings::default();
-        settings.abs_error = 1.0e-6;
-        settings.rel_error = 1.0e-6;
+        settings.abs_error = 1.0e-9;
+        settings.rel_error = 1.0e-14;
         settings.gravity_order = 4;
-        settings.gravity_interp_dt_secs = 300.0;
-        settings.moon_interp_dt_secs = 60.0;
-        settings.sun_interp_dt_secs = 60.0;
+        settings.gravity_interp_dt_secs = 600.0;
+        settings.moon_interp_dt_secs = 10.0;
+        settings.sun_interp_dt_secs = 10.0;
 
         println!("starttime mjd = {:.9}", starttime.to_mjd(TimeScale::UTC));
+        println!("starttime = {}", starttime);
         let q = frametransform::qgcrf2itrf(&starttime);
         println!("q = {}", q);
         println!("state0 = {}", state);

@@ -9,7 +9,7 @@ use super::rkv87_table;
 pub struct RKV87 {}
 
 impl RKAdaptive<17, 7> for RKV87 {
-    const ORDER: usize = 7;
+    const ORDER: usize = 8;
 
     const FSAL: bool = false;
 
