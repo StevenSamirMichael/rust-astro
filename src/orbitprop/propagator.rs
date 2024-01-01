@@ -16,6 +16,7 @@ use num_traits::identities::Zero;
 use std::vec::Vec;
 
 use crate::orbitprop::SatProperties;
+use crate::univ;
 
 use thiserror::Error;
 
@@ -50,6 +51,28 @@ fn point_gravity(
     mu * (sr / (srnorm * srnorm2) - s / (snorm * snorm2))
 }
 
+// Return tuple with point gravity force and
+// point gravity partial (da/dr)
+// Equation 3.37 in Montenbruck & Gill for point gravity
+// Equation 7.75 in Montenbruck & Gill for partials
+
+fn point_gravity_and_partials(
+    r: &na::Vector3<f64>, // object
+    s: &na::Vector3<f64>, // distant attractur
+    mu: f64,
+) -> (na::Vector3<f64>, na::Matrix3<f64>) {
+    let rs = r - s;
+    let rsnorm2 = rs.norm_squared();
+    let rsnorm = rsnorm2.sqrt();
+    let snorm2 = s.norm_squared();
+    let snorm = snorm2.sqrt();
+    (
+        -mu * (rs / (rsnorm * rsnorm2) + s / (snorm * snorm2)),
+        -mu * (na::Matrix3::<f64>::identity() / (rsnorm2 * rsnorm)
+            - 3.0 * rs * rs.transpose() / (rsnorm2 * rsnorm2 * rsnorm)),
+    )
+}
+
 #[derive(Debug, Error)]
 pub enum PropagationError {
     #[error("Invalid number of columns: {c}")]
@@ -71,8 +94,8 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
         //println!("tm = {} :: {} :: x = {}", self.start, tm, x);
 
         // get GCRS position & velocity;
-        let pos_gcrs: na::Vector3<f64> = y.fixed_view::<3, 1>(0, 0).into();
-        let vel_gcrs: na::Vector3<f64> = y.fixed_view::<3, 1>(3, 0).into();
+        let pos_gcrf: na::Vector3<f64> = y.fixed_view::<3, 1>(0, 0).into();
+        let vel_gcrf: na::Vector3<f64> = y.fixed_view::<3, 1>(3, 0).into();
 
         // Moon position
         let (sun_gcrf, moon_gcrf) = match self.settings.use_jplephem {
@@ -96,7 +119,7 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
         let qitrf2gcrf = qgcrf2itrf.conjugate();
 
         // Position in ITRF coordinates
-        let pos_itrf = qgcrf2itrf * pos_gcrs;
+        let pos_itrf = qgcrf2itrf * pos_gcrf;
 
         // Propagating a "simple" 6-dof (position, velocity) state
         if C == 1 {
@@ -110,10 +133,10 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
             accel += qitrf2gcrf * gravity_itrf;
 
             // Acceleration due to moon
-            accel += point_gravity(&pos_gcrs, &moon_gcrf, crate::univ::MU_MOON);
+            accel += point_gravity(&pos_gcrf, &moon_gcrf, crate::univ::MU_MOON);
 
             // Acceleration due to sun
-            accel += point_gravity(&pos_gcrs, &sun_gcrf, crate::univ::MU_SUN);
+            accel += point_gravity(&pos_gcrf, &sun_gcrf, crate::univ::MU_SUN);
 
             // Add solar pressure & drag if that is defined in satellite properties
             if let Some(props) = self.satprops {
@@ -140,7 +163,7 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
                         na::vector![0.0, 0.0, crate::univ::OMEGA_EARTH];
 
                     // See Vallado section 3.7.2: Velocity & Acceleration Transformations
-                    let vel_itrf = qgcrf2itrf * vel_gcrs - OMEGA_EARTH.cross(&pos_itrf);
+                    let vel_itrf = qgcrf2itrf * vel_gcrf - OMEGA_EARTH.cross(&pos_itrf);
 
                     let dragpressure_itrf =
                         -0.5 * cd_a_over_m * density * vel_itrf * vel_itrf.norm();
@@ -154,11 +177,40 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
 
             let mut dy = Self::Output::zero();
             // change in position is velocity
-            dy.fixed_view_mut::<3, 1>(0, 0).copy_from(&vel_gcrs);
+            dy.fixed_view_mut::<3, 1>(0, 0).copy_from(&vel_gcrf);
 
             // Change in velocity is acceleration
             dy.fixed_view_mut::<3, 1>(3, 0).copy_from(&accel);
 
+            Ok(dy)
+        } else if C == 7 {
+            let (gravity_accel, gravity_partials) = earthgravity::jgm3()
+                .accel_and_partials(&pos_itrf, self.settings.gravity_order as usize);
+            let (sun_accel, sun_partials) =
+                point_gravity_and_partials(&pos_gcrf, &sun_gcrf, univ::MU_SUN);
+            let (moon_accel, moon_partials) =
+                point_gravity_and_partials(&pos_gcrf, &moon_gcrf, univ::MU_MOON);
+
+            let accel = qitrf2gcrf * gravity_accel + sun_accel + moon_accel;
+
+            // Equation 7.42 in Montenbruck & Gill
+            let mut dfdy: StateType<6> = StateType::<6>::zeros();
+            dfdy.fixed_view_mut::<3, 3>(0, 3)
+                .copy_from(&na::Matrix3::<f64>::identity());
+
+            let ritrf2gcrf = qitrf2gcrf.to_rotation_matrix();
+            let dadr = ritrf2gcrf * gravity_partials * ritrf2gcrf.transpose()
+                + sun_partials
+                + moon_partials;
+
+            dfdy.fixed_view_mut::<3, 3>(3, 0).copy_from(&dadr);
+
+            let dphi = dfdy * y.fixed_view::<6, 6>(0, 1);
+
+            let mut dy = Self::Output::zero();
+            dy.fixed_view_mut::<3, 1>(0, 0).copy_from(&vel_gcrf);
+            dy.fixed_view_mut::<3, 1>(3, 0).copy_from(&accel);
+            dy.fixed_view_mut::<6, 6>(0, 1).copy_from(&dphi);
             Ok(dy)
         } else {
             Err(Box::new(PropagationError::InvalidStateColumns { c: C }))
@@ -283,6 +335,38 @@ mod tests {
         // Try to propagate back to original time
         let res2 = propagate(&res.state[0], &stoptime, &starttime, None, &settings, None);
         println!("res2 = {:?}", res2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_state_transition() -> AstroResult<()> {
+        let starttime = AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0);
+        let stoptime = starttime + 1.0;
+
+        let mut state: CovState = CovState::zeros();
+        state[0] = univ::GEO_R;
+        state[4] = (univ::MU_EARTH / univ::GEO_R).sqrt();
+        state
+            .fixed_view_mut::<6, 6>(0, 1)
+            .copy_from(&na::Matrix6::<f64>::identity());
+        println!("state 0 = {}", state);
+
+        let mut settings = PropSettings::default();
+        settings.abs_error = 1.0e-9;
+        settings.rel_error = 1.0e-14;
+        settings.gravity_order = 4;
+        settings.gravity_interp_dt_secs = 300.0;
+        settings.use_jplephem = false;
+
+        println!("running");
+        let res = propagate(&state, &starttime, &stoptime, None, &settings, None)?;
+        println!("res = {:?}", res);
+        println!("time = {}", res.time.last().unwrap());
+        println!("state end = {}", res.state[0]);
+
+        let res2 = propagate(&res.state[0], &stoptime, &starttime, None, &settings, None)?;
+        println!("res2 state = {}", res2.state[0]);
 
         Ok(())
     }

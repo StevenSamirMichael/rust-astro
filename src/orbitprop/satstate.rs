@@ -5,11 +5,12 @@ use crate::orbitprop::PropSettings;
 use crate::AstroResult;
 use crate::AstroTime;
 
+type PVCovType = na::SMatrix<f64, 6, 6>;
+
 #[derive(Clone, Debug)]
 pub enum StateCov {
-    PVCov(na::SMatrix<f64, 6, 6>),
-    PVRCov(na::SMatrix<f64, 6, 7>),
     None,
+    PVCov(PVCovType),
 }
 
 #[derive(Clone, Debug)]
@@ -28,6 +29,20 @@ impl SatState {
         }
     }
 
+    /// Set position uncertainty (1-sigma) in the position, velocity, angular momentum
+    /// frame
+    pub fn set_pvh_pos_uncertainty(&mut self, sigma_pvh: &na::Vector3<f64>) {
+        self.cov = StateCov::PVCov({
+            let mut m = PVCovType::zeros();
+            let mut diag = na::Vector6::<f64>::zeros();
+            diag[0] = sigma_pvh[0] * sigma_pvh[0];
+            diag[1] = sigma_pvh[1] * sigma_pvh[1];
+            diag[2] = sigma_pvh[2] * sigma_pvh[2];
+            m.set_diagonal(&diag);
+            m
+        })
+    }
+
     pub fn propagate(
         &self,
         time: &AstroTime,
@@ -35,23 +50,38 @@ impl SatState {
     ) -> AstroResult<SatState> {
         let default = orbitprop::PropSettings::default();
         let settings = option_settings.unwrap_or(&default);
-        let res = orbitprop::propagate(&self.pv, &self.time, time, None, settings, None)?;
-        Ok(SatState {
-            time: time.clone(),
-            pv: res.state[0],
-            cov: StateCov::None,
-        })
+        match self.cov {
+            StateCov::None => {
+                let res = orbitprop::propagate(&self.pv, &self.time, time, None, settings, None)?;
+                Ok(SatState {
+                    time: time.clone(),
+                    pv: res.state[0],
+                    cov: StateCov::None,
+                })
+            }
+            StateCov::PVCov(cov) => {
+                let mut state = na::SMatrix::<f64, 6, 7>::zeros();
+                state.fixed_view_mut::<6, 1>(0, 0).copy_from(&self.pv);
+                let res = orbitprop::propagate(&state, &self.time, time, None, settings, None)?;
+                Ok(SatState {
+                    time: time.clone(),
+                    pv: res.state[0].fixed_view::<6, 1>(0, 0).into(),
+                    cov: {
+                        let phi = res.state[0].fixed_view::<6, 6>(0, 1);
+                        StateCov::PVCov(phi * cov * phi.transpose())
+                    },
+                })
+            }
+        }
     }
 
     pub fn to_string(&self) -> String {
         format!(
             r#"Satellite State
                 Time: {}
-            Position: {}
-            Velocity: {}"#,
-            self.time,
-            self.pv.fixed_view::<3, 1>(0, 0).transpose(),
-            self.pv.fixed_view::<3, 1>(3, 0).transpose(),
+            Position: [{:+8.0}, {:+8.0}, {:+8.0}] m,
+            Velocity: [{:+8.3}, {:+8.3}, {:+8.3}] m/s"#,
+            self.time, self.pv[0], self.pv[1], self.pv[2], self.pv[3], self.pv[4], self.pv[5],
         )
     }
 }
