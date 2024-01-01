@@ -215,7 +215,7 @@ pub trait RKAdaptive<const N: usize, const NI: usize> {
             let yerr = karr
                 .iter()
                 .enumerate()
-                .fold(S::Output::zero(), |acc, (idx, k)| {
+                .fold(S::Output::ode_zero(), |acc, (idx, k)| {
                     if Self::BERR[idx].abs() > 1.0e-9 {
                         acc + k.clone() * Self::BERR[idx]
                     } else {

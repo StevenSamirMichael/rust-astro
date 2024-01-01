@@ -4,6 +4,7 @@ use crate::astrotime::AstroTime;
 use crate::earthgravity;
 use crate::frametransform;
 use crate::jplephem;
+use crate::lpephem;
 use crate::ode;
 use crate::ode::RKAdaptive;
 use crate::SolarSystem;
@@ -74,9 +75,13 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
         let vel_gcrs: na::Vector3<f64> = y.fixed_view::<3, 1>(3, 0).into();
 
         // Moon position
-        let moon_gcrf = jplephem::geocentric_pos(SolarSystem::MOON, &tm).unwrap();
-        // Sun position
-        let sun_gcrf = jplephem::geocentric_pos(crate::SolarSystem::SUN, &tm).unwrap();
+        let (sun_gcrf, moon_gcrf) = match self.settings.use_jplephem {
+            true => (
+                jplephem::geocentric_pos(SolarSystem::SUN, &tm)?,
+                jplephem::geocentric_pos(SolarSystem::MOON, &tm)?,
+            ),
+            false => (lpephem::sun::pos_gcrf(&tm), lpephem::moon::pos_gcrf(&tm)),
+        };
 
         // Get rotation from gcrf to itrf frame from interpolation table
         let grav_idx: f64 = x.abs() / self.settings.gravity_interp_dt_secs;
@@ -267,6 +272,7 @@ mod tests {
         settings.rel_error = 1.0e-14;
         settings.gravity_order = 4;
         settings.gravity_interp_dt_secs = 300.0;
+        settings.use_jplephem = false;
 
         println!("state0 = {}", state.transpose());
         println!("running");

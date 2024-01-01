@@ -37,4 +37,8 @@ impl<const R: usize, const C: usize> ODEState for nalgebra::SMatrix<f64, R, C> {
     fn ode_nelem(&self) -> usize {
         self.ncols() * self.nrows()
     }
+
+    fn ode_zero() -> Self {
+        Self::zeros()
+    }
 }

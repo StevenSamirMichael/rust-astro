@@ -35,10 +35,13 @@ pub trait ODEState:
 
     // Number of elements
     fn ode_nelem(&self) -> usize;
+
+    // zero
+    fn ode_zero() -> Self;
 }
 
 pub trait ODESystem {
-    type Output: ODEState + Zero;
+    type Output: ODEState;
     fn ydot(&mut self, x: f64, y: &Self::Output) -> ODEResult<Self::Output>;
 }
 

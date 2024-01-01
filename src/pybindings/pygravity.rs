@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 
-use crate::gravity::{accel, GravityModel};
+use crate::earthgravity::{accel, GravityModel};
 
 use super::pyitrfcoord::PyITRFCoord;
 use crate::itrfcoord::ITRFCoord;

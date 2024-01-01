@@ -17,7 +17,7 @@ pub mod types;
 mod nalgebra;
 
 // ndarray bindings for ODE state
-mod ndarray;
+//mod ndarray;
 
 pub use rk_adaptive::RKAdaptive;
 pub use rk_adaptive_settings::RKAdaptiveSettings;

@@ -1,6 +1,7 @@
 use nalgebra as na;
 
 use crate::orbitprop;
+use crate::orbitprop::PropSettings;
 use crate::AstroResult;
 use crate::AstroTime;
 
@@ -27,15 +28,37 @@ impl SatState {
         }
     }
 
-    pub fn propagate(&self, time: &AstroTime) -> AstroResult<SatState> {
-        let mut settings = orbitprop::PropSettings::default();
-        settings.gravity_order = 2;
-        let res = orbitprop::propagate(&self.pv, &self.time, time, None, &settings, None)?;
+    pub fn propagate(
+        &self,
+        time: &AstroTime,
+        option_settings: Option<&PropSettings>,
+    ) -> AstroResult<SatState> {
+        let default = orbitprop::PropSettings::default();
+        let settings = option_settings.unwrap_or(&default);
+        let res = orbitprop::propagate(&self.pv, &self.time, time, None, settings, None)?;
         Ok(SatState {
             time: time.clone(),
             pv: res.state[0],
             cov: StateCov::None,
         })
+    }
+
+    pub fn to_string(&self) -> String {
+        format!(
+            r#"Satellite State
+                Time: {}
+            Position: {}
+            Velocity: {}"#,
+            self.time,
+            self.pv.fixed_view::<3, 1>(0, 0).transpose(),
+            self.pv.fixed_view::<3, 1>(3, 0).transpose(),
+        )
+    }
+}
+
+impl std::fmt::Display for SatState {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }
 
@@ -53,11 +76,11 @@ mod test {
         );
         println!("state orig = {:?}", satstate);
 
-        let state2 = satstate.propagate(&(satstate.time + 1.0))?;
+        let state2 = satstate.propagate(&(satstate.time + 1.0), None)?;
 
         println!("state 2 = {:?}", state2);
 
-        let state0 = state2.propagate(&satstate.time);
+        let state0 = state2.propagate(&satstate.time, None);
         println!("state 0 = {:?}", state0);
         Ok(())
     }

@@ -11,10 +11,13 @@ mod pylpephem_moon;
 mod pylpephem_sun;
 mod pynrlmsise;
 mod pyquaternion;
+mod pysatstate;
 mod pysgp4;
 mod pysolarsystem;
 mod pytle;
 mod pyuniv;
+
+mod pypropsettings;
 
 mod pyutils;
 
@@ -23,6 +26,9 @@ use pyframetransform as pyft;
 use pyitrfcoord::PyITRFCoord;
 use pyquaternion::Quaternion;
 use pysolarsystem::SolarSystem;
+
+use pypropsettings::PyPropSettings;
+use pysatstate::PySatState;
 
 /// JPL Ephemeris Sub-Module
 #[pymodule]
@@ -84,6 +90,13 @@ fn frametransform(_py: Python, m: &PyModule) -> PyResult<()> {
 }
 
 #[pymodule]
+fn satprop(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<PyPropSettings>()?;
+    m.add_class::<PySatState>()?;
+    Ok(())
+}
+
+#[pymodule]
 pub fn astro(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyAstroTime>()?;
     m.add_class::<pyastrotime::PyTimeScale>()?;
@@ -106,6 +119,7 @@ pub fn astro(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(frametransform))?;
     m.add_wrapped(wrap_pymodule!(jplephem))?;
     m.add_wrapped(wrap_pymodule!(lpephem))?;
+    m.add_wrapped(wrap_pymodule!(satprop))?;
 
     m.add_wrapped(wrap_pymodule!(mod_utils::utils))?;
 
