@@ -146,13 +146,7 @@ fn deltaat_new() -> &'static Vec<[u64; 2]> {
 
 impl std::fmt::Display for AstroTime {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let (year, mon, day, hour, min, sec) = self.to_datetime();
-
-        write!(
-            f,
-            "{}-{:02}-{:02} {:02}:{:02}:{:06.3}Z",
-            year, mon, day, hour, min, sec
-        )
+        write!(f, "{}", self.to_string())
     }
 }
 
@@ -266,6 +260,21 @@ impl AstroTime {
     /// (seconds since midnight Jan 1 1970, UTC)
     pub fn from_unixtime(t: f64) -> AstroTime {
         AstroTime::from_mjd(t / 86400.0 + UTC1970, Scale::UTC)
+    }
+
+    pub fn to_string(&self) -> String {
+        let (mut year, mut mon, mut day, mut hour, mut min, mut sec) = self.to_datetime();
+
+        // Prevent edge case where seconds is displayed as 60
+        if sec > 59.999 {
+            let t = self.clone() + 5e-4 / 86400.0;
+            (year, mon, day, hour, min, sec) = t.to_datetime();
+        }
+
+        format!(
+            "{}-{:02}-{:02} {:02}:{:02}:{:06.3}Z",
+            year, mon, day, hour, min, sec
+        )
     }
 
     /// Construt new AstroTime object, representing

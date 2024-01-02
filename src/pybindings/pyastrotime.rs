@@ -8,6 +8,9 @@ use crate::astrotime::{self, AstroTime, Scale};
 
 use numpy as np;
 
+///
+/// Enum specifying time epoch or scale
+///
 #[pyclass(name = "timescale")]
 pub enum PyTimeScale {
     /// Invalid time scale
@@ -55,6 +58,20 @@ impl IntoPy<PyObject> for astrotime::Scale {
     }
 }
 
+///
+/// Object representing an instant in time
+///
+/// Used for orbit propagation, frame transformations, etc..
+///
+/// Includes function for conversion to various time representations
+/// (e.g., julian date, modified julian date, gps time, ...)
+///
+/// Also includes conversions between various scales
+/// (e.g., UTC, Terrestrial Time, GPS, ...)
+///
+/// Methods also included for conversion to & from the more-standard
+/// "datetime" object used in Python
+///
 #[pyclass(name = "time")]
 #[derive(PartialEq, PartialOrd, Copy, Clone, Debug)]
 pub struct PyAstroTime {
@@ -63,6 +80,22 @@ pub struct PyAstroTime {
 
 #[pymethods]
 impl PyAstroTime {
+    ///
+    /// Create a new time object
+    ///
+    ///
+    /// Inputs Options:
+    ///
+    ///    1:  None: Output current date / time
+    ///
+    ///    2:  Year, Month, Day:
+    ///              Output object representing associated date
+    ///              (same as "fromdate" method)
+    ///    
+    ///    3:  Year, Month, Day, Hour, Minute, Second:
+    ///              Output object representing associated date & time
+    ///              (same as "fromgregorian" method)
+    ///
     #[new]
     #[pyo3(signature=(*py_args))]
     fn py_new(py_args: &PyTuple) -> PyResult<Self> {
@@ -323,11 +356,7 @@ impl PyAstroTime {
     }
 
     fn __str__(&self) -> PyResult<String> {
-        let dt = self.inner.to_datetime();
-        Ok(format!(
-            "{:04}-{:02}-{:02} {:02}:{:02}:{:06.3}Z",
-            dt.0, dt.1, dt.2, dt.3, dt.4, dt.5
-        ))
+        Ok(self.inner.to_string())
     }
 
     fn __repr__(&self) -> PyResult<String> {
