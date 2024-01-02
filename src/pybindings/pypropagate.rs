@@ -61,6 +61,7 @@ pub fn propagate(
     let duration_secs: Option<f64> = kwargs_or_none(&kwargs, "duration_secs")?;
     let duration_days: Option<f64> = kwargs_or_none(&kwargs, "duration_days")?;
     let pystoptime: Option<PyAstroTime> = kwargs_or_none(&kwargs, "stoptime")?;
+    //let output_phi: bool = kwargs_or_default(&kwargs, "output_phi", false)?;
 
     if duration_days == None && pystoptime == None && duration_secs == None {
         return Err(pyo3::exceptions::PyRuntimeError::new_err(

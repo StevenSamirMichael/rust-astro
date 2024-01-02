@@ -1,6 +1,7 @@
 use pyo3::prelude::*;
 use pyo3::types::timezone_utc;
 use pyo3::types::PyDateTime;
+use pyo3::types::PyTuple;
 use pyo3::types::PyTzInfo;
 
 use crate::astrotime::{self, AstroTime, Scale};
@@ -63,12 +64,32 @@ pub struct PyAstroTime {
 #[pymethods]
 impl PyAstroTime {
     #[new]
-    fn py_new() -> PyResult<Self> {
-        match AstroTime::now() {
-            Ok(v) => Ok(PyAstroTime { inner: v }),
-            Err(_) => Err(pyo3::exceptions::PyOSError::new_err(
-                "Could not get current time",
-            )),
+    #[pyo3(signature=(*py_args))]
+    fn py_new(py_args: &PyTuple) -> PyResult<Self> {
+        if py_args.is_empty() {
+            match AstroTime::now() {
+                Ok(v) => Ok(PyAstroTime { inner: v }),
+                Err(_) => Err(pyo3::exceptions::PyOSError::new_err(
+                    "Could not get current time",
+                )),
+            }
+        } else if py_args.len() == 3 {
+            let year = py_args.get_item(0)?.extract::<u32>()?;
+            let month = py_args.get_item(1)?.extract::<u32>()?;
+            let day = py_args.get_item(2)?.extract::<u32>()?;
+            Self::from_date(year, month, day)
+        } else if py_args.len() == 6 {
+            let year = py_args.get_item(0)?.extract::<u32>()?;
+            let month = py_args.get_item(1)?.extract::<u32>()?;
+            let day = py_args.get_item(2)?.extract::<u32>()?;
+            let hour = py_args.get_item(3)?.extract::<u32>()?;
+            let min = py_args.get_item(4)?.extract::<u32>()?;
+            let sec = py_args.get_item(5)?.extract::<f64>()?;
+            Self::from_gregorian(year, month, day, hour, min, sec)
+        } else {
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "Must pass in year, month, day or year, month, day, hour, min, sec",
+            ))
         }
     }
 
