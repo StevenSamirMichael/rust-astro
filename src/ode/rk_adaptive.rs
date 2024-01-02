@@ -1,6 +1,5 @@
 use super::rk_adaptive_settings::RKAdaptiveSettings;
 use super::types::*;
-use num_traits::identities::Zero;
 
 pub trait RKAdaptive<const N: usize, const NI: usize> {
     // Butcher Tableau Coefficients

@@ -17,6 +17,7 @@ mod pysolarsystem;
 mod pytle;
 mod pyuniv;
 
+mod pypropagate;
 mod pypropsettings;
 
 mod pyutils;
@@ -93,6 +94,9 @@ fn frametransform(_py: Python, m: &PyModule) -> PyResult<()> {
 fn satprop(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPropSettings>()?;
     m.add_class::<PySatState>()?;
+    m.add_function(wrap_pyfunction!(pypropagate::propagate, m)?)
+        .unwrap();
+
     Ok(())
 }
 

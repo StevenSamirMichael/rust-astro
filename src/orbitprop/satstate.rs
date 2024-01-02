@@ -134,7 +134,7 @@ impl SatState {
             StateCov::None => s1,
             StateCov::PVCov(cov) => {
                 s1.push_str(format!(r#"
-                Covariance: {cov:+8.2e}"#
+            Covariance: {cov:+8.2e}"#
                 ).as_str());
                 s1
             }

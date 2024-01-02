@@ -1,4 +1,3 @@
-use num_traits::Zero;
 use std::ops::{Add, Div, Mul, Sub};
 
 use std::fmt::Debug;
