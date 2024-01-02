@@ -229,7 +229,7 @@ pub fn propagate<const C: usize>(
     satprops: Option<&dyn SatProperties>,
 ) -> AstroResult<PropagationResult<StateType<C>>> {
     // Propagation structure
-    let duration_days: f64 = (*stop - *start).abs();
+    let duration_days: f64 = (*stop - *start).days().abs();
     let duration_secs: f64 = duration_days * 86400.0;
 
     // Direction of time
@@ -258,7 +258,7 @@ pub fn propagate<const C: usize>(
     };
 
     // Duration to end of integration, in seconds
-    let x_end: f64 = (*stop - *start) * 86400.0;
+    let x_end: f64 = (*stop - *start).days() * 86400.0;
 
     let mut odesettings = crate::ode::RKAdaptiveSettings::default();
     odesettings.abserror = settings.abs_error;

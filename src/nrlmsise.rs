@@ -110,7 +110,7 @@ pub fn nrlmsise(
     if time_option.is_some() {
         let time = time_option.unwrap();
         let (year, _mon, _day, dhour, dmin, dsec) = time.to_datetime();
-        let fday: f64 = time - AstroTime::from_date(year, 1, 1) + 1.0;
+        let fday: f64 = (time - AstroTime::from_date(year, 1, 1)).days() + 1.0;
         day_of_year = fday.floor() as i32;
         sec_of_day = dhour as f64 * 3600.0 + dmin as f64 * 60.0 + dsec;
 

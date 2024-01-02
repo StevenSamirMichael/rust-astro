@@ -38,8 +38,8 @@ pub mod utils;
 pub mod ode;
 
 // Objects available at crate level
-pub use astrotime::AstroTime;
 pub use astrotime::Scale as TimeScale;
+pub use astrotime::{AstroTime, Duration};
 pub use itrfcoord::ITRFCoord;
 pub use solarsystem::SolarSystem;
 pub use tle::TLE;

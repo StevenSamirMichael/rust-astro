@@ -152,9 +152,9 @@ pub fn get(tm: AstroTime) -> AstroResult<SpaceWeatherRecord> {
     let sw = sw_lock.as_ref().unwrap();
 
     // First, try simple indexing
-    let idx = (tm - sw[0].date).floor() as usize;
+    let idx = (tm - sw[0].date).days().floor() as usize;
     if idx < sw.len() {
-        if (tm - sw[idx].date).abs() < 1.0 {
+        if (tm - sw[idx].date).days().abs() < 1.0 {
             return Ok(sw[idx].clone());
         }
     }

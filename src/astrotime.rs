@@ -38,6 +38,54 @@ pub struct AstroTime {
     mjd_tai: f64,
 }
 
+pub enum Duration {
+    Days(f64),
+    Seconds(f64),
+    Years(f64),
+    Minutes(f64),
+    Hours(f64),
+}
+
+impl Duration {
+    pub fn days(&self) -> f64 {
+        match self {
+            Duration::Days(v) => *v,
+            Duration::Seconds(v) => *v / 86400.0,
+            Duration::Years(v) => *v * 365.25,
+            Duration::Minutes(v) => *v / 1440.0,
+            Duration::Hours(v) => *v / 24.0,
+        }
+    }
+    pub fn seconds(&self) -> f64 {
+        match self {
+            Duration::Days(v) => *v * 86400.0,
+            Duration::Seconds(v) => *v,
+            Duration::Years(v) => *v * 86400.0 * 365.25,
+            Duration::Minutes(v) => *v * 60.0,
+            Duration::Hours(v) => *v * 3600.0,
+        }
+    }
+    pub fn hours(&self) -> f64 {
+        match self {
+            Duration::Days(v) => *v * 24.0,
+            Duration::Seconds(v) => *v / 3600.0,
+            Duration::Minutes(v) => *v / 60.0,
+            Duration::Hours(v) => *v,
+            Duration::Years(v) => *v * 24.0 * 365.25,
+        }
+    }
+
+    pub fn minutes(&self) -> f64 {
+        match self {
+            Duration::Days(v) => *v * 1440.0,
+            Duration::Seconds(v) => *v / 60.0,
+            Duration::Minutes(v) => *v,
+            Duration::Hours(v) => *v * 60.0,
+            Duration::Years(v) => *v * 1440.0 * 365.25,
+        }
+    }
+}
+
 use crate::utils::{astroerr, AstroResult};
 
 use super::earth_orientation_params as eop;
@@ -157,6 +205,24 @@ impl std::ops::Add<f64> for AstroTime {
     }
 }
 
+impl std::ops::Add<Duration> for AstroTime {
+    type Output = Self;
+    fn add(self, other: Duration) -> Self::Output {
+        Self {
+            mjd_tai: self.mjd_tai + other.days(),
+        }
+    }
+}
+
+impl std::ops::Sub<Duration> for AstroTime {
+    type Output = Self;
+    fn sub(self, other: Duration) -> Self::Output {
+        Self {
+            mjd_tai: self.mjd_tai - other.days(),
+        }
+    }
+}
+
 /// Take the difference between two AstroTime time instances
 /// returning the floating-point number of days between
 /// the instances.
@@ -179,30 +245,37 @@ impl std::ops::Sub<f64> for &AstroTime {
 }
 
 impl std::ops::Sub<AstroTime> for &AstroTime {
-    type Output = f64;
-    fn sub(self, other: AstroTime) -> f64 {
-        self.mjd_tai - other.mjd_tai
+    type Output = Duration;
+    fn sub(self, other: AstroTime) -> Duration {
+        Duration::Days(self.mjd_tai - other.mjd_tai)
     }
 }
 
 impl std::ops::Sub<&AstroTime> for &AstroTime {
-    type Output = f64;
-    fn sub(self, other: &AstroTime) -> f64 {
-        self.mjd_tai - other.mjd_tai
+    type Output = Duration;
+    fn sub(self, other: &AstroTime) -> Duration {
+        Duration::Days(self.mjd_tai - other.mjd_tai)
     }
 }
 
 impl std::ops::Sub<AstroTime> for AstroTime {
-    type Output = f64;
-    fn sub(self, other: AstroTime) -> f64 {
-        self.mjd_tai - other.mjd_tai
+    type Output = Duration;
+    fn sub(self, other: AstroTime) -> Duration {
+        Duration::Days(self.mjd_tai - other.mjd_tai)
     }
 }
 
 impl std::ops::Sub<&AstroTime> for AstroTime {
-    type Output = f64;
-    fn sub(self, other: &AstroTime) -> f64 {
-        self.mjd_tai - other.mjd_tai
+    type Output = Duration;
+    fn sub(self, other: &AstroTime) -> Duration {
+        Duration::Days(self.mjd_tai - other.mjd_tai)
+    }
+}
+
+impl std::ops::Add<&Vec<Duration>> for AstroTime {
+    type Output = Vec<Self>;
+    fn add(self, other: &Vec<Duration>) -> Self::Output {
+        other.into_iter().map(|x| self + x.days()).collect()
     }
 }
 

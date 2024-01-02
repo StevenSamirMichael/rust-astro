@@ -127,7 +127,7 @@ pub fn sgp4_full<'a>(
     let mut rarr = StateArr::zeros(n);
     let mut varr = StateArr::zeros(n);
     for (pos, thetime) in tm.iter().enumerate() {
-        let tsince = (*thetime - tle.epoch) * 1440.0;
+        let tsince = (*thetime - tle.epoch).days() * 1440.0;
 
         match sgp4_lowlevel(&mut s, tsince) {
             Ok((r, v)) => {
