@@ -717,7 +717,7 @@ mod tests {
         assert_eq!(min, 20);
         assert!(((sec - 41.0) / 41.0).abs() < 1.0e-5);
 
-        let dcalc: f64 = tm2 - tm;
+        let dcalc: f64 = (tm2 - tm).days();
         assert!(((dcalc - delta) / delta).abs() < 1.0e-5);
     }
 
