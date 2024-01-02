@@ -143,35 +143,37 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
                 let ss = y.fixed_view::<6, 1>(0, 0);
 
                 // Compute solar pressure
-                let solarpressure = -props.cr_a_over_m(&tm, &ss.into()) * 4.56e-6 * sun_gcrf
-                    / sun_gcrf.norm().powf(3.0);
+                let solarpressure =
+                    -props.cr_a_over_m(&tm, &ss.into()) * 4.56e-6 * sun_gcrf / sun_gcrf.norm();
                 accel += solarpressure;
 
                 // Compute drag
-                let cd_a_over_m = props.cd_a_over_m(&tm, &ss.into());
+                if pos_gcrf.norm() < 700.0e3 + crate::univ::EARTH_RADIUS {
+                    let cd_a_over_m = props.cd_a_over_m(&tm, &ss.into());
 
-                if cd_a_over_m > 1e-6 {
-                    let itrf = crate::ITRFCoord::from(pos_itrf.as_slice());
-                    let (density, _temperature) = crate::nrlmsise::nrlmsise(
-                        itrf.hae() / 1.0e3,
-                        Some(itrf.latitude_rad()),
-                        Some(itrf.longitude_rad()),
-                        Some(tm),
-                        self.settings.use_spaceweather,
-                    );
-                    const OMEGA_EARTH: na::Vector3<f64> =
-                        na::vector![0.0, 0.0, crate::univ::OMEGA_EARTH];
+                    if cd_a_over_m > 1e-6 {
+                        let itrf = crate::ITRFCoord::from(pos_itrf.as_slice());
+                        let (density, _temperature) = crate::nrlmsise::nrlmsise(
+                            itrf.hae() / 1.0e3,
+                            Some(itrf.latitude_rad()),
+                            Some(itrf.longitude_rad()),
+                            Some(tm),
+                            self.settings.use_spaceweather,
+                        );
+                        const OMEGA_EARTH: na::Vector3<f64> =
+                            na::vector![0.0, 0.0, crate::univ::OMEGA_EARTH];
 
-                    // See Vallado section 3.7.2: Velocity & Acceleration Transformations
-                    let vel_itrf = qgcrf2itrf * vel_gcrf - OMEGA_EARTH.cross(&pos_itrf);
+                        // See Vallado section 3.7.2: Velocity & Acceleration Transformations
+                        let vel_itrf = qgcrf2itrf * vel_gcrf - OMEGA_EARTH.cross(&pos_itrf);
 
-                    let dragpressure_itrf =
-                        -0.5 * cd_a_over_m * density * vel_itrf * vel_itrf.norm();
-                    let dragpressure_gcrs = qgcrf2itrf.conjugate()
-                        * (dragpressure_itrf
-                            + OMEGA_EARTH.cross(&OMEGA_EARTH.cross(&pos_itrf))
-                            + 2.0 * OMEGA_EARTH.cross(&vel_itrf));
-                    accel += dragpressure_gcrs;
+                        let dragpressure_itrf =
+                            -0.5 * cd_a_over_m * density * vel_itrf * vel_itrf.norm();
+                        let dragpressure_gcrs = qgcrf2itrf.conjugate()
+                            * (dragpressure_itrf
+                                + OMEGA_EARTH.cross(&OMEGA_EARTH.cross(&pos_itrf))
+                                + 2.0 * OMEGA_EARTH.cross(&vel_itrf));
+                        accel += dragpressure_gcrs;
+                    }
                 }
             } // end of handling drag & solarpressure
 
