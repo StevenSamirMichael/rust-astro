@@ -1,5 +1,6 @@
 use super::pyastrotime::PyAstroTime;
 use super::pypropsettings::PyPropSettings;
+use super::pysatproperties::PySatProperties;
 
 use nalgebra as na;
 use numpy as np;
@@ -53,6 +54,7 @@ fn lowlevel_propagate<const C: usize>(
     start: &crate::AstroTime,
     stop: &crate::AstroTime,
     dt: Option<f64>,
+    pysatproperties: &Option<PySatProperties>,
     propsettings: &orbitprop::PropSettings,
 ) -> PyResult<Py<PyAny>> {
     // Create the state to propagate
@@ -66,14 +68,20 @@ fn lowlevel_propagate<const C: usize>(
             .copy_from(&na::Matrix6::<f64>::identity());
     }
 
-    // Finally, do the propagation
-    let res = match crate::orbitprop::propagate(&pv, &start, &stop, dt, &propsettings, None) {
-        Ok(v) => v,
-        Err(e) => {
-            let estring = format!("Error propagating: {}", e.to_string());
-            return Err(pyo3::exceptions::PyRuntimeError::new_err(estring));
-        }
+    let satproperties: Option<&dyn orbitprop::SatProperties> = match pysatproperties {
+        None => None,
+        Some(v) => Some(&v.inner),
     };
+
+    // Finally, do the propagation
+    let res =
+        match crate::orbitprop::propagate(&pv, &start, &stop, dt, &propsettings, satproperties) {
+            Ok(v) => v,
+            Err(e) => {
+                let estring = format!("Error propagating: {}", e.to_string());
+                return Err(pyo3::exceptions::PyRuntimeError::new_err(estring));
+            }
+        };
 
     pyo3::Python::with_gil(|py| -> PyResult<Py<PyAny>> {
         let r = PyDict::new(py);
@@ -177,6 +185,12 @@ fn lowlevel_propagate<const C: usize>(
 ///                   default is False
 ///     propsettings: "PropSetttings" object with input settings for the propagation.
 ///                   if left out, default will be used.
+///    satproperties: "SatPropertiesStatic" object with drag and radiation pressure
+///                   succeptibility of satellite.
+///                   If left out, drag and radiation pressure are neglected
+///                   Dynamic drag & radiation pressure models are not
+///                   yet implemented
+///
 ///
 /// Output: Python dictionary with the following elements:
 ///  
@@ -223,6 +237,7 @@ pub fn propagate(
     let duration_days: Option<f64> = kwargs_or_none(&mut mkwargs, "duration_days")?;
     let pystoptime: Option<PyAstroTime> = kwargs_or_none(&mut mkwargs, "stoptime")?;
     let output_phi: bool = kwargs_or_default(&mut mkwargs, "output_phi", false)?;
+    let pysatproperties: Option<PySatProperties> = kwargs_or_none(&mut mkwargs, "satproperties")?;
 
     match dt_days {
         None => (),
@@ -265,10 +280,26 @@ pub fn propagate(
 
     // Simple sate propagation
     if output_phi == false {
-        lowlevel_propagate::<1>(pos, vel, &start.inner, &stoptime, dt_secs, &propsettings)
+        lowlevel_propagate::<1>(
+            pos,
+            vel,
+            &start.inner,
+            &stoptime,
+            dt_secs,
+            &pysatproperties,
+            &propsettings,
+        )
     }
     // Propagate with state transition matrix
     else {
-        lowlevel_propagate::<7>(pos, vel, &start.inner, &stoptime, dt_secs, &propsettings)
+        lowlevel_propagate::<7>(
+            pos,
+            vel,
+            &start.inner,
+            &stoptime,
+            dt_secs,
+            &pysatproperties,
+            &propsettings,
+        )
     }
 }
