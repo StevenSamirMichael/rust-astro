@@ -186,7 +186,7 @@ fn lowlevel_propagate<const C: usize>(
 ///      "vel": GCRF velocity in meters / second at "time".  Output is a
 ///             Nx3 numpy matrix, where N is the length of the output
 ///             "time" list
-///      "phi": 6x6 State transition matrix corresponding to each time.
+///      "Phi": 6x6 State transition matrix corresponding to each time.
 ///             Output is Nx6x6 numpy matrix, where N is the lenght of
 ///             the output "time" list. Not included if output_phi
 ///             kwarg is set to false (the default)
