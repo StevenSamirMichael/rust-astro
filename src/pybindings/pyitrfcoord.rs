@@ -21,7 +21,7 @@ impl PyITRFCoord {
     #[pyo3(signature=(x = 0.0, y = 0.0, z = 0.0))]
     fn new(x: f64, y: f64, z: f64) -> PyResult<Self> {
         Ok(PyITRFCoord {
-            inner: ITRFCoord::from_vec([x, y, z]),
+            inner: ITRFCoord::from_slice(&[x, y, z]).unwrap(),
         })
     }
 
