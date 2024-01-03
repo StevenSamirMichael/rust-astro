@@ -2,6 +2,62 @@ use super::astrotime::AstroTime;
 use crate::sgp4::SatRec;
 use crate::utils::AstroResult;
 
+///
+/// Stucture representing a Two-Line Element Set (TLE), a satellite
+/// ephemeris format from the 1970s that is still somehow in use
+/// today and can be used to calculate satellite position and
+/// velcocity in the "TEME" frame (not-quite GCRF) using the
+/// "Simplified General Perturbations-4" (SGP-4) mathemematical
+/// model that is also included in this package.
+///
+/// For details, see: https://en.wikipedia.org/wiki/Two-line_element_set
+///
+/// The TLE format is still commonly used to represent satellite
+/// ephemerides, and satellite ephemerides catalogs in this format
+/// are publicly availalble at www.space-track.org (registration
+/// required)
+///
+/// TLEs sometimes have a "line 0" that includes the name of the satellite
+///
+/// Example Usage:
+///
+///
+/// ```
+/// use astro::TLE;
+/// use astro::AstroTime;
+/// use astro::sgp4::sgp4;
+/// use astro::frametransform;
+/// use astro::itrfcoord::ITRFCoord;
+///
+/// let lines = vec!["0 INTELSAT 902",
+///     "1 26900U 01039A   06106.74503247  .00000045  00000-0  10000-3 0  8290",
+///     "2 26900   0.0164 266.5378 0003319  86.1794 182.2590  1.00273847 16981   9300."];
+///
+/// let mut tle = TLE::load_3line(lines[0], lines[1], lines[2]).unwrap();
+/// let tm = AstroTime::from_datetime(2006, 5, 1, 11, 0, 0.0);
+///
+/// // Use SGP4 to get position,
+/// let (pTEME, vTEME) = sgp4(&mut tle, &[tm]).unwrap();
+///
+/// println!("pTEME = {}", pTEME);
+/// // Rotate the position to the ITRF frame (Earth-fixed)
+/// // Since pTEME is a 3xN array where N is the number of times
+/// // (we are just using a single time)
+/// // we need to convert to a fixed matrix to rotate
+/// let pITRF = frametransform::qteme2itrf(&tm) * pTEME.fixed_view::<3,1>(0,0);
+///
+/// println!("pITRF = {}", pITRF);
+///
+/// // Convert to an "ITRF Coordinate" and print geodetic position
+/// let itrf = ITRFCoord::from_slice(&pTEME.fixed_view::<3,1>(0,0).as_slice()).unwrap();
+///
+/// println!("latitude = {} deg", itrf.latitude_deg());
+/// println!("longitude = {} deg", itrf.longitude_deg());
+/// println!("altitude = {} m", itrf.hae());
+///
+/// ```
+///
+///
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct TLE {
     /// Name of satellite
@@ -135,14 +191,14 @@ impl TLE {
     ///
     /// ```
     ///
-    pub fn load_3line(line0: &String, line1: &String, line2: &String) -> Result<TLE, String> {
+    pub fn load_3line(line0: &str, line1: &str, line2: &str) -> Result<TLE, String> {
         match TLE::load_2line(line1, line2) {
             Ok(mut tle) => {
                 tle.name = {
                     if line0.len() > 2 && line0.chars().nth(0).unwrap() == '0' {
                         line0[2..].to_string()
                     } else {
-                        line0.clone()
+                        String::from(line0)
                     }
                 };
                 Ok(tle)
@@ -151,7 +207,7 @@ impl TLE {
         }
     }
 
-    pub fn load_2line(line1: &String, line2: &String) -> Result<TLE, String> {
+    pub fn load_2line(line1: &str, line2: &str) -> Result<TLE, String> {
         let mut year: u32 = {
             let mut mstr: String = "1".to_owned();
             mstr.push_str(&line1[18..20]);
@@ -304,6 +360,50 @@ impl TLE {
             satrec: None,
         })
     }
+
+    pub fn to_pretty_string(&self) -> String {
+        format!(
+            r#"
+            TLE: {}
+                         NORAD ID: {},
+                      Launch Year: {},
+                            Epoch: {},
+                  Mean Motion Dot: {} revs / day^2,
+              Mean Motion Dot Dot: {} revs / day^3,
+                             Drag: {},
+                      Inclination: {} deg,
+                             RAAN: {} deg,
+                            eccen: {},
+                   Arg of Perigee: {} deg,
+                     Mean Anomaly: {} deg,
+                      Mean Motion: {} revs / day
+                            Rev #: {}
+        "#,
+            self.name,
+            self.sat_num,
+            match self.desig_year > 50 {
+                true => self.desig_year + 1900,
+                false => self.desig_year + 2000,
+            },
+            self.epoch,
+            self.mean_motion_dot * 2.0,
+            self.mean_motion_dot_dot * 6.0,
+            self.bstar,
+            self.inclination,
+            self.raan,
+            self.eccen,
+            self.arg_of_perigee,
+            self.mean_anomaly,
+            self.mean_motion,
+            self.rev_num,
+        )
+    }
+}
+
+impl std::fmt::Display for TLE {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.to_pretty_string())
+    }
 }
 
 #[cfg(test)]
@@ -319,8 +419,7 @@ mod tests {
         match TLE::load_3line(&line0.to_string(), &line1.to_string(), &line2.to_string()) {
             Ok(t) => {
                 assert_eq!(1, 1);
-                println!("TLE = {:?}", t);
-                println!("epoch = {}", t.epoch);
+                println!("TLE = {}", t);
             }
 
             Err(s) => {

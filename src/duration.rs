@@ -1,3 +1,5 @@
+use crate::AstroTime;
+
 #[derive(Clone)]
 pub enum Duration {
     Days(f64),
@@ -72,6 +74,20 @@ impl Duration {
     }
 }
 
+impl std::ops::Add<AstroTime> for Duration {
+    type Output = AstroTime;
+    fn add(self, other: AstroTime) -> AstroTime {
+        other + self.days()
+    }
+}
+
+impl std::ops::Add<&AstroTime> for Duration {
+    type Output = AstroTime;
+    fn add(self, other: &AstroTime) -> AstroTime {
+        *other + self.days()
+    }
+}
+
 impl std::ops::Add<Duration> for Duration {
     type Output = Duration;
     fn add(self, other: Duration) -> Self::Output {
@@ -124,5 +140,22 @@ impl std::ops::Sub<&Duration> for &Duration {
 impl std::fmt::Display for Duration {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.to_string())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn testdur() {
+        // A random assortment of duration tests...
+        assert!(Duration::Seconds(1.0).seconds() == 1.0);
+        assert!(Duration::Minutes(1.0).seconds() == 60.0);
+        assert!(Duration::Hours(1.0).minutes() == 60.0);
+        assert!(Duration::Hours(1.0).seconds() == 3600.0);
+        assert!(Duration::Days(1.0).hours() == 24.0);
+        assert!(Duration::Days(1.0).seconds() == 86400.0);
+        assert!((Duration::Days(1.0) + Duration::Days(1.0)).seconds() == 2.0);
     }
 }

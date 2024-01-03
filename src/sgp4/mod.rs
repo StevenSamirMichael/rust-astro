@@ -1,3 +1,8 @@
+///
+/// A pure-rust implementation of SGP4
+///
+/// manually and painstakingly converted from C++
+///
 pub use self::satrec::SatRec;
 
 #[derive(PartialEq, PartialOrd, Clone, Debug, Eq, Copy)]

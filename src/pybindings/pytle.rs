@@ -105,6 +105,10 @@ impl PyTLE {
     fn get_mean_motion_dot_dot(&self) -> PyResult<f64> {
         Ok(self.inner.mean_motion_dot_dot)
     }
+
+    fn __str__(&self) -> String {
+        self.inner.to_pretty_string()
+    }
 }
 
 impl IntoPy<PyObject> for TLE {

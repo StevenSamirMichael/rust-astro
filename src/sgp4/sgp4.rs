@@ -57,7 +57,7 @@ const SGP4_ERRS: [&str; 7] = [
 /// // the TLE epoch time
 ///     
 /// use astro::TLE;
-/// use astro::sgp4::{sgp4_full, GravConst, OpsMode};
+/// use astro::sgp4::{sgp4_full, GravConst, OpsMode};
 /// use astro::coordconversion::qteme2itrf;
 /// use astro::itrfcoord::ITRFCoord;
 ///

@@ -7,8 +7,10 @@ const RAD2DEG: f64 = 180. / PI;
 pub const WGS84_A: f64 = 6378137.0;
 pub const WGS84_F: f64 = 0.003352810664747;
 
+use crate::astroerr;
 use crate::types::Quaternion as Quat;
 use crate::types::Vec3;
+use crate::AstroResult;
 
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
 pub struct ITRFCoord {
@@ -151,14 +153,17 @@ impl ITRFCoord {
         ITRFCoord::from_geodetic_rad(lat * DEG2RAD, lon * DEG2RAD, hae)
     }
 
-    /// Returns an ITRF coordinate given input vector
+    /// Return an ITRF coordinate given input slice
     /// representing Cartesian coordinates, in meters
-    ///
-    pub fn from_vec(v: [f64; 3]) -> ITRFCoord {
-        ITRFCoord {
-            itrf: Vec3::from(v),
+    pub fn from_slice(v: &[f64]) -> AstroResult<ITRFCoord> {
+        if v.len() != 3 {
+            return astroerr!("Input slice must have 3 elements");
         }
+        Ok(ITRFCoord {
+            itrf: Vec3::from_row_slice(v),
+        })
     }
+
     /// Returns an ITRF Coordinate given the geodetic inputs
     ///   with radian units for latitude & longitude
     ///
