@@ -2,7 +2,7 @@ use crate::orbitprop::SatPropertiesStatic;
 
 use pyo3::prelude::*;
 
-#[pyclass(name = "SatPropertiesStatic")]
+#[pyclass(name = "satproperties_static")]
 #[derive(Clone, Debug)]
 pub struct PySatProperties {
     pub inner: SatPropertiesStatic,

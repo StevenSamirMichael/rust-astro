@@ -2,7 +2,7 @@ use pyo3::prelude::*;
 
 use crate::orbitprop::PropSettings;
 
-#[pyclass(name = "PropSettings")]
+#[pyclass(name = "propsettings")]
 #[derive(Clone, Debug)]
 pub struct PyPropSettings {
     pub inner: PropSettings,

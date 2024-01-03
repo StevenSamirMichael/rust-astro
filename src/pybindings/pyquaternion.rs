@@ -6,7 +6,7 @@ use pyo3::prelude::*;
 type Quat = na::UnitQuaternion<f64>;
 type Vec3 = na::Vector3<f64>;
 
-#[pyclass]
+#[pyclass(name = "quaternion")]
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub struct Quaternion {
     pub inner: Quat,
@@ -105,7 +105,7 @@ impl Quaternion {
     }
 
     fn __mul__(&self, other: &PyAny) -> PyResult<PyObject> {
-        // Multiply quaternion by quaternion        
+        // Multiply quaternion by quaternion
         if other.is_instance_of::<Quaternion>() {
             let q: PyRef<Quaternion> = other.extract()?;
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
@@ -114,7 +114,7 @@ impl Quaternion {
                 }
                 .into_py(py));
             })
-        } 
+        }
         // This incorrectly matches for all PyArray types
         else if let Ok(v) = other.downcast::<np::PyArray2<f64>>() {
             if v.dims()[1] != 3 {
@@ -126,16 +126,12 @@ impl Quaternion {
             let qmat = rot.matrix().conjugate();
 
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
-             
-                let nd = unsafe {np::ndarray::ArrayView2::from_shape_ptr((3, 3), qmat.as_ptr())};
+                let nd = unsafe { np::ndarray::ArrayView2::from_shape_ptr((3, 3), qmat.as_ptr()) };
                 let res = v.readonly().as_array().dot(&nd).to_pyarray(py);
 
                 Ok(res.into_py(py))
-                
             })
-    
-        } 
-        else if let Ok(v1d) = other.downcast::<np::PyArray1<f64>>() {
+        } else if let Ok(v1d) = other.downcast::<np::PyArray1<f64>>() {
             if v1d.len() != 3 {
                 return Err(pyo3::exceptions::PyTypeError::new_err(
                     "Invalid rhs.  1D array must be of length 3",
@@ -155,8 +151,7 @@ impl Quaternion {
                 let vnd = np::PyArray1::<f64>::from_vec(py, vec![vout[0], vout[1], vout[2]]);
                 Ok(vnd.into_py(py))
             })
-        }
-        else {
+        } else {
             let s = format!("invalid type: {}", other.get_type());
             Err(pyo3::exceptions::PyTypeError::new_err(s))
         }
