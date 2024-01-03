@@ -6,6 +6,8 @@ use pyo3::types::PyTzInfo;
 
 use crate::astrotime::{self, AstroTime, Scale};
 
+use super::pyduration::PyDuration;
+
 use numpy as np;
 
 ///
@@ -240,7 +242,7 @@ impl PyAstroTime {
     fn __add__(&self, other: &PyAny) -> PyResult<PyObject> {
         // Numpy array of floats
         if other.is_instance_of::<np::PyArray1<f64>>() {
-            let parr: np::PyReadonlyArray1<f64> = other.extract().unwrap();
+            let parr = other.extract::<np::PyReadonlyArray1<f64>>()?;
             pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
                 let objarr = parr
                     .as_array()
@@ -256,23 +258,43 @@ impl PyAstroTime {
                 Ok(parr.into_py(py))
             })
         }
-        // list of floats
+        // list of floats or duration
         else if other.is_instance_of::<pyo3::types::PyList>() {
-            let v = other.extract::<Vec<f64>>().unwrap();
-            pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
-                let objarr = v
-                    .into_iter()
-                    .map(|x| {
-                        let pyobj = PyAstroTime {
-                            inner: self.inner + x,
-                        };
-                        pyobj.into_py(py)
-                    })
-                    .into_iter();
+            if let Ok(v) = other.extract::<Vec<f64>>() {
+                pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
+                    let objarr = v
+                        .into_iter()
+                        .map(|x| {
+                            let pyobj = PyAstroTime {
+                                inner: self.inner + x,
+                            };
+                            pyobj.into_py(py)
+                        })
+                        .into_iter();
 
-                let parr = np::PyArray1::<PyObject>::from_iter(py, objarr);
-                Ok(parr.into_py(py))
-            })
+                    let parr = np::PyArray1::<PyObject>::from_iter(py, objarr);
+                    Ok(parr.into_py(py))
+                })
+            } else if let Ok(v) = other.extract::<Vec<PyDuration>>() {
+                pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
+                    let objarr = v
+                        .into_iter()
+                        .map(|x| {
+                            let pyobj = PyAstroTime {
+                                inner: self.inner + x.inner,
+                            };
+                            pyobj.into_py(py)
+                        })
+                        .into_iter();
+
+                    let parr = np::PyArray1::<PyObject>::from_iter(py, objarr);
+                    Ok(parr.into_py(py))
+                })
+            } else {
+                Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Invalid types in list",
+                ))
+            }
         }
         // Constant number
         else if other.is_instance_of::<pyo3::types::PyFloat>()
@@ -286,6 +308,12 @@ impl PyAstroTime {
                 }
                 .into_py(py))
             })
+        } else if other.is_instance_of::<PyDuration>() {
+            let dur: PyDuration = other.extract::<PyDuration>().unwrap();
+            Ok(PyAstroTime {
+                inner: self.inner + dur.inner,
+            }
+            .into_py(other.py()))
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Invalid type for rhs",
@@ -314,21 +342,41 @@ impl PyAstroTime {
         }
         // list of floats
         else if other.is_instance_of::<pyo3::types::PyList>() {
-            let v = other.extract::<Vec<f64>>().unwrap();
-            pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
-                let objarr = v
-                    .into_iter()
-                    .map(|x| {
-                        let pyobj = PyAstroTime {
-                            inner: self.inner - x,
-                        };
-                        pyobj.into_py(py)
-                    })
-                    .into_iter();
+            if let Ok(v) = other.extract::<Vec<f64>>() {
+                pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
+                    let objarr = v
+                        .into_iter()
+                        .map(|x| {
+                            let pyobj = PyAstroTime {
+                                inner: self.inner - x,
+                            };
+                            pyobj.into_py(py)
+                        })
+                        .into_iter();
 
-                let parr = np::PyArray1::<PyObject>::from_iter(py, objarr);
-                Ok(parr.into_py(py))
-            })
+                    let parr = np::PyArray1::<PyObject>::from_iter(py, objarr);
+                    Ok(parr.into_py(py))
+                })
+            } else if let Ok(v) = other.extract::<Vec<PyDuration>>() {
+                pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
+                    let objarr = v
+                        .into_iter()
+                        .map(|x| {
+                            let pyobj = PyAstroTime {
+                                inner: self.inner - x.inner,
+                            };
+                            pyobj.into_py(py)
+                        })
+                        .into_iter();
+
+                    let parr = np::PyArray1::<PyObject>::from_iter(py, objarr);
+                    Ok(parr.into_py(py))
+                })
+            } else {
+                Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Invalid types in list",
+                ))
+            }
         }
         // Constant number
         else if other.is_instance_of::<pyo3::types::PyFloat>()
@@ -342,6 +390,12 @@ impl PyAstroTime {
                 }
                 .into_py(py))
             })
+        } else if other.is_instance_of::<PyDuration>() {
+            let dur: PyDuration = other.extract::<PyDuration>().unwrap();
+            Ok(PyAstroTime {
+                inner: self.inner - dur.inner,
+            }
+            .into_py(other.py()))
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Invalid type for rhs",

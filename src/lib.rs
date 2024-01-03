@@ -37,9 +37,12 @@ pub mod utils;
 // Integrate ordinary differential equations
 pub mod ode;
 
+mod duration;
+
 // Objects available at crate level
+pub use astrotime::AstroTime;
 pub use astrotime::Scale as TimeScale;
-pub use astrotime::{AstroTime, Duration};
+pub use duration::Duration;
 pub use itrfcoord::ITRFCoord;
 pub use solarsystem::SolarSystem;
 pub use tle::TLE;

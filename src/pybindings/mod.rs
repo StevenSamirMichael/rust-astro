@@ -3,6 +3,7 @@ use pyo3::{wrap_pyfunction, wrap_pymodule};
 
 mod mod_utils;
 mod pyastrotime;
+mod pyduration;
 mod pyframetransform;
 mod pygravity;
 mod pyitrfcoord;
@@ -24,6 +25,7 @@ mod pysatproperties;
 mod pyutils;
 
 use pyastrotime::PyAstroTime;
+use pyduration::PyDuration;
 use pyframetransform as pyft;
 use pyitrfcoord::PyITRFCoord;
 use pyquaternion::Quaternion;
@@ -105,6 +107,7 @@ fn satprop(_py: Python, m: &PyModule) -> PyResult<()> {
 #[pymodule]
 pub fn astro(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyAstroTime>()?;
+    m.add_class::<PyDuration>()?;
     m.add_class::<pyastrotime::PyTimeScale>()?;
     m.add_class::<Quaternion>()?;
     m.add_function(wrap_pyfunction!(pysgp4::sgp4, m)?).unwrap();

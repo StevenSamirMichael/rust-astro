@@ -1,4 +1,5 @@
 use super::pyastrotime::PyAstroTime;
+use super::pyduration::PyDuration;
 use super::pypropsettings::PyPropSettings;
 use super::pysatproperties::PySatProperties;
 
@@ -169,24 +170,42 @@ fn lowlevel_propagate<const C: usize>(
 ///      tm:   astro.time object representing instant at which satellite is at "pos" & "vel"
 ///
 /// Optional keyword arguments:
+///
+///
+/// 4 ways of setting propagation end:
+/// (one of these must be used)
 ///   
-///         stoptime: astro.time object representing instant at which new position and
-///                   velocity will be computed
-///    duration_secs: duration in seconds from "tm" for at which new position and
-///                   velocity will be computed.  Alternative way of setting "stoptime"
+///         stoptime: astro.time object representing instant at
+///                   which new position and velocity will be computed
+///    duration_secs: duration in seconds from "tm" for at which new
+///                   position and velocity will be computed.  
 ///    duration_days: duration in days from "tm" at which new position and
-///                   velocity will be computed.  Alternative way of setting "stoptime"
-///          dt_secs: Interval in seconds between "starttime" and "stoptime" at which
-///                   solution will also be computed (default: no interval)
+///                   velocity will be computed.  
+///         duration: An astro.duration object setting duration from "tm"
+///                   at which new position & velocity will be computed.
+///
+///
+///  3 ways of setting smaller interval over which to compute solution:
+///  (defualt is none, i.e. solution only computed at propagation end)
+///
+///          dt_secs: Interval in seconds between "starttime" and "stoptime"
+///                   at which solution will also be computed
 ///          dt_days: Interval in days between "starttime" and "stoptime" at which
-///                   solution will also be computed (default: no interval)
+///                   solution will also be computed
+///               dt: astro.duration representing interval over which
+///                   new position & velocity will be computed
+///
+///
+///  Other keywords:
+///
+///
 ///       output_phi: Output 6x6 state transition matrix between "starttime" and
 ///                   "stoptime" (and at intervals, if specified)
 ///                   default is False
-///     propsettings: "PropSetttings" object with input settings for the propagation.
-///                   if left out, default will be used.
-///    satproperties: "SatPropertiesStatic" object with drag and radiation pressure
-///                   succeptibility of satellite.
+///     propsettings: "PropSetttings" object with input settings for
+///                   the propagation. if left out, default will be used.
+///    satproperties: "SatPropertiesStatic" object with drag and
+///                   radiation pressure succeptibility of satellite.
 ///                   If left out, drag and radiation pressure are neglected
 ///                   Dynamic drag & radiation pressure models are not
 ///                   yet implemented
@@ -204,7 +223,8 @@ fn lowlevel_propagate<const C: usize>(
 ///             Output is Nx6x6 numpy matrix, where N is the lenght of
 ///             the output "time" list. Not included if output_phi
 ///             kwarg is set to false (the default)
-///    "stats": Python dictionary with statistics for the propagation.  This includes:
+///    "stats": Python dictionary with statistics for the propagation.  
+///             This includes:
 ///                   "num_eval": Number of function evaluations of the force model
 ///                               required to get solution with desired accuracy
 ///             "accepted_steps": Accepted steps in the adpative Runga-Kutta solver
@@ -233,16 +253,22 @@ pub fn propagate(
     };
     let mut dt_secs: Option<f64> = kwargs_or_none(&mut mkwargs, "dt_secs")?;
     let dt_days: Option<f64> = kwargs_or_none(&mut mkwargs, "dt_days")?;
+    let dt_dur: Option<PyDuration> = kwargs_or_none(&mut mkwargs, "dt")?;
     let duration_secs: Option<f64> = kwargs_or_none(&mut mkwargs, "duration_secs")?;
+    let pyduration: Option<PyDuration> = kwargs_or_none(&mut mkwargs, "duration")?;
     let duration_days: Option<f64> = kwargs_or_none(&mut mkwargs, "duration_days")?;
     let pystoptime: Option<PyAstroTime> = kwargs_or_none(&mut mkwargs, "stoptime")?;
     let output_phi: bool = kwargs_or_default(&mut mkwargs, "output_phi", false)?;
     let pysatproperties: Option<PySatProperties> = kwargs_or_none(&mut mkwargs, "satproperties")?;
 
-    match dt_days {
-        None => (),
-        Some(v) => dt_secs = Some(v * 86400.0),
-    };
+    // get duration over which to compute solution
+    match dt_dur {
+        Some(v) => dt_secs = Some(v.inner.seconds()),
+        None => match dt_days {
+            None => (),
+            Some(v) => dt_secs = Some(v * 86400.0),
+        },
+    }
 
     // Look for extraneous kwargs and return error
     if mkwargs.is_some() {
@@ -262,18 +288,24 @@ pub fn propagate(
         }
     }
 
-    if duration_days == None && pystoptime == None && duration_secs == None {
+    if duration_days == None && pystoptime == None && duration_secs == None && pyduration.is_none()
+    {
         return Err(pyo3::exceptions::PyRuntimeError::new_err(
             "Must set either duration or stop time",
         ));
     }
+
+    // Multiple ways of setting stop time ; this is complicated
     let stoptime = match pystoptime {
         Some(p) => p.inner,
         None => {
             start.inner
-                + match duration_days {
-                    Some(v) => v,
-                    None => duration_secs.unwrap() / 86400.0,
+                + match pyduration {
+                    Some(v) => v.inner.days(),
+                    None => match duration_days {
+                        Some(v) => v,
+                        None => duration_secs.unwrap() / 86400.0,
+                    },
                 }
         }
     };

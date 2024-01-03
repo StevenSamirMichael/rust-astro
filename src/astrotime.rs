@@ -38,55 +38,8 @@ pub struct AstroTime {
     mjd_tai: f64,
 }
 
-pub enum Duration {
-    Days(f64),
-    Seconds(f64),
-    Years(f64),
-    Minutes(f64),
-    Hours(f64),
-}
-
-impl Duration {
-    pub fn days(&self) -> f64 {
-        match self {
-            Duration::Days(v) => *v,
-            Duration::Seconds(v) => *v / 86400.0,
-            Duration::Years(v) => *v * 365.25,
-            Duration::Minutes(v) => *v / 1440.0,
-            Duration::Hours(v) => *v / 24.0,
-        }
-    }
-    pub fn seconds(&self) -> f64 {
-        match self {
-            Duration::Days(v) => *v * 86400.0,
-            Duration::Seconds(v) => *v,
-            Duration::Years(v) => *v * 86400.0 * 365.25,
-            Duration::Minutes(v) => *v * 60.0,
-            Duration::Hours(v) => *v * 3600.0,
-        }
-    }
-    pub fn hours(&self) -> f64 {
-        match self {
-            Duration::Days(v) => *v * 24.0,
-            Duration::Seconds(v) => *v / 3600.0,
-            Duration::Minutes(v) => *v / 60.0,
-            Duration::Hours(v) => *v,
-            Duration::Years(v) => *v * 24.0 * 365.25,
-        }
-    }
-
-    pub fn minutes(&self) -> f64 {
-        match self {
-            Duration::Days(v) => *v * 1440.0,
-            Duration::Seconds(v) => *v / 60.0,
-            Duration::Minutes(v) => *v,
-            Duration::Hours(v) => *v * 60.0,
-            Duration::Years(v) => *v * 1440.0 * 365.25,
-        }
-    }
-}
-
 use crate::utils::{astroerr, AstroResult};
+use crate::Duration;
 
 use super::earth_orientation_params as eop;
 use super::utils::datadir;
