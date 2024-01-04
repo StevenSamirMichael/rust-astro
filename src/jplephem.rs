@@ -121,21 +121,18 @@ impl JPLEphem {
     ///
     /// # Example
     ///
-    /// ```
-    ///  // Note: filename can be full path. If not, file is
-    ///  // assumed to be in the "datadir" directory
-    ///  // (see submodule) that holds all the data files
-    ///  // for the rest of the library
+    /// ``
     ///
-    /// use astro::jplephem::{JPLEphem, SolarSystem};
-    /// use astro::astrotime::AstroTime;
-    /// let jpl = JPLEphem::from_file("linux_p1550p2650.440").unwrap();
+    /// use astro::jplephem;
+    /// use astro::SolarSystem;
+    /// use astro::AstroTime;
     ///
     /// // Construct time: March 1 2021 12:00pm UTC
     /// let t = AstroTime::from_datetime(2021, 3, 1, 12, 0, 0.0);
     ///
-    /// // Find geocentric moon position at this time
-    /// let p = jpl.geocentric_body_pos(SolarSystem::MOON, &t).unwrap();
+    /// // Find geocentric moon position at this time in the GCRF frame
+    /// let p = jplephem::geocentric_pos(SolarSystem::MOON, &t).unwrap();
+    /// println!("p = {}", p);
     /// ```
     ///
     fn from_file(fname: &str) -> AstroResult<JPLEphem> {

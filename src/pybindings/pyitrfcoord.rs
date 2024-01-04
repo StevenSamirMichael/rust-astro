@@ -6,6 +6,18 @@ use crate::types::Vec3;
 
 use super::Quaternion;
 
+///
+/// Representation of a coordinate in the
+/// International Terrestrial Reference Frame (ITRF)
+///
+/// This coordinate object can be created from and also
+/// output to Geodetic coordinates (latitude, longitude,
+/// height above ellipsoid).
+///
+/// Functions are also available to provide rotation
+/// quaternions to the East-North-Up frame
+/// and North-East-Down frame at this coordinate
+///
 #[pyclass(name = "itrfcoord")]
 pub struct PyITRFCoord {
     pub inner: ITRFCoord,
@@ -16,7 +28,7 @@ const DEG2RAD: f64 = PI / 180.;
 
 #[pymethods]
 impl PyITRFCoord {
-    //! Represent a coordinate in the ITRF (International Terrestrial Reference Frame)
+    // Represent a coordinate in the ITRF (International Terrestrial Reference Frame)
     #[new]
     #[pyo3(signature=(x = 0.0, y = 0.0, z = 0.0))]
     fn new(x: f64, y: f64, z: f64) -> PyResult<Self> {
@@ -27,7 +39,7 @@ impl PyITRFCoord {
 
     ///
     /// Create coordinate from input geodetic
-    /// Inputs:
+    /// Optional inputs, in order:
     ///
     /// latitude, radians
     /// longitude, radians

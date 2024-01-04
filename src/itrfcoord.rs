@@ -1,5 +1,3 @@
-extern crate nalgebra;
-
 use std::f64::consts::PI;
 const DEG2RAD: f64 = PI / 180.;
 const RAD2DEG: f64 = 180. / PI;
@@ -7,11 +5,25 @@ const RAD2DEG: f64 = 180. / PI;
 pub const WGS84_A: f64 = 6378137.0;
 pub const WGS84_F: f64 = 0.003352810664747;
 
+use nalgebra as na;
+
 use crate::astroerr;
 use crate::types::Quaternion as Quat;
 use crate::types::Vec3;
 use crate::AstroResult;
 
+///
+/// Representation of a coordinate in the
+/// International Terrestrial Reference Frame (ITRF)
+///
+/// This coordinate object can be created from and also
+/// output to Geodetic coordinates (latitude, longitude,
+/// height above ellipsoid).
+///
+/// Functions are also available to provide rotation
+/// quaternions to the East-North-Up frame
+/// and North-East-Down frame at this coordinate
+///
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
 pub struct ITRFCoord {
     pub itrf: Vec3,
@@ -153,6 +165,10 @@ impl ITRFCoord {
         ITRFCoord::from_geodetic_rad(lat * DEG2RAD, lon * DEG2RAD, hae)
     }
 
+    pub fn from_vector(v: &na::Vector3<f64>) -> ITRFCoord {
+        ITRFCoord { itrf: v.clone() }
+    }
+
     /// Return an ITRF coordinate given input slice
     /// representing Cartesian coordinates, in meters
     pub fn from_slice(v: &[f64]) -> AstroResult<ITRFCoord> {
@@ -179,7 +195,7 @@ impl ITRFCoord {
     /// use astro::itrfcoord::ITRFCoord;
     /// use std::f64::consts::PI;
     /// const DEG2RAD: f64 = PI / 180.0;
-    /// let itrf = ITRFCoord::from_geodetic_deg(42.466*DEG2RAD, -71.1516*DEG2RAD, 150.0);
+    /// let itrf = ITRFCoord::from_geodetic_rad(42.466*DEG2RAD, -71.1516*DEG2RAD, 150.0);
     /// ```
     ///
     pub fn from_geodetic_rad(lat: f64, lon: f64, hae: f64) -> ITRFCoord {
