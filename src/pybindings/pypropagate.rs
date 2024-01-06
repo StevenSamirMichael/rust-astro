@@ -202,7 +202,7 @@ fn lowlevel_propagate<const C: usize>(
 ///       output_phi: Output 6x6 state transition matrix between "starttime" and
 ///                   "stoptime" (and at intervals, if specified)
 ///                   default is False
-///     propsettings: "PropSetttings" object with input settings for
+///     propsettings: "propsettings" object with input settings for
 ///                   the propagation. if left out, default will be used.
 ///    satproperties: "SatPropertiesStatic" object with drag and
 ///                   radiation pressure succeptibility of satellite.

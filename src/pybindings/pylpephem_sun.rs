@@ -76,9 +76,9 @@ pub fn pos_mod(time: &PyAny) -> PyResult<PyObject> {
 ///
 ///              If not passed in, "Standard" is used (90.0 + 50.0/60.0)
 ///
-/// Returns:
+/// Returns Tuple:
 ///
-///    AstroResult<(sunrise: AstroTime, sunset: AstroTime)>
+///    (sunrise: AstroTime, sunset: AstroTime)
 ///
 ///
 #[pyfunction]

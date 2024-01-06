@@ -16,6 +16,182 @@ from . import frametransform
 __all__ = ['time', 'duration', 'timescale', 'quaternion', 'sgp4', 'gravmodel', 'gravity', 'nrlmsise00', 'univ', 'solarsystem', 'TLE', 'itrfcoord', 'frametransform', 'lpephem', 'satprop', 'jplephem', 'utils']
 
 
+class TLE():
+    """    
+    Stucture representing a Two-Line Element Set (TLE), a satellite
+    ephemeris format from the 1970s that is still somehow in use
+    today and can be used to calculate satellite position and
+    velcocity in the "TEME" frame (not-quite GCRF) using the
+    "Simplified General Perturbations-4" (SGP-4) mathemematical
+    model that is also included in this package.
+
+    For details, see: https://en.wikipedia.org/wiki/Two-line_element_set
+
+    The TLE format is still commonly used to represent satellite
+    ephemerides, and satellite ephemerides catalogs in this format
+    are publicly availalble at www.space-track.org (registration
+    required)
+
+    TLEs sometimes have a "line 0" that includes the name of the satellite
+
+    
+ 
+    """
+
+    @typing.staticmethod
+    def from_lines(lines: list[str]) -> list[astro.TLE]:
+        """
+        Return a list of TLEs from input lines, represented as a 
+        list of strings
+        """
+
+    @typing.staticmethod
+    def single_from_lines(lines: list[str]) -> astro.TLE:
+        """
+        Return a single TLE from a 2 or 3-element list of lines
+        
+        If additional lines are included, they are ignored.
+        """
+        
+    @property
+    def satnum(self) -> int:
+        """
+        Satellite number, or equivalently the NORAD ID
+        """
+        
+    @property
+    def eccen(self) -> float:
+        """
+        Satellite eccentricity, in range [0,1]
+        """
+        
+    @property
+    def mean_anomaly(self) -> float:
+        """
+        Mean anomaly in degrees
+        """
+        
+    @property
+    def mean_motion(self) -> float:
+        """
+        Mean motion in revs / day
+        """
+        
+    @property
+    def inclination(self) -> float:
+        """
+        Inclination, in degrees
+        """
+    @property
+    def epoch(self) -> astro.time:
+        """
+        TLE epoch
+        """
+        
+    @property
+    def arg_of_perigee(self) -> astro.time:
+        """
+        Argument of Perigee, in degrees
+        """
+        
+    @property
+    def mean_motion_dot(self) -> float:
+        """
+        1/2 of first derivative of mean motion, in revs/day^2
+        
+        the "1/2" is because that is how number is stored in the TLE
+        """
+        
+    @property
+    def mean_motion_dot_dot(self) -> float:
+        """
+        1/6 of 2nd derivative of mean motion, in revs/day^3
+        
+        the "1/6" is because that is how number is stored in the TLE
+        """
+    
+    @property
+    def name(self) -> str:
+        """
+        The name of the satellite
+        """
+
+    @property
+    def bstar(self) -> str:
+        """
+        "B Star" or drag of the satellite
+        
+        should be rho0 * Cd * A / 2 / m
+        
+        Units (which are strange) is multiples of 
+        1 / Earth radius
+        """
+
+def sgp4(
+    tle: astro.TLE, 
+    tm: astro.time|list[astro.time]|npt.ArrayLike[astro.time]
+    ) -> (npt.ArrayLike[np.float64], npt.ArrayLike[np.float64]):
+    """
+    Run Simplified General Perturbations (SGP)-4 propagator on
+    Two-Line Element Set to
+    output satellite position and velocity at given time
+    in the "TEME" coordinate system
+
+    A detailed description is at:
+    https://celestrak.org/publications/AIAA/2008-6770/AIAA-2008-6770.pdf
+
+
+    # Arguments
+
+    tle: The TLE on which top operate.
+    
+    tm: astro.time object or list of objects or numpy array of 
+        objects representimg time(s) at which to compute
+        position and velocity
+          
+
+    # Return
+
+    tuple with the following elements:
+    
+    0 : a Nx3 numpy array representing position in meters in the TEME frame at 
+        each of the "N" input times (or 3-element array for a single time)
+        
+    1 : a Nx3 numpy array representing velocity in meters / second in the TEME
+        frame at each of the "N" input times
+        (or 3-element array for a single time)
+
+    Example usage: show Geodetic position of satellite at TLE epoch
+    
+    lines = [
+        "0 INTELSAT 902",
+        "1 26900U 01039A   06106.74503247  .00000045  00000-0  10000-3 0  8290",
+        "2 26900   0.0164 266.5378 0003319  86.1794 182.2590  1.00273847 16981   9300."
+    ]
+
+
+    tle = astro.TLE.single_from_lines(lines)
+
+    # Compute TEME position & velocity at epoch
+    pteme, vteme = astro.sgp4(tle, tle.epoch)
+
+    # Rotate to ITRF frame
+    q = astro.frametransform.qteme2itrf(tm)
+    pitrf = q * pteme
+    vitrf = q * vteme - np.cross(np.array([0, 0, astro.univ.omega_earth]), pitrf)
+
+    # convert to ITRF coordinate object
+    coord = astro.itrfcoord.from_vector(pitrf)
+    # Print ITRF coordinate object location
+    print(coord)
+
+    Output:
+    
+    ITRFCoord(lat:  -0.0363 deg, lon:  -2.2438 deg, hae: 35799.51 km)
+
+    """    
+    
+
 class gravmodel():
     """
     Earth gravity models available for use
@@ -638,14 +814,21 @@ class itrfcoord():
     and North-East-Down frame at this coordinate
     """
 
-    @typing.overload
-    def __init__(self) -> None:
+    def __init__(x: float, y: float, z: float) -> astro.itrfcoord:
         """
         Represent a coordinate in the ITRF (International Terrestrial Reference Frame)
         Inputs are 3 separate floats representing ITRF Cartesian position in meters
         """ 
         
-    def from_geodetic() -> itrfcoord:
+    @typing.static_method
+    def from_vector(v: list[float]|npt.ArrayLike[np.float64]) -> astro.itrfcoord:
+        """
+        Create ITRF coordinate from 3-element list or numpy array
+        representing ITRF cartesian position in meters
+        """
+            
+    @typing.staticmethod                
+    def from_geodetic() -> astro.itrfcoord:
         """            
         Create coordinate from input geodetic
         Optional inputs, in order:

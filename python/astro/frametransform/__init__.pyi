@@ -1,5 +1,13 @@
 """
 Transformations between coordinate frames, and associated utility functions
+
+Coordinate frame transforms are mostly pulled from Vallado:
+https://www.google.com/books/edition/Fundamentals_of_Astrodynamics_and_Applic/PJLlWzMBKjkC?hl=en&gbpv=0
+
+or the IERS:
+https://www.iers.org/
+
+
 """
 
 from __future__ import annotations
@@ -16,7 +24,7 @@ def gmst(tm: astro.time|npt.ArrayLike[astro.time]) -> float|npt.ArrayLike[np.flo
     
     Vallado algorithm 15:
     
-    GMST = 67310.5481 + (876600h + 8640184.812866) * tᵤₜ₁ * (0.983104 + tᵤₜ₁ * −6.2e−6)
+    GMST = 67310.5481 + (876600h + 8640184.812866) * tᵤₜ₁ * (0.983104 + tᵤₜ₁ * -6.2e-6)
     
     Input is astro.time object or list or numpy array of astro.time objects.
     
@@ -62,7 +70,9 @@ def qitrf2tirs(tm: astro.time|npt.ArrayLike[astro.time]) -> astro.quaternion|npt
     rotations from itrf to tirs matched element-wise to the input times       
     """
 
-def qtirs2cirs(tm: astro.time|npt.ArrayLike[astro.time]) -> astro.quaternion|npt.ArrayLike[astro.quaternion]:
+def qtirs2cirs(
+    tm: astro.time|npt.ArrayLike[astro.time]
+    ) -> astro.quaternion|npt.ArrayLike[astro.quaternion]:
     """
     Rotation from Terrestrial Intermediate Reference System (TIRS)
     to the Celestial Intermediate Reference System (CIRS)
@@ -75,7 +85,9 @@ def qtirs2cirs(tm: astro.time|npt.ArrayLike[astro.time]) -> astro.quaternion|npt
     """
 
 
-def qitrf2gcrf(tm: astro.time|npt.ArrayLike[astro.time]) -> astro.quaternion|npt.ArrayLike[astro.quaternion]:
+def qitrf2gcrf(
+    tm: astro.time|npt.ArrayLike[astro.time]
+    ) -> astro.quaternion|npt.ArrayLike[astro.quaternion]:
     """
     Quaternion representing rotation from the
     International Terrestrial Reference Frame (ITRF)
@@ -94,7 +106,9 @@ def qitrf2gcrf(tm: astro.time|npt.ArrayLike[astro.time]) -> astro.quaternion|npt
     rotations from itrf to gcrf matched element-wise to the input times  
     """
 
-def qteme2itrf(tm: astro.time|npt.ArrayLike[astro.time]) -> astro.quaternion|npt.ArrayLike[astro.quaternion]:
+def qteme2itrf(
+    tm: astro.time|npt.ArrayLike[astro.time]
+    ) -> astro.quaternion|npt.ArrayLike[astro.quaternion]:
     """
     Quaternion representing rotation from the
     True Equator Mean Equinox (TEME) frame

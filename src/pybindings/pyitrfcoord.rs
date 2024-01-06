@@ -1,5 +1,8 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use pyo3::types::PyList;
+
+use numpy::{PyArray1, PyReadonlyArray1};
 
 use crate::itrfcoord::ITRFCoord;
 use crate::types::Vec3;
@@ -35,6 +38,34 @@ impl PyITRFCoord {
         Ok(PyITRFCoord {
             inner: ITRFCoord::from_slice(&[x, y, z]).unwrap(),
         })
+    }
+
+    // From a 3-element vector or list
+    #[staticmethod]
+    fn from_vector(v: &PyAny) -> PyResult<Self> {
+        if v.is_instance_of::<PyList>() {
+            let lv = v.extract::<Vec<f64>>()?;
+            if lv.len() != 3 {
+                return Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Invalid number of elements",
+                ));
+            }
+            Ok(PyITRFCoord {
+                inner: ITRFCoord::from_slice(lv.as_slice()).unwrap(),
+            })
+        } else if v.is_instance_of::<PyArray1<f64>>() {
+            let nv = v.extract::<PyReadonlyArray1<f64>>()?;
+            if nv.len() != 3 {
+                return Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Invalid number of elements",
+                ));
+            }
+            Ok(PyITRFCoord {
+                inner: ITRFCoord::from_slice(nv.as_array().as_slice().unwrap()).unwrap(),
+            })
+        } else {
+            return Err(pyo3::exceptions::PyTypeError::new_err("Invalid input type"));
+        }
     }
 
     ///

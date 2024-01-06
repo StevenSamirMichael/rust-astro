@@ -106,6 +106,16 @@ impl PyTLE {
         Ok(self.inner.mean_motion_dot_dot)
     }
 
+    /// Name of satellite
+    fn name(&self) -> PyResult<String> {
+        Ok(self.inner.name.clone())
+    }
+
+    // Drag
+    fn bstar(&self) -> PyResult<f64> {
+        Ok(self.inner.bstar)
+    }
+
     fn __str__(&self) -> String {
         self.inner.to_pretty_string()
     }
