@@ -10,29 +10,153 @@ import numpy as np
 
 import astro
 import datetime
+from . import jplephem
 
-__all__ = [
-    "TLE",
-    "duration",
-    "frametransform",
-    "gravity",
-    "gravmodel",
-    "itrfcoord",
-    "jplephem",
-    "lpephem",
-    "nrlmsise00",
-    "quaternion",
-    "satprop",
-    "sgp4",
-    "solarsystem",
-    "time",
-    "timescale",
-    "univ",
-    "utils"
-]
+__all__ = ['time', 'duration', 'timescale', 'quaternion', 'sgp4', 'gravmodel', 'gravity', 'nrlmsise00', 'univ', 'solarsystem', 'TLE', 'itrfcoord', 'frametransform', 'lpephem', 'satprop', 'jplephem', 'utils']
 
 
-__all__ = ['time', 'duration', 'timescale', 'quaternion', 'sgp4', 'gravmodel', 'gravity', 'nrlmsise00', 'univ', 'solarsystem', 'TLE', 'itrfcoord', 'frametransform', 'jplephem', 'lpephem', 'satprop', 'utils']
+class gravmodel():
+    """
+    Earth gravity models available for use
+    
+    For details, see: http://icgem.gfz-potsdam.de/    
+    """
+    
+    @property
+    def jgm3() -> int:
+        """
+        The "JGM3" gravity model
+        
+        This model is used by default in the orbit propagators
+        """
+        
+    @property
+    def jgm2() -> int:
+        """
+        The "JGM2" gravity model
+        """
+        
+    @property
+    def egm96() -> int:
+        """
+        The "EGM96" gravity model
+        """
+
+    @property
+    def itugrace16() -> int:
+        """
+        the ITU Grace 16 gravity model
+        """
+
+def gravity(pos: list[float]|astro.itrfcoord|npt.ArrayLike[np.float],
+            **kwargs) -> npt.ArrayLike[np.float]:
+    """
+    gravity(pos)
+    --
+
+    Return acceleration due to Earth gravity at the input position. The
+    acceleration does not include the centrifugal force, and is output
+    in m/s^2 in the International Terrestrial Reference Frame (ITRF)
+
+    Inputs:
+
+        pos:   Position as ITRF coordinate (astro.itrfcoord) or numpy
+                3-vector representing ITRF position in meters or 
+                list 3-vector representing ITRF position in meters
+
+    Kwargs:
+        
+        model:   The gravity model to use.  Options are:
+                    astro.gravmodel.jgm3
+                    astro.gravmodel.jgm2
+                    astro.gravmodel.egm96
+                    astro.gravmodel.itugrace16
+
+                Default is astro.gravmodel.jgm3
+
+                For details of models, see:
+                http://icgem.gfz-potsdam.de/tom_longtime
+
+        order:    The order of the gravity model to use.
+                Default is 6, maximum is 16
+
+
+                For details of calculation, see Chapter 3.2 of:
+                "Satellite Orbits: Models, Methods, Applications",
+                O. Montenbruck and B. Gill, Springer, 2012.
+        
+        """    
+
+class solarsystem():
+    """
+    Solar system bodies for which high-precision ephemeris can be computed    
+    """
+    
+    @property
+    def Mercury() -> int:
+        """
+        Mercury
+        """
+    
+    @property
+    def Venus() -> int:
+        """
+        Venus
+        """
+        
+    @property
+    def EMB() -> int:
+        """
+        Earth-Moon Barycenter
+        """        
+        
+    @property
+    def Mars() -> int:
+        """
+        Mars
+        """
+        
+    @property
+    def Jupiter() -> int:
+        """
+        Jupter
+        """
+        
+    @property
+    def Saturn() -> int:
+        """
+        Saturn
+        """
+        
+    @property
+    def Uranus() -> int:
+        """
+        Uranus
+        """
+        
+    @property
+    def Neptune() -> int:
+        """
+        Neptune
+        """
+    
+    @property
+    def Pluto() -> int:
+        """
+        Pluto
+        """
+        
+    @property
+    def Moon() -> int:
+        """
+        Moon
+        """
+        
+    @property
+    def Sun() -> int:
+        """
+        Sun
+        """
 
 class timescale():
     """
@@ -366,7 +490,138 @@ class duration():
         Floating point number of seconds represented by duration
         """
 
+class quaternion():
+    """
+    Quaternion representing rotation of 3D Cartesian axes
 
+    Quaternion is right-handed rotation of a vector,
+    e.g. rotation of +xhat 90 degrees by +zhat give +yhat
+
+    This is different than the convention used in Vallado, but
+    it is the way it is commonly used in mathematics and it is
+    the way it should be done.
+
+    For the uninitiated: quaternions are a more-compact and
+    computationally efficient way of representing 3D rotations.  
+    They can also be multipled together and easily renormalized to
+    avoid problems with floating-point precision eventually causing
+    changes in the rotated vecdtor norm.
+
+    For details, see:
+
+    https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation    
+    
+    Under the hood, this is using the "UnitQuaternion" object in the 
+    rust "nalgebra" crate.
+    """
+    
+    def new() -> astro.quaternion:
+        """
+        Return unit quaternion (no rotation)
+        """
+      
+    @staticmethod
+    def from_axis_angle(axis: npt.ArrayLike[np.float64], angle: float) -> astro.quaternion:
+        """
+        Return quaternion representing right-handed rotation by 
+        "angle" degrees about the given axis.  The axis does not 
+        have to be normalized.
+        """
+      
+    @staticmethod  
+    def rotx(theta) -> astro.quaternion:
+        """
+        Return quaternion representing right-handed rotation of vector
+        by "theta" degrees about the xhat unit vector
+        
+        Equivalent rotation matrix:
+        | 1             0            0|
+        | 0    cos(theta)   sin(theta)|
+        | 0   -sin(theta)   cos(theta)|        
+        """
+        
+      
+    @staticmethod  
+    def roty(theta) -> astro.quaternion:
+        """
+        Return quaternion representing right-handed rotation of vector
+        by "theta" degrees about the yhat unit vector
+        
+        Equivalent rotation matrix:
+        | cos(theta)     0   -sin(theta)|
+        |          0     1             0|
+        | sin(theta)     0    cos(theta)|          
+        """        
+    
+    @staticmethod  
+    def rotz(theta) -> astro.quaternion:
+        """
+        Return quaternion representing right-handed rotation of vector
+        by "theta" degrees about the zhat unit vector
+        
+        Equivalent rotation matrix:
+        |  cos(theta)      sin(theta)   0|
+        | -sin(theta)      cos(theta)   0|
+        |           0               0   1|
+        """ 
+    
+    def to_rotation_matrix(self) -> npt.ArrayLike[np.float64]:
+        """
+        Return 3x3 rotation matrix representing equivalent rotation
+        """
+        
+    def to_euler(self) -> (float, float, float):
+        """
+        Return equivalent rotation angle represented as rotation angles:
+        ("roll", "pitch", "yaw") in radians
+        roll = rotation about x axis
+        pitch = rotation about y axis
+        yaw = rotation about z axis
+        """
+        
+    def angle(self) -> float:
+        """
+        Return the angle in radians of the rotation
+        """
+        
+    def axis(self) -> npt.ArrayLike(np.float64):
+        """
+        Return the axis of rotation as a unit vector
+        """
+        
+    def conj(self) -> astro.quaternion:
+        """
+        Return conjucate or inverse of the rotation
+        """
+        
+    def conjugate(self) -> astro.quaternion:
+        """
+        Return conjugate or inverse of the rotation
+        """
+
+    @typing.overload
+    def __mul__(self, other: astro.quaternion) -> astro.quaternion:
+        """
+        Multiply represents concatenation of two rotations representing 
+        the quaternions.  The left value rotation is applied after 
+        the right value, per the normal convention
+        """
+        
+    @typing.overload
+    def __mul__(self, other: npt.ArrayLike[np.float64]) -> npt.ArrayLike[np.float64]:
+        """
+        Multply by a vector to rotate the vector
+        
+        The vector is represented as a numpy array
+        
+        If the array is 1 demensional it must have 3 elements
+        
+        If the array is 2 dimensionsl and the dimensions are Nx3, 
+        each of the "N" vectors is rotated by the quaternion and a
+        Nx3 array is returned
+        """
+        
+    
 
 class itrfcoord():
     """

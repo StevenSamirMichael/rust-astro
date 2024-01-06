@@ -1,5 +1,6 @@
 use nalgebra as na;
 use numpy as np;
+use numpy::PyArray2;
 use numpy::ToPyArray;
 use pyo3::prelude::*;
 
@@ -12,6 +13,27 @@ pub struct Quaternion {
     pub inner: Quat,
 }
 
+///
+/// Quaternion representing rotation of 3D Cartesian axes
+///
+/// Quaternion is right-handed rotation of a vector,
+/// e.g. rotation of +xhat 90 degrees by +zhat give +yhat
+///
+/// This is different than the convention used in Vallado, but
+/// it is the way it is commonly used in mathematics and it is
+/// the way it should be done.
+///
+/// For the uninitiated: quaternions are a more-compact and
+/// computationally efficient way of representing 3D rotations.  
+/// They can also be multipled together and easily renormalized to
+/// avoid problems with floating-point precision eventually causing
+/// changes in the rotated vecdtor norm.
+///
+/// For details, see:
+///
+/// https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+///
+///
 #[pymethods]
 impl Quaternion {
     #[new]
@@ -54,6 +76,34 @@ impl Quaternion {
                 "Axis norm is 0",
             )),
         }
+    }
+
+    ///    
+    /// Return 3x3 rotation matrix representing rotation
+    /// identical to this quaternion
+    ///
+    fn to_rotation_matrix(&self) -> PyObject {
+        let rot = self.inner.to_rotation_matrix();
+
+        pyo3::Python::with_gil(|py| -> PyObject {
+            let phi = unsafe { np::PyArray2::<f64>::new(py, [3, 3], false) };
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    rot.matrix().as_ptr(),
+                    phi.as_raw_array_mut().as_mut_ptr(),
+                    9,
+                );
+            }
+            phi.to_object(py)
+        })
+    }
+
+    ///
+    /// Return rotation represented as
+    /// "roll", "pitch", "yaw" euler angles
+    /// in radians.  Return is a tuple
+    fn to_euler(&self) -> (f64, f64, f64) {
+        self.inner.euler_angles()
     }
 
     fn __str__(&self) -> PyResult<String> {

@@ -49,7 +49,7 @@ impl IntoPy<PyObject> for &GravityModel {
 }
 
 ///
-/// gravity(pos, /)
+/// gravity(pos)
 /// --
 ///
 /// Return acceleration due to Earth gravity at the input position. The
@@ -64,12 +64,12 @@ impl IntoPy<PyObject> for &GravityModel {
 /// Kwargs:
 ///     
 ///     model:   The gravity model to use.  Options are:
-///                   astro.GravModel.jgm3
-///                   astro.GravModel.jgm2
-///                   astro.GravModel.egm96
-///                   astro.GravModel.itugrace16
+///                   astro.gravmodel.jgm3
+///                   astro.gravmodel.jgm2
+///                   astro.gravmodel.egm96
+///                   astro.gravmodel.itugrace16
 ///
-///               Default is astro.GravModel.jgm3
+///               Default is astro.gravmodel.jgm3
 ///
 ///               For details of models, see:
 ///               http://icgem.gfz-potsdam.de/tom_longtime
