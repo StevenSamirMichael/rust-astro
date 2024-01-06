@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-rust"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "astro"
+name = "satkit"
 version = "0.1"
 
 [tool.setuptools.packages]
@@ -12,7 +12,7 @@ find = { where = ["python"] }
 [[tool.setuptools-rust.ext-modules]]
 features = ["pybindings"]
 args = ["--crate-type", "cdylib"]
-target = "astro/astro"
+target = "satkit/satkit"
 path = "Cargo.toml"
 binding = "PyO3"
 py-limited-api = "auto"

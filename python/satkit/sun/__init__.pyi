@@ -1,5 +1,5 @@
 """
-Astrodynamic calculations related to the sun
+satkitdynamic calculations related to the sun
 """
 
 from __future__ import annotations
@@ -7,10 +7,10 @@ import typing
 import numpy.typing as npt
 import numpy as np
 
-import astro
+import satkit
 
 @typing.overload
-def pos_gcrf(time: astro.time) -> npt.ArrayLike[np.float64]:
+def pos_gcrf(time: satkit.time) -> npt.ArrayLike[np.float64]:
      """
     Sun position in the Geocentric Celestial Reference Frame (GCRF)
 
@@ -19,7 +19,7 @@ def pos_gcrf(time: astro.time) -> npt.ArrayLike[np.float64]:
 
     Input:
 
-    time:  astro.time object representing time
+    time:  satkit.time object representing time
             at which to compute position
 
     Output:
@@ -34,7 +34,7 @@ def pos_gcrf(time: astro.time) -> npt.ArrayLike[np.float64]:
     
 @typing.overload
 def pos_gcrf(
-    time: npt.ArrayLike[astro.time]|list[astro.time]
+    time: npt.ArrayLike[satkit.time]|list[satkit.time]
              ) -> npt.ArrayLike[np.float64]:
     """
     Sun position in the Geocentric Celestial Reference Frame (GCRF)
@@ -44,7 +44,7 @@ def pos_gcrf(
 
     Input:
 
-    time:  list or numpy array of astro.time objects representing times
+    time:  list or numpy array of satkit.time objects representing times
             at which to compute position
 
     Output:
@@ -57,7 +57,7 @@ def pos_gcrf(
     """
     
 @typing.overload
-def pos_gcrf(time: astro.time) -> npt.ArrayLike[np.float64]:
+def pos_gcrf(time: satkit.time) -> npt.ArrayLike[np.float64]:
      """
     Sun position in the Geocentric Celestial Reference Frame (GCRF)
 
@@ -66,7 +66,7 @@ def pos_gcrf(time: astro.time) -> npt.ArrayLike[np.float64]:
 
     Input:
 
-    time:  astro.time object representing time
+    time:  satkit.time object representing time
             at which to compute position
 
     Output:
@@ -81,7 +81,7 @@ def pos_gcrf(time: astro.time) -> npt.ArrayLike[np.float64]:
     
     
 @typing.overload
-def pos_mod(time: astro.time) -> npt.ArrayLike[np.float64]:
+def pos_mod(time: satkit.time) -> npt.ArrayLike[np.float64]:
     """
     Sun position in the Mean-of-Date Frame
 
@@ -89,7 +89,7 @@ def pos_mod(time: astro.time) -> npt.ArrayLike[np.float64]:
 
     Input:
 
-    time:  astro.time object representing time
+    time:  satkit.time object representing time
             aatwhich to compute position
 
     Output:
@@ -102,7 +102,7 @@ def pos_mod(time: astro.time) -> npt.ArrayLike[np.float64]:
     """
 @typing.overload
 def pos_mod(
-    time: npt.ArrayLike[astro.time]|list[astro.time]
+    time: npt.ArrayLike[satkit.time]|list[satkit.time]
              ) -> npt.ArrayLike[np.float64]:
     """
     Sun position in the Mean-of-Date Frame
@@ -111,7 +111,7 @@ def pos_mod(
 
     Input:
 
-    time:  list or numpy arra of astro.time objects,
+    time:  list or numpy arra of satkit.time objects,
            representing times at which to compute positions
 
     Output:
@@ -122,10 +122,10 @@ def pos_mod(
     From Vallado: Valid with accuracy of .01 degrees from 1950 to 2050
     """
     
-def rise_set(time: astro.time,
-             coord: astro.itrfcoord,
+def rise_set(time: satkit.time,
+             coord: satkit.itrfcoord,
              sigma: float = 90.0 + 50.0/60.0
-             ) -> (astro.time, astro.time):
+             ) -> (satkit.time, satkit.time):
     """
     Sunrise and sunset times on the day given by input time
     and at the given location.  
@@ -137,10 +137,10 @@ def rise_set(time: astro.time,
 
     Inputs:
 
-        Time:   astro.time representing date for which to compute
+        Time:   satkit.time representing date for which to compute
                 sunrise & sunset
 
-        coord:   astro.itrfcoord representing location for which to compute
+        coord:   satkit.itrfcoord representing location for which to compute
                 sunrise & sunset
 
         sigma:   optional angle in degrees between noon & rise/set:
@@ -148,12 +148,12 @@ def rise_set(time: astro.time,
                             "Standard": 90 deg, 50 arcmin (90.0+50.0/60.0)
                         "Civil Twilight": 96 deg
                     "Nautical Twilight": 102 deg
-                "Astronomical Twilight": 108 deg
+                "satkitnomical Twilight": 108 deg
 
                 If not passed in, "Standard" is used (90.0 + 50.0/60.0)
 
     Returns Tuple:
 
-    (sunrise: AstroTime, sunset: AstroTime)
+    (sunrise: satkitTime, sunset: satkitTime)
 
     """

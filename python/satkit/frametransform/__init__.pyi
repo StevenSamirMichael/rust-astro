@@ -2,7 +2,7 @@
 Transformations between coordinate frames, and associated utility functions
 
 Coordinate frame transforms are mostly pulled from Vallado:
-https://www.google.com/books/edition/Fundamentals_of_Astrodynamics_and_Applic/PJLlWzMBKjkC?hl=en&gbpv=0
+https://www.google.com/books/edition/Fundamentals_of_satkitdynamics_and_Applic/PJLlWzMBKjkC?hl=en&gbpv=0
 
 or the IERS:
 https://www.iers.org/
@@ -15,10 +15,10 @@ import typing
 import numpy.typing as npt
 import numpy as np
 
-import astro
+import satkit
 import datetime
 
-def gmst(tm: astro.time|npt.ArrayLike[astro.time]) -> float|npt.ArrayLike[np.float]:
+def gmst(tm: satkit.time|npt.ArrayLike[satkit.time]) -> float|npt.ArrayLike[np.float]:
     """    
     Greenwich Mean Sidereal Time
     
@@ -26,23 +26,23 @@ def gmst(tm: astro.time|npt.ArrayLike[astro.time]) -> float|npt.ArrayLike[np.flo
     
     GMST = 67310.5481 + (876600h + 8640184.812866) * tᵤₜ₁ * (0.983104 + tᵤₜ₁ * -6.2e-6)
     
-    Input is astro.time object or list or numpy array of astro.time objects.
+    Input is satkit.time object or list or numpy array of satkit.time objects.
     
     Output is float or numpy array of floats with GMST in radians matched element-wise
     to the input times.    
     """
     
-def gmst(tm: astro.time|npt.ArrayLike[astro.time]) -> float|npt.ArrayLike[np.float]:
+def gmst(tm: satkit.time|npt.ArrayLike[satkit.time]) -> float|npt.ArrayLike[np.float]:
     """    
     Greenwich Apparent Sidereal Time
     
-    Input is astro.time object or list or numpy array of astro.time objects.
+    Input is satkit.time object or list or numpy array of satkit.time objects.
     
     Output is float or numpy array of floats with GAST in radians matched element-wise
     to the input times.    
     """    
 
-def earth_rotation_angle(tm: astro.time|npt.ArrayLike[astro.time]) -> float|npt.ArrayLike[np.float]:
+def earth_rotation_angle(tm: satkit.time|npt.ArrayLike[satkit.time]) -> float|npt.ArrayLike[np.float]:
     """    
     Earth rotation angle    
     
@@ -51,43 +51,43 @@ def earth_rotation_angle(tm: astro.time|npt.ArrayLike[astro.time]) -> float|npt.
 
     Equation 5.15
     
-    Input is astro.time object or list or numpy array of astro.time objects.
+    Input is satkit.time object or list or numpy array of satkit.time objects.
     
     Output is float or numpy array of floats with Earth Rotation Angle in radians
     matched element-wise to the input times.    
     """    
 
 
-def qitrf2tirs(tm: astro.time|npt.ArrayLike[astro.time]) -> astro.quaternion|npt.ArrayLike[astro.quaternion]:
+def qitrf2tirs(tm: satkit.time|npt.ArrayLike[satkit.time]) -> satkit.quaternion|npt.ArrayLike[satkit.quaternion]:
     """
     Rotation from International Terrestrial Reference Frame
     (ITRF) to the Terrestrial Intermediate Reference System (TIRS)
-    represented as astro.quaterinion object
+    represented as satkit.quaterinion object
 
-    Input is astro.time object or list or numpy array of astro.time objects.
+    Input is satkit.time object or list or numpy array of satkit.time objects.
     
-    Output is astro.quaternion or numpy array of astro.quaternion representiong
+    Output is satkit.quaternion or numpy array of satkit.quaternion representiong
     rotations from itrf to tirs matched element-wise to the input times       
     """
 
 def qtirs2cirs(
-    tm: astro.time|npt.ArrayLike[astro.time]
-    ) -> astro.quaternion|npt.ArrayLike[astro.quaternion]:
+    tm: satkit.time|npt.ArrayLike[satkit.time]
+    ) -> satkit.quaternion|npt.ArrayLike[satkit.quaternion]:
     """
     Rotation from Terrestrial Intermediate Reference System (TIRS)
     to the Celestial Intermediate Reference System (CIRS)
 
 
-    Input is astro.time object or list or numpy array of astro.time objects.
+    Input is satkit.time object or list or numpy array of satkit.time objects.
     
-    Output is astro.quaternion or numpy array of astro.quaternion representiong
+    Output is satkit.quaternion or numpy array of satkit.quaternion representiong
     rotations from itrf to tirs matched element-wise to the input times       
     """
 
 
 def qitrf2gcrf(
-    tm: astro.time|npt.ArrayLike[astro.time]
-    ) -> astro.quaternion|npt.ArrayLike[astro.quaternion]:
+    tm: satkit.time|npt.ArrayLike[satkit.time]
+    ) -> satkit.quaternion|npt.ArrayLike[satkit.quaternion]:
     """
     Quaternion representing rotation from the
     International Terrestrial Reference Frame (ITRF)
@@ -100,15 +100,15 @@ def qitrf2gcrf(
 
     Note: Very computationally expensive    
     
-    Input is astro.time object or list or numpy array of astro.time objects.
+    Input is satkit.time object or list or numpy array of satkit.time objects.
     
-    Output is astro.quaternion or numpy array of astro.quaternion representiong
+    Output is satkit.quaternion or numpy array of satkit.quaternion representiong
     rotations from itrf to gcrf matched element-wise to the input times  
     """
 
 def qteme2itrf(
-    tm: astro.time|npt.ArrayLike[astro.time]
-    ) -> astro.quaternion|npt.ArrayLike[astro.quaternion]:
+    tm: satkit.time|npt.ArrayLike[satkit.time]
+    ) -> satkit.quaternion|npt.ArrayLike[satkit.quaternion]:
     """
     Quaternion representing rotation from the
     True Equator Mean Equinox (TEME) frame
@@ -119,8 +119,8 @@ def qteme2itrf(
     Note: TEME is the output frame of the SGP4 propagator used to 
     compute position from two-line element sets.
     
-    Input is astro.time object or list or numpy array of astro.time objects.
+    Input is satkit.time object or list or numpy array of satkit.time objects.
     
-    Output is astro.quaternion or numpy array of astro.quaternion representiong
+    Output is satkit.quaternion or numpy array of satkit.quaternion representiong
     rotations from TEME to ITRF matched element-wise to the input times  
     """

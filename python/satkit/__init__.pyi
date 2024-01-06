@@ -8,7 +8,7 @@ import typing
 import numpy.typing as npt
 import numpy as np
 
-import astro
+import satkit
 import datetime
 from . import jplephem
 from . import frametransform
@@ -39,14 +39,14 @@ class TLE():
     """
 
     @typing.staticmethod
-    def from_lines(lines: list[str]) -> list[astro.TLE]:
+    def from_lines(lines: list[str]) -> list[satkit.TLE]:
         """
         Return a list of TLEs from input lines, represented as a 
         list of strings
         """
 
     @typing.staticmethod
-    def single_from_lines(lines: list[str]) -> astro.TLE:
+    def single_from_lines(lines: list[str]) -> satkit.TLE:
         """
         Return a single TLE from a 2 or 3-element list of lines
         
@@ -83,13 +83,13 @@ class TLE():
         Inclination, in degrees
         """
     @property
-    def epoch(self) -> astro.time:
+    def epoch(self) -> satkit.time:
         """
         TLE epoch
         """
         
     @property
-    def arg_of_perigee(self) -> astro.time:
+    def arg_of_perigee(self) -> satkit.time:
         """
         Argument of Perigee, in degrees
         """
@@ -128,8 +128,8 @@ class TLE():
         """
 
 def sgp4(
-    tle: astro.TLE, 
-    tm: astro.time|list[astro.time]|npt.ArrayLike[astro.time]
+    tle: satkit.TLE, 
+    tm: satkit.time|list[satkit.time]|npt.ArrayLike[satkit.time]
     ) -> (npt.ArrayLike[np.float64], npt.ArrayLike[np.float64]):
     """
     Run Simplified General Perturbations (SGP)-4 propagator on
@@ -145,7 +145,7 @@ def sgp4(
 
     tle: The TLE on which top operate.
     
-    tm: astro.time object or list of objects or numpy array of 
+    tm: satkit.time object or list of objects or numpy array of 
         objects representimg time(s) at which to compute
         position and velocity
           
@@ -170,18 +170,18 @@ def sgp4(
     ]
 
 
-    tle = astro.TLE.single_from_lines(lines)
+    tle = satkit.TLE.single_from_lines(lines)
 
     # Compute TEME position & velocity at epoch
-    pteme, vteme = astro.sgp4(tle, tle.epoch)
+    pteme, vteme = satkit.sgp4(tle, tle.epoch)
 
     # Rotate to ITRF frame
-    q = astro.frametransform.qteme2itrf(tm)
+    q = satkit.frametransform.qteme2itrf(tm)
     pitrf = q * pteme
-    vitrf = q * vteme - np.cross(np.array([0, 0, astro.univ.omega_earth]), pitrf)
+    vitrf = q * vteme - np.cross(np.array([0, 0, satkit.univ.omega_earth]), pitrf)
 
     # convert to ITRF coordinate object
-    coord = astro.itrfcoord.from_vector(pitrf)
+    coord = satkit.itrfcoord.from_vector(pitrf)
     # Print ITRF coordinate object location
     print(coord)
 
@@ -225,7 +225,7 @@ class gravmodel():
         the ITU Grace 16 gravity model
         """
 
-def gravity(pos: list[float]|astro.itrfcoord|npt.ArrayLike[np.float],
+def gravity(pos: list[float]|satkit.itrfcoord|npt.ArrayLike[np.float],
             **kwargs) -> npt.ArrayLike[np.float]:
     """
     gravity(pos)
@@ -237,19 +237,19 @@ def gravity(pos: list[float]|astro.itrfcoord|npt.ArrayLike[np.float],
 
     Inputs:
 
-        pos:   Position as ITRF coordinate (astro.itrfcoord) or numpy
+        pos:   Position as ITRF coordinate (satkit.itrfcoord) or numpy
                 3-vector representing ITRF position in meters or 
                 list 3-vector representing ITRF position in meters
 
     Kwargs:
         
         model:   The gravity model to use.  Options are:
-                    astro.gravmodel.jgm3
-                    astro.gravmodel.jgm2
-                    astro.gravmodel.egm96
-                    astro.gravmodel.itugrace16
+                    satkit.gravmodel.jgm3
+                    satkit.gravmodel.jgm2
+                    satkit.gravmodel.egm96
+                    satkit.gravmodel.itugrace16
 
-                Default is astro.gravmodel.jgm3
+                Default is satkit.gravmodel.jgm3
 
                 For details of models, see:
                 http://icgem.gfz-potsdam.de/tom_longtime
@@ -337,7 +337,7 @@ class solarsystem():
 
 class timescale():
     """
-    Specify time scale used to represent or convert between the "astro.time"
+    Specify time scale used to represent or convert between the "satkit.time"
     representation of time     
     
     Most of the time, these are not needed directly, but various time scales
@@ -396,7 +396,7 @@ class time():
     conversion between various time epochs (GPS, TAI, UTC, UT1, etc...)
     """
         
-    def __init__(self, *args) -> astro.time:
+    def __init__(self, *args) -> satkit.time:
         """
         Create a "time" object. 
         
@@ -416,24 +416,24 @@ class time():
         second (including fractional component) of the minute    
         
         Example 1: 
-        print(astro.time(2023, 3, 5, 11, 3,45.453))
+        print(satkit.time(2023, 3, 5, 11, 3,45.453))
         2023-03-05 11:03:45.453Z
         
         Example 2:
-        print(astro.time(2023, 3, 5))
+        print(satkit.time(2023, 3, 5))
         2023-03-05 00:00:00.000Z
                     
         """
         
     @staticmethod
-    def now() -> astro.time:
+    def now() -> satkit.time:
         """
         Create a "time" object representing the instant of time at the 
         calling of the function.
         """
         
     @staticmethod
-    def from_date(year: int, month: int, day: int) -> astro.time:
+    def from_date(year: int, month: int, day: int) -> satkit.time:
         """
         Returns a time object representing the start of the day (midnight)
         on the provided date, specified by standard Gregorian year, month
@@ -454,7 +454,7 @@ class time():
     @staticmethod
     def from_gregorian(self, year: int, month: int,
                        day: int, hour: int,
-                       min: int, sec: float) -> astro.time:
+                       min: int, sec: float) -> satkit.time:
         """
         Create time object from 6 input arguments representing
         UTC Gregorian time.  
@@ -468,7 +468,7 @@ class time():
         6 : floating point second of minute, in range [0,60) 
         
         Example:
-        print(astro.time.from_gregorian(2023, 3, 5, 11, 3,45.453))
+        print(satkit.time.from_gregorian(2023, 3, 5, 11, 3,45.453))
         2023-03-05 11:03:45.453Z        
         """    
     
@@ -486,10 +486,10 @@ class time():
         """
 
     @staticmethod
-    def from_datetime(dt: datetime.datetime) -> astro.time:
+    def from_datetime(dt: datetime.datetime) -> satkit.time:
         """
         Convert input "datetime.datetime" object to an 
-        "astro.time" object represenging the same 
+        "satkit.time" object represenging the same 
         instant in time
         """
         
@@ -504,22 +504,22 @@ class time():
         Default is true
         
         Example: (from Easterm Standard Time time zone)
-        dt = astro.time(2023, 6, 3, 6, 19, 34).datetime(True)
+        dt = satkit.time(2023, 6, 3, 6, 19, 34).datetime(True)
         print(dt)
         2023-06-03 06:19:34+00:00
 
-        dt = astro.time(2023, 6, 3, 6, 19, 34).datetime(False)
+        dt = satkit.time(2023, 6, 3, 6, 19, 34).datetime(False)
         print(dt)
         2023-06-03 02:19:34
         """
         
-    def to_mjd(self, scale: astro.timescale) -> float:
+    def to_mjd(self, scale: satkit.timescale) -> float:
         """
         Represent time instance as a Modified Julian Date 
         with the provided time scale
         """
         
-    def to_jd(self, scale: astro.timescale) -> float:
+    def to_jd(self, scale: satkit.timescale) -> float:
         """
         Represent time instance as Julian Date with 
         the provided time scale
@@ -535,43 +535,43 @@ class time():
         """
         
     def __add__(self, 
-            other: astro.duration|npt.ArrayLike[float]|
-            float|list[float]|npt.ArrayLike[astro.duration]) -> astro.time|npt.ArrayLike[astro.time]:
+            other: satkit.duration|npt.ArrayLike[float]|
+            float|list[float]|npt.ArrayLike[satkit.duration]) -> satkit.time|npt.ArrayLike[satkit.time]:
         """
-        Return an astro.time object or nunpy array of astro.time objects 
+        Return an satkit.time object or nunpy array of satkit.time objects 
         representing the input "added to" the current object
         
         Possible inputs and corresponding outputs:
         
-        1. float: return astro.time object incremented by input number of days
-        2. astro.duration: return astro.time object incremented by duration
-        3. list[float]: return numpy array of astro.time objects, representing
+        1. float: return satkit.time object incremented by input number of days
+        2. satkit.duration: return satkit.time object incremented by duration
+        3. list[float]: return numpy array of satkit.time objects, representing
            an element-wise addition of days to the "self"
-        4. list[duration]: reuturn numpy array of astro.time objects, with each
+        4. list[duration]: reuturn numpy array of satkit.time objects, with each
            object representing an element-wise addition of "duration" to the "self"
-        5. numpy.array(float): return numpy array of astro.time objects, with each
+        5. numpy.array(float): return numpy array of satkit.time objects, with each
            object representing an element-wise addition of days to the "self"        
         """
     
     def __sub__(self,
-                other: astro.duration|astro.time|npt.ArrayLoke[float]|
-                npt.ArrayLike[astro.duration]|
-                list[float]) -> astro.time | astro.duration | npt.ArrayLike[astro.time]:
+                other: satkit.duration|satkit.time|npt.ArrayLoke[float]|
+                npt.ArrayLike[satkit.duration]|
+                list[float]) -> satkit.time | satkit.duration | npt.ArrayLike[satkit.time]:
         """
-        Return an astro.time object or numpy array of astro.time objects
+        Return an satkit.time object or numpy array of satkit.time objects
         representing the input "subtracted from" the current object
         
         Possible inputs and corresponding outputs:
         
-        1. astro.time: output is duration representing the difference
+        1. satkit.time: output is duration representing the difference
            between the "other" time and "self"
-        2. astro.duration: output is astro.time object representing time minus
+        2. satkit.duration: output is satkit.time object representing time minus
            the input duration
-        3. list[float]: return numpy array of astro.time objects, representing
+        3. list[float]: return numpy array of satkit.time objects, representing
            an element-wise subtraction of days to the "self"
-        4. list[duration]: return numpy array of astro.time objects, representing
+        4. list[duration]: return numpy array of satkit.time objects, representing
            an element-wise subtraction of "duration" from the "self"
-        5. numpy.array(float): return numpy array of astro.time objects, with 
+        5. numpy.array(float): return numpy array of satkit.time objects, with 
            each object representing an element-wise subtraction of days from 
            the "self".
            
@@ -607,7 +607,7 @@ class duration():
         Create duration object representing input number of hours
         """
 
-    def __add__(self, other: duration|astro.time) -> duration|astro.time:
+    def __add__(self, other: duration|satkit.time) -> duration|satkit.time:
         """
         Add a duration to either another duration or a time
         
@@ -622,7 +622,7 @@ class duration():
         Duration: 1 hours, 1 minutes, 0.000 seconds
         
         Example 2: 
-        print(duration.from_hours(1) + astro.time(2023, 6, 4, 11,30,0))
+        print(duration.from_hours(1) + satkit.time(2023, 6, 4, 11,30,0))
         2023-06-04 13:30:00.000Z
         
         """
@@ -692,13 +692,13 @@ class quaternion():
     rust "nalgebra" crate.
     """
     
-    def new() -> astro.quaternion:
+    def new() -> satkit.quaternion:
         """
         Return unit quaternion (no rotation)
         """
       
     @staticmethod
-    def from_axis_angle(axis: npt.ArrayLike[np.float64], angle: float) -> astro.quaternion:
+    def from_axis_angle(axis: npt.ArrayLike[np.float64], angle: float) -> satkit.quaternion:
         """
         Return quaternion representing right-handed rotation by 
         "angle" degrees about the given axis.  The axis does not 
@@ -706,7 +706,7 @@ class quaternion():
         """
       
     @staticmethod  
-    def rotx(theta) -> astro.quaternion:
+    def rotx(theta) -> satkit.quaternion:
         """
         Return quaternion representing right-handed rotation of vector
         by "theta" degrees about the xhat unit vector
@@ -719,7 +719,7 @@ class quaternion():
         
       
     @staticmethod  
-    def roty(theta) -> astro.quaternion:
+    def roty(theta) -> satkit.quaternion:
         """
         Return quaternion representing right-handed rotation of vector
         by "theta" degrees about the yhat unit vector
@@ -731,7 +731,7 @@ class quaternion():
         """        
     
     @staticmethod  
-    def rotz(theta) -> astro.quaternion:
+    def rotz(theta) -> satkit.quaternion:
         """
         Return quaternion representing right-handed rotation of vector
         by "theta" degrees about the zhat unit vector
@@ -766,18 +766,18 @@ class quaternion():
         Return the axis of rotation as a unit vector
         """
         
-    def conj(self) -> astro.quaternion:
+    def conj(self) -> satkit.quaternion:
         """
         Return conjucate or inverse of the rotation
         """
         
-    def conjugate(self) -> astro.quaternion:
+    def conjugate(self) -> satkit.quaternion:
         """
         Return conjugate or inverse of the rotation
         """
 
     @typing.overload
-    def __mul__(self, other: astro.quaternion) -> astro.quaternion:
+    def __mul__(self, other: satkit.quaternion) -> satkit.quaternion:
         """
         Multiply represents concatenation of two rotations representing 
         the quaternions.  The left value rotation is applied after 
@@ -814,21 +814,21 @@ class itrfcoord():
     and North-East-Down frame at this coordinate
     """
 
-    def __init__(x: float, y: float, z: float) -> astro.itrfcoord:
+    def __init__(x: float, y: float, z: float) -> satkit.itrfcoord:
         """
         Represent a coordinate in the ITRF (International Terrestrial Reference Frame)
         Inputs are 3 separate floats representing ITRF Cartesian position in meters
         """ 
         
     @typing.static_method
-    def from_vector(v: list[float]|npt.ArrayLike[np.float64]) -> astro.itrfcoord:
+    def from_vector(v: list[float]|npt.ArrayLike[np.float64]) -> satkit.itrfcoord:
         """
         Create ITRF coordinate from 3-element list or numpy array
         representing ITRF cartesian position in meters
         """
             
     @typing.staticmethod                
-    def from_geodetic() -> astro.itrfcoord:
+    def from_geodetic() -> satkit.itrfcoord:
         """            
         Create coordinate from input geodetic
         Optional inputs, in order:
@@ -895,13 +895,13 @@ class itrfcoord():
         Cartesian ITRF coord as numpy array
         """
         
-    def qned2itrf(self) -> astro.quaternion:
+    def qned2itrf(self) -> satkit.quaternion:
         """
         Quaternion representing rotation from North-East-Down (NED)
         to ITRF at this location
         """
         
-    def qenu2itrf(self) -> astro.quaternion:
+    def qenu2itrf(self) -> satkit.quaternion:
         """
         Quaternion representiong rotation from East-North-Up (ENU)
         to ITRF at this location

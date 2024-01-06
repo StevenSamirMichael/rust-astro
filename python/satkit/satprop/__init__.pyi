@@ -35,7 +35,7 @@ import typing
 import numpy.typing as npt
 import numpy as np
 
-import astro
+import satkit
 import datetime
 
 class PropStats(typing.TypedDict):
@@ -44,7 +44,7 @@ class PropStats(typing.TypedDict):
     rejected_steps: int
 
 class PropResult(typing.TypedDict):
-    time: npt.ArrayLike[astro.time]
+    time: npt.ArrayLike[satkit.time]
     pos: npt.ArrayLike[np.float64]
     vel: npt.ArrayLike[np.float64]
     Phi: typing.NotRequired[npt.ArrayLike[np.float64]]
@@ -98,7 +98,7 @@ class propsettings():
         
 def propagate(pos: npt.ArrayLike(np.float64),
             vel: npt.ArrayLike(np.float64),
-            start: astro.time,
+            start: satkit.time,
             **kwargs
             ) -> PropResult:
     """
@@ -124,7 +124,7 @@ def propagate(pos: npt.ArrayLike(np.float64),
         
         pos:   3-element numpy array representing satellite GCRF position in meters
         vel:   3-element numpy array representing satellite GCRF velocity in m/s
-            tm:   astro.time object representing instant at which satellite is at "pos" & "vel"
+            tm:   satkit.time object representing instant at which satellite is at "pos" & "vel"
     
     Optional keyword arguments:
     
@@ -132,13 +132,13 @@ def propagate(pos: npt.ArrayLike(np.float64),
     4 ways of setting propagation end:
     (one of these must be used)
         
-            stoptime: astro.time object representing instant at
+            stoptime: satkit.time object representing instant at
                         which new position and velocity will be computed
         duration_secs: duration in seconds from "tm" for at which new
                         position and velocity will be computed.  
         duration_days: duration in days from "tm" at which new position and
                         velocity will be computed.  
-            duration: An astro.duration object setting duration from "tm"
+            duration: An satkit.duration object setting duration from "tm"
                         at which new position & velocity will be computed.
     
     
@@ -149,7 +149,7 @@ def propagate(pos: npt.ArrayLike(np.float64),
                         at which solution will also be computed
                 dt_days: Interval in days between "starttime" and "stoptime" at which
                         solution will also be computed
-                    dt: astro.duration representing interval over which
+                    dt: satkit.duration representing interval over which
                         new position & velocity will be computed
     
     
@@ -170,7 +170,7 @@ def propagate(pos: npt.ArrayLike(np.float64),
     
     Output: Python dictionary with the following elements:
         
-        "time": list of astro.time objects at which solution is computed
+        "time": list of satkit.time objects at which solution is computed
             "pos": GCRF position in meters at "time".  Output is a Nx3 numpy
                 matrix, where N is the length of the output "time" list
             "vel": GCRF velocity in meters / second at "time".  Output is a

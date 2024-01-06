@@ -1,12 +1,12 @@
 [package]
-name = "astro"
+name = "satkit"
 version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at 
 # https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "astro"
+name = "satkit"
 crate-type = ["cdylib"]
 
 [dependencies]

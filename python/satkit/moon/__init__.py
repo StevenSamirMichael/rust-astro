@@ -1,5 +1,5 @@
 """
-Astrodynamic calculations related to the moon
+satkitdynamic calculations related to the moon
 """
 
 from __future__ import annotations
@@ -7,10 +7,10 @@ import typing
 import numpy.typing as npt
 import numpy as np
 
-import astro
+import satkit
 
 @typing.overload
-def pos_gcrf(time: astro.time) -> npt.ArrayLike[np.float64]:
+def pos_gcrf(time: satkit.time) -> npt.ArrayLike[np.float64]:
     """
     Approximate Moon position in the GCRF Frame
 
@@ -18,7 +18,7 @@ def pos_gcrf(time: astro.time) -> npt.ArrayLike[np.float64]:
 
     Input:
 
-    time:  astro.time object, 
+    time:  satkit.time object, 
     Output:
 
     3-element numpy array representing moon position in GCRF frame
@@ -30,7 +30,7 @@ def pos_gcrf(time: astro.time) -> npt.ArrayLike[np.float64]:
     
 @typing.overload
 def pos_gcrf(
-    time: npt.ArrayLike[astro.time]|list[astro.time]
+    time: npt.ArrayLike[satkit.time]|list[satkit.time]
              ) -> npt.ArrayLike[np.float64]:
     """
     Approximate Moon position in the GCRF Frame
@@ -39,7 +39,7 @@ def pos_gcrf(
 
     Input:
 
-    time:  astro.time list, or numpy array
+    time:  satkit.time list, or numpy array
             for which to compute position
 
     Output:

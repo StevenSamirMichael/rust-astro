@@ -1,6 +1,5 @@
 use nalgebra as na;
 use numpy as np;
-use numpy::PyArray2;
 use numpy::ToPyArray;
 use pyo3::prelude::*;
 

@@ -105,7 +105,7 @@ fn satprop(_py: Python, m: &PyModule) -> PyResult<()> {
 }
 
 #[pymodule]
-pub fn astro(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn satkit(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyAstroTime>()?;
     m.add_class::<PyDuration>()?;
     m.add_class::<pyastrotime::PyTimeScale>()?;

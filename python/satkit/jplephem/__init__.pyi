@@ -9,9 +9,9 @@ import typing
 import numpy.typing as npt
 import numpy as np
 
-import astro
+import satkit
 
-def geocentric_pos(body: astro.solarsystem, tm: astro.time|list[astro.time]|npt.ArrayLike[astro.time]) -> npt.ArrayLike[np.float64]:
+def geocentric_pos(body: satkit.solarsystem, tm: satkit.time|list[satkit.time]|npt.ArrayLike[satkit.time]) -> npt.ArrayLike[np.float64]:
     """
     Return geocentric (Earth-centered) positionfor a given solar-system body
     at the given time or times in the GCRF frame 
@@ -24,17 +24,17 @@ def geocentric_pos(body: astro.solarsystem, tm: astro.time|list[astro.time]|npt.
     
     Example:
     
-    from astro import jplephem
-    from astro import solarsystem
+    from satkit import jplephem
+    from satkit import solarsystem
 
-    timearray = [astro.time(2022, 1, 1), astro.time(2022, 1, 2)]
+    timearray = [satkit.time(2022, 1, 1), satkit.time(2022, 1, 2)]
     print(jplephem.geocentric_pos(solarsystem.Sun, timearray))    
     
     [[ 2.61298635e+10 -1.32825366e+11 -5.75794120e+10]
     [ 2.87014564e+10 -1.32376376e+11 -5.73848916e+10]]    
     """
     
-def barycentric_pos(body: astro.solarsystem, tm: astro.time|list[astro.time]|npt.ArrayLike[astro.time]) -> npt.ArrayLike[np.float64]:
+def barycentric_pos(body: satkit.solarsystem, tm: satkit.time|list[satkit.time]|npt.ArrayLike[satkit.time]) -> npt.ArrayLike[np.float64]:
     """
     Return barycentric position for a given solar-system body
     at the given time or times.  The barycentric coordinate system origin 
@@ -49,18 +49,18 @@ def barycentric_pos(body: astro.solarsystem, tm: astro.time|list[astro.time]|npt
     
     Example:
     
-    from astro import jplephem
-    from astro import solarsystem
+    from satkit import jplephem
+    from satkit import solarsystem
 
-    timearray = [astro.time(2022, 1, 1), astro.time(2022, 1, 2)]
+    timearray = [satkit.time(2022, 1, 1), satkit.time(2022, 1, 2)]
     print(jplephem.barycentric(solarsystem.Sun, timearray))    
     
     [[-1.28367505e+09  4.49091935e+08  2.22928070e+08]
      [-1.28417613e+09  4.47924236e+08  2.22445460e+08]]
     """    
 
-def geocentric_state(body: astro.solarsystem, 
-                     tm: astro.time|list[astro.time]|npt.ArrayLike[astro.time]) -> (npt.ArrayLike[np.float64], npt.ArrayLike[np.float64]):
+def geocentric_state(body: satkit.solarsystem, 
+                     tm: satkit.time|list[satkit.time]|npt.ArrayLike[satkit.time]) -> (npt.ArrayLike[np.float64], npt.ArrayLike[np.float64]):
     """
     Return geocentric (Earth-centered) state (position and velocity) for a given solar-system body
     at the given time or times in the GCRF frame 
@@ -73,10 +73,10 @@ def geocentric_state(body: astro.solarsystem,
     
     Example:
     
-    from astro import jplephem
-    from astro import solarsystem
+    from satkit import jplephem
+    from satkit import solarsystem
 
-    timearray = [astro.time(2022, 1, 1), astro.time(2022, 1, 2)]
+    timearray = [satkit.time(2022, 1, 1), satkit.time(2022, 1, 2)]
     print(jplephem.geocentric_state(solarsystem.Sun, timearray))
     
     (array([[ 2.61298635e+10, -1.32825366e+11, -5.75794120e+10],
@@ -87,8 +87,8 @@ def geocentric_state(body: astro.solarsystem,
     
     """
     
-def barycentric_state(body: astro.solarsystem, 
-                     tm: astro.time|list[astro.time]|npt.ArrayLike[astro.time]) -> (npt.ArrayLike[np.float64], npt.ArrayLike[np.float64]):
+def barycentric_state(body: satkit.solarsystem, 
+                     tm: satkit.time|list[satkit.time]|npt.ArrayLike[satkit.time]) -> (npt.ArrayLike[np.float64], npt.ArrayLike[np.float64]):
     """
     Return barycentric position and velocity for a given solar-system body
     at the given time or times.  The barycentric coordinate system origin 
@@ -103,10 +103,10 @@ def barycentric_state(body: astro.solarsystem,
     
     Example:
     
-    from astro import jplephem
-    from astro import solarsystem
+    from satkit import jplephem
+    from satkit import solarsystem
 
-    timearray = [astro.time(2022, 1, 1), astro.time(2022, 1, 2)]
+    timearray = [satkit.time(2022, 1, 1), satkit.time(2022, 1, 2)]
     print(jplephem.barycentric_state(solarsystem.Sun, timearray))
     
     (array([[-1.28367505e+09,  4.49091935e+08,  2.22928070e+08],
