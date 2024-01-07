@@ -965,3 +965,112 @@ class itrfcoord():
         Quaternion representiong rotation from East-North-Up (ENU)
         to ITRF at this location
         """
+
+class consts():
+    """
+    Some constants that are useful for saetllite dynamics
+    """
+    
+    @property
+    def wgs84_a() -> float:
+        """
+        WGS-84 semiparameter, in meters
+        """
+        
+    @property
+    def wgs84_f() -> float:
+        """
+        WGS-84 flattening in meters
+        """
+        
+    @property
+    def earth_radius() -> float:
+        """
+        Earth radius along major axis, meters
+        """
+        
+    @property
+    def mu_earth() -> float:
+        """
+        Gravitational parameter of Earth, m^3/s^2
+        """
+        
+    @property
+    def mu_moon() -> float:
+        """
+        Gravitational parmaeter of Moon, m^3/s^2
+        """
+        
+    @property
+    def mu_sun() -> float:
+        """
+        Gravitational parameter of sun, m^3/s^2
+        """
+        
+    @property
+    def GM() -> float:
+        """
+        Gravitational parameter of Earth, m^3/s^2
+        """
+        
+    @property
+    def omega_earth() -> float:
+        """
+        Scalar Earth rotation rate, rad/s
+        """
+        
+    @property
+    def c() -> float:
+        """
+        Speed of light, m/s
+        """
+        
+    @property
+    def au() -> float:
+        """
+        Astronomical Unit, mean Earth-Sun distance, meters
+        """
+    
+    @property
+    def sun_radius() -> float:
+        """
+        Radius of sun, meters
+        """
+        
+    @property
+    def moon_radius() -> float:
+        """
+        Radius of moon, meters
+        """
+        
+    @property
+    def earth_moon_mass_ratio() -> float:
+        """
+        Earth mass over Moon mass, unitless
+        """
+        
+    @property
+    def geo_r() -> float:
+        """
+        Distance to Geosynchronous orbit from Earth center, meters
+        """
+        
+    @property
+    def jgm3_mu() -> float:
+        """
+        Earth gravitational parameter from JGM3 gravity model, m^3/s^2
+        """
+        
+    @property
+    def jgm3_a() -> float:
+        """
+        Earth semiparameter from JGM3 gravity model, m
+        """
+        
+    @property
+    def jgm3_j2() -> float:
+        """    
+        "J2" gravity due oblateness of Earth from JGM3 gravity model, 
+        unitless
+        """
+    

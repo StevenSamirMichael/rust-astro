@@ -52,7 +52,7 @@ pub fn get_testdirs() -> Vec<PathBuf> {
                     .join("Application Support")
                     .join("astro-data"),
             );
-            testdirs.push(Path::new(vstr).join("astro-data"));
+            testdirs.push(Path::new(vstr).join("/astro-data"));
             testdirs.push(Path::new(vstr).to_path_buf());
         }
         Err(_e) => (),
@@ -83,7 +83,7 @@ pub fn get_testdirs() -> Vec<PathBuf> {
 /// files are found
 ///
 /// *  "ASTROLIB_DATA" environment variable
-/// *  ${HOME}/share/astro-data
+/// *  ${HOME}/share/.astro-data
 /// *  ${HOME}
 /// *  /usr/share/astro-data
 /// *  On Mac Only:
@@ -98,7 +98,7 @@ pub fn get_testdirs() -> Vec<PathBuf> {
 pub fn get() -> AstroResult<PathBuf> {
     static INSTANCE: OnceCell<AstroResult<PathBuf>> = OnceCell::new();
     let res = INSTANCE.get_or_init(|| {
-        for ref dir in get_testdirs() {            
+        for ref dir in get_testdirs() {
             let p = PathBuf::from(&dir).join("tab5.2a.txt");
             if p.is_file() {
                 return Ok(dir.to_path_buf().clone());

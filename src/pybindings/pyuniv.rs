@@ -2,12 +2,12 @@ use pyo3::prelude::*;
 
 use crate::univ as cuniv;
 
-#[pyclass(name = "univ")]
-pub struct Univ {}
+#[pyclass(name = "consts")]
+pub struct Consts {}
 
 #[pymethods]
 #[allow(non_upper_case_globals)]
-impl Univ {
+impl Consts {
     #[classattr]
     ///  WGS-84 semiparameter, in meters
     const wgs84_a: f64 = cuniv::WGS84_A;
