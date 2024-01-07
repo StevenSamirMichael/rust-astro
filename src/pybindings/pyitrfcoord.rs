@@ -232,7 +232,8 @@ impl PyITRFCoord {
     /// North-East-Down (NED) coordinate frame
     /// to International Terrestrial Reference Frame
     /// (ITRF) at this point
-    fn qned2itrf(&self) -> Quaternion {
+    #[getter]
+    fn get_qned2itrf(&self) -> Quaternion {
         Quaternion {
             inner: self.inner.q_ned2itrf(),
         }
@@ -242,7 +243,8 @@ impl PyITRFCoord {
     /// East-North-Up (ENU) coordinate frame
     /// to International Terrestrial Reference Frame
     /// (ITRF) at this point
-    fn qenu2itrf(&self) -> Quaternion {
+    #[getter]
+    fn get_qenu2itrf(&self) -> Quaternion {
         Quaternion {
             inner: self.inner.q_ned2itrf(),
         }

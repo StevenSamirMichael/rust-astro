@@ -29,6 +29,11 @@ impl SatState {
         }
     }
 
+    /// set covariance
+    pub fn set_cov(&mut self, cov: StateCov) {
+        self.cov = cov;
+    }
+
     /// Set position uncertainty (1-sigma) in the
     /// position, velocity, angular momentum frame
     pub fn set_pvh_pos_uncertainty(&mut self, sigma_pvh: &na::Vector3<f64>) {
@@ -172,6 +177,23 @@ mod test {
 
         let state0 = state2.propagate(&satstate.time, None);
         println!("state 0 = {:?}", state0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_satcov() -> AstroResult<()> {
+        let mut satstate = SatState::from_pv(
+            &AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0),
+            &na::vector![univ::GEO_R, 0.0, 0.0],
+            &na::vector![0.0, (univ::MU_EARTH / univ::GEO_R).sqrt(), 0.0],
+        );
+        satstate.set_pvh_pos_uncertainty(&na::vector![1.0, 1.0, 1.0]);
+        println!("state orig = {:?}", satstate.cov);
+
+        let state2 = satstate.propagate(&(satstate.time + 1.0), None)?;
+
+        println!("state 2 = {:?}", state2.cov);
+
         Ok(())
     }
 }

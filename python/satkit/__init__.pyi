@@ -402,7 +402,7 @@ class time():
     conversion between various time epochs (GPS, TAI, UTC, UT1, etc...)
     """
         
-    def __init__(self, *args) -> satkit.time:
+    def __init__(self, *args):
         """
         Create a "time" object. 
         
@@ -698,7 +698,7 @@ class quaternion():
     rust "nalgebra" crate.
     """
     
-    def __init__() -> satkit.quaternion:
+    def __init__(self):
         """
         Return unit quaternion (no rotation)
         """
@@ -860,7 +860,7 @@ class itrfcoord():
         ITRFCoord(lat:  42.4400 deg, lon: -71.1500 deg, hae:  0.10 km) 
     """
 
-    def __init__(*args, **kwargs) -> itrfcoord:
+    def __init__(self, *args, **kwargs):
         """
         Create a coordinate in the ITRF (International Terrestrial Reference Frame)
 
@@ -954,12 +954,14 @@ class itrfcoord():
         Cartesian ITRF coord as numpy array
         """
         
+    @property
     def qned2itrf(self) -> quaternion:
         """
         Quaternion representing rotation from North-East-Down (NED)
         to ITRF at this location
         """
-        
+    
+    @property
     def qenu2itrf(self) -> quaternion:
         """
         Quaternion representiong rotation from East-North-Up (ENU)

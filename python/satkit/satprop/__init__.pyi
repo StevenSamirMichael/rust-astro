@@ -50,8 +50,88 @@ class PropResult(typing.TypedDict):
     Phi: typing.NotRequired[npt.ArrayLike[np.float64]]
     stats: PropStats
     
+class satstate():
+    """
+    A convenience class representing a satellite position and velocity, and 
+    optionally 6x6 position/velocity covariance at a particular instant in time
+    
+    This class can be used to propagate the position, velocity, and optional 
+    covariance to different points in time.     
+    """
+    
+    def __init__(self,
+                 time: satkit.time, 
+                 pos: npt.ArrayLike[np.float64],
+                 vel: npt.ArrayLike[np.float64],
+                 cov: npt.ArrayLike[np.float64]|None = None):
+        """
+        Create a new satellite state, given:
+        
+        1. time instant (satkit.time)
+        2. Position, meters in GCRF frame (3-element numpy array)
+        3. Velocity, meters / second in GCRF frame (3-element numpy array)
+        4. Optionally, covariance in GCRF frame (numpy array, 6x6)
+        """
+        
+    
+    @property
+    def pos(self) -> npt.ArrayLike[np.float64]:
+        """
+        Return this state position in meters in GCRF frame as 3-element numpy array
+        """
+        
+    @property
+    def vel(self) -> npt.ArrayLike[np.float64]:
+        """
+        Return this state velocity in meters / second in GCRF frame
+        as 3-element numpy array
+        """
+        
+    @property
+    def cov(self) -> npt.ArrayLike[np.float64]|None:
+        """
+        return state covariance matrix in GCRF frame
+        as 6x6 numpy matrix
+        
+        or None if no covariance is set
+        """
+
+    @property
+    def time(self) -> satkit.astrotime:
+        """
+        Return instant in time of this satellite state
+        """
+        
+    def propagate(self, time: satkit.time, propsettings=None) -> satstate:
+        """
+        Propagate this state to a new time, specified by the "time" input,
+        
+        updating the position, the velocity, and the covariance if set
+        
+        Optional input keyword argument:
+            "propsettings": a satkit.satprop.propsettings object describing
+                            settings to use in the propagation
+                            If omitted, default is used
+
+        """
+
 
 class propsettings():
+    """
+    This class contains settings used in the high-precision
+    orbit propgator part of the "satkit" python toolbox
+    """
+    
+    def __init__(self):
+        """
+        Create default propsetting object, with
+        
+        abs_error: 1e-8
+        rel_error: 1e-8
+        gravity_order: 4
+        use_spaceweather: True
+        use_jplephem: True
+        """
     
     @property
     def abs_error() -> float:

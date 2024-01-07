@@ -18,10 +18,12 @@ pub struct PySatState {
 #[pymethods]
 impl PySatState {
     #[new]
+    #[pyo3(signature=(time, pos, vel, cov=None))]
     fn py_new(
-        tm: &PyAstroTime,
+        time: &PyAstroTime,
         pos: &np::PyArray1<f64>,
         vel: &np::PyArray1<f64>,
+        cov: Option<&np::PyArray2<f64>>,
     ) -> PyResult<Self> {
         if pos.len() != 3 || vel.len() != 3 {
             return Err(pyo3::exceptions::PyRuntimeError::new_err(
@@ -29,13 +31,24 @@ impl PySatState {
             ));
         }
 
-        Ok(PySatState {
-            inner: SatState::from_pv(
-                &tm.inner,
-                &na::Vector3::<f64>::from_row_slice(unsafe { pos.as_slice().unwrap() }),
-                &na::Vector3::<f64>::from_row_slice(unsafe { vel.as_slice().unwrap() }),
-            ),
-        })
+        let mut state = SatState::from_pv(
+            &time.inner,
+            &na::Vector3::<f64>::from_row_slice(unsafe { pos.as_slice().unwrap() }),
+            &na::Vector3::<f64>::from_row_slice(unsafe { vel.as_slice().unwrap() }),
+        );
+        if cov.is_some() {
+            let cov = cov.unwrap();
+            let dims = cov.dims();
+            if dims[0] != 6 || dims[1] != 6 {
+                return Err(pyo3::exceptions::PyRuntimeError::new_err(
+                    "Covariance must be 6x6 matrix",
+                ));
+            }
+            let nacov = na::Matrix6::<f64>::from_row_slice(unsafe { cov.as_slice().unwrap() });
+            state.set_cov(StateCov::PVCov(nacov));
+        }
+
+        Ok(PySatState { inner: state })
     }
 
     fn set_pvh_pos_uncertainty(&mut self, sigma_pvh: &np::PyArray1<f64>) -> PyResult<()> {
@@ -77,6 +90,13 @@ impl PySatState {
     }
 
     #[getter]
+    fn get_time(&self) -> PyAstroTime {
+        PyAstroTime {
+            inner: self.inner.time,
+        }
+    }
+
+    #[getter]
     fn get_cov(&self) -> Py<PyAny> {
         pyo3::Python::with_gil(|py| -> Py<PyAny> {
             match self.inner.cov {
@@ -89,6 +109,21 @@ impl PySatState {
                         .to_object(py)
                 }
             }
+        })
+    }
+
+    #[getter]
+    fn get_pos(&self) -> Py<PyAny> {
+        pyo3::Python::with_gil(|py| -> Py<PyAny> {
+            np::PyArray1::from_slice(py, self.inner.pv.fixed_view::<3, 1>(0, 0).as_slice())
+                .to_object(py)
+        })
+    }
+    #[getter]
+    fn get_vel(&self) -> Py<PyAny> {
+        pyo3::Python::with_gil(|py| -> Py<PyAny> {
+            np::PyArray1::from_slice(py, self.inner.pv.fixed_view::<3, 1>(3, 0).as_slice())
+                .to_object(py)
         })
     }
 
