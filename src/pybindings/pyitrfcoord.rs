@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use pyo3::types::PyList;
+use pyo3::types::{PyList, PyTuple};
 
 use numpy::{PyArray1, PyReadonlyArray1};
 
@@ -8,6 +8,8 @@ use crate::itrfcoord::ITRFCoord;
 use crate::types::Vec3;
 
 use super::Quaternion;
+
+use super::pyutils::*;
 
 ///
 /// Representation of a coordinate in the
@@ -26,118 +28,131 @@ pub struct PyITRFCoord {
     pub inner: ITRFCoord,
 }
 
-use std::f64::consts::PI;
-const DEG2RAD: f64 = PI / 180.;
-
 #[pymethods]
 impl PyITRFCoord {
-    // Represent a coordinate in the ITRF (International Terrestrial Reference Frame)
-    #[new]
-    #[pyo3(signature=(x = 0.0, y = 0.0, z = 0.0))]
-    fn new(x: f64, y: f64, z: f64) -> PyResult<Self> {
-        Ok(PyITRFCoord {
-            inner: ITRFCoord::from_slice(&[x, y, z]).unwrap(),
-        })
-    }
+    /// Create a coordinate in the ITRF (International Terrestrial Reference Frame)
+    ///
+    ///
+    /// Coordinate from "Cartesian" inputs can be set via folloing:
+    ///
+    ///   1: single 3-element list of floats representing ITRF Cartesian location in meters
+    ///   2: single 3-element numpy array of floats representing ITRF Cartesian location in meters
+    ///   3. 3 separate input arguments representing x,y,z ITRF Cartesian location in meters
+    ///
+    /// Input can also be set from geodetic coordinate using kwargs
+    ///     Optional kwargs:
+    ///
+    ///     latitude_deg: latitude, degrees
+    ///     longitude_deg: longitude, degrees
+    ///     latitude_rad: latitude, radians
+    ///     longitude_rad: longitude, radians
+    ///     altitude: height above ellipsoid, meters
+    ///     height: height above ellipsoid, meters
+    ///
+    ///   Note that there are 2 ways to specify latitude, longitude, and altitude
+    ///   All 3 must be specified or an error will be triffered
+    ///
+    /// Output:
+    ///
+    ///   New "ITRF" Coordinate
+    ///
+    /// Example:
+    ///
+    ///   1. Create ITRF coord from cartesian
+    ///
+    ///   coord = itrfcoord([ 1523128.63570828 -4461395.28873207  4281865.94218203 ])
+    ///   print(coord)
+    ///
+    ///   ITRFCoord(lat:  42.4400 deg, lon: -71.1500 deg, hae:  0.10 km)
+    ///
+    ///   2. Create same ITRF coord from geodetic
+    ///
+    ///   coord = itrfcoord(latitude_deg=42.44, longitude_deg=-71.15, altitude=100)
+    ///  
+    ///   print(coord)
+    ///
+    ///   ITRFCoord(lat:  42.4400 deg, lon: -71.1500 deg, hae:  0.10 km)
+    ///
 
-    // From a 3-element vector or list
-    #[staticmethod]
-    fn from_vector(v: &PyAny) -> PyResult<Self> {
-        if v.is_instance_of::<PyList>() {
-            let lv = v.extract::<Vec<f64>>()?;
-            if lv.len() != 3 {
+    #[new]
+    #[pyo3(signature=(*args, **kwargs))]
+    fn new(args: &PyTuple, mut kwargs: Option<&PyDict>) -> PyResult<Self> {
+        // If kwargs are set, we get input from them
+        if kwargs.is_some() {
+            use std::f64::consts::PI;
+
+            let mut latitude_deg: Option<f64> = kwargs_or_none(&mut kwargs, "latitude_deg")?;
+            latitude_deg = match kwargs_or_none::<f64>(&mut kwargs, "latitude_rad")? {
+                None => latitude_deg,
+                Some(v) => Some(v * 180.0 / PI),
+            };
+            let mut longitude_deg: Option<f64> = kwargs_or_none(&mut kwargs, "longitude_deg")?;
+            longitude_deg = match kwargs_or_none::<f64>(&mut kwargs, "longitude_rad")? {
+                None => longitude_deg,
+                Some(v) => Some(v * 180.0 / PI),
+            };
+            let mut altitude: Option<f64> = kwargs_or_none(&mut kwargs, "altitude")?;
+            altitude = match kwargs_or_none(&mut kwargs, "height")? {
+                None => altitude,
+                Some(v) => Some(v),
+            };
+
+            if latitude_deg.is_none() || longitude_deg.is_none() || altitude.is_none() {
                 return Err(pyo3::exceptions::PyTypeError::new_err(
-                    "Invalid number of elements",
+                    "Must set latitude, longitude, and altitude",
                 ));
             }
             Ok(PyITRFCoord {
-                inner: ITRFCoord::from_slice(lv.as_slice()).unwrap(),
-            })
-        } else if v.is_instance_of::<PyArray1<f64>>() {
-            let nv = v.extract::<PyReadonlyArray1<f64>>()?;
-            if nv.len() != 3 {
-                return Err(pyo3::exceptions::PyTypeError::new_err(
-                    "Invalid number of elements",
-                ));
-            }
-            Ok(PyITRFCoord {
-                inner: ITRFCoord::from_slice(nv.as_array().as_slice().unwrap()).unwrap(),
+                inner: ITRFCoord::from_geodetic_deg(
+                    latitude_deg.unwrap(),
+                    longitude_deg.unwrap(),
+                    altitude.unwrap(),
+                ),
             })
         } else {
-            return Err(pyo3::exceptions::PyTypeError::new_err("Invalid input type"));
-        }
-    }
-
-    ///
-    /// Create coordinate from input geodetic
-    /// Optional inputs, in order:
-    ///
-    /// latitude, radians
-    /// longitude, radians
-    /// heigth above ellipsoid, meters
-    ///
-    ///
-    /// Optional kwargs:
-    ///
-    /// latitude_deg: latitude, degrees
-    /// longitude_deg: longitude, degrees
-    /// latitude_rad: latitude, radians
-    /// longitude_rad: longitude, radians
-    /// altitude: height above ellipsoid, meters
-    ///
-    #[staticmethod]
-    #[pyo3(signature=(latitude=0.0, longitude=0.0, altitude=0.0, **kwargs))]
-    fn from_geodetic(
-        mut latitude: f64,
-        mut longitude: f64,
-        mut altitude: f64,
-        kwargs: Option<&PyDict>,
-    ) -> PyResult<Self> {
-        if kwargs.is_some() {
-            let kw = kwargs.unwrap();
-
-            match kw.get_item("latitude_deg")? {
-                Some(v) => {
-                    latitude = v.extract::<f64>()? * DEG2RAD;
+            if args.len() == 3 {
+                let x = args[0].extract::<f64>()?;
+                let y = args[1].extract::<f64>()?;
+                let z = args[2].extract::<f64>()?;
+                Ok(PyITRFCoord {
+                    inner: ITRFCoord::from_slice(&[x, y, z]).unwrap(),
+                })
+            } else if args.len() == 1 {
+                if args[0].is_instance_of::<PyList>() {
+                    match args[0].extract::<Vec<f64>>() {
+                        Ok(xl) => {
+                            if xl.len() != 3 {
+                                return Err(pyo3::exceptions::PyTypeError::new_err(
+                                    "Invalid number of elements",
+                                ));
+                            }
+                            Ok(PyITRFCoord {
+                                inner: ITRFCoord::from_slice(&xl).unwrap(),
+                            })
+                        }
+                        Err(e) => Err(e),
+                    }
+                } else if args[0].is_instance_of::<PyArray1<f64>>() {
+                    let xv = args[0].extract::<PyReadonlyArray1<f64>>().unwrap();
+                    if xv.len() != 3 {
+                        return Err(pyo3::exceptions::PyTypeError::new_err(
+                            "Invalid number of elements",
+                        ));
+                    }
+                    Ok(PyITRFCoord {
+                        inner: ITRFCoord::from_slice(xv.as_slice().unwrap()).unwrap(),
+                    })
+                } else {
+                    return Err(pyo3::exceptions::PyTypeError::new_err(
+                "First input must be float, 3-element list of floats, or 3-element numpy array of float"
+            ));
                 }
-                None => (),
-            }
-            match kw.get_item("longitude_deg")? {
-                Some(v) => {
-                    longitude = v.extract::<f64>()? * DEG2RAD;
-                }
-                None => (),
-            }
-
-            match kw.get_item("latitude_rad")? {
-                Some(v) => {
-                    latitude = v.extract::<f64>()?;
-                }
-                None => (),
-            }
-            match kw.get_item("longitude_rad")? {
-                Some(v) => {
-                    longitude = v.extract::<f64>()?;
-                }
-                None => (),
-            }
-            match kw.get_item("altitude")? {
-                Some(v) => {
-                    altitude = v.extract::<f64>()?;
-                }
-                None => (),
-            }
-            match kw.get_item("height")? {
-                Some(v) => {
-                    altitude = v.extract::<f64>()?;
-                }
-                None => (),
+            } else {
+                return Err(pyo3::exceptions::PyTypeError::new_err(
+                "First input must be float, 3-element list of floats, or 3-element numpy array of float"
+            ));
             }
         }
-
-        Ok(PyITRFCoord {
-            inner: ITRFCoord::from_geodetic_rad(latitude, longitude, altitude),
-        })
     }
 
     #[getter]
@@ -193,7 +208,7 @@ impl PyITRFCoord {
     /// Return vector representing ITRF Cartesian coordinate
     /// in meters
     #[getter]
-    fn get_vec(&self) -> PyObject {
+    fn get_vector(&self) -> PyObject {
         pyo3::Python::with_gil(|py| -> PyObject {
             numpy::PyArray::from_slice(py, self.inner.itrf.data.as_slice()).to_object(py)
         })

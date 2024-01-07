@@ -9,8 +9,51 @@ use numpy as np;
 use numpy::ndarray;
 use numpy::{PyArray1, PyArray2};
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 
 use crate::types::Vec3;
+
+pub fn kwargs_or_default<'a, T>(
+    kwargs: &mut Option<&'a PyDict>,
+    name: &str,
+    default: T,
+) -> PyResult<T>
+where
+    T: FromPyObject<'a>,
+{
+    match kwargs.is_some() {
+        true => {
+            let kw = kwargs.unwrap();
+            match kw.get_item(name)? {
+                None => Ok(default),
+                Some(v) => {
+                    kw.del_item(name)?;
+                    Ok(v.extract::<T>()?)
+                }
+            }
+        }
+        false => Ok(default),
+    }
+}
+
+pub fn kwargs_or_none<'a, T>(kwargs: &mut Option<&'a PyDict>, name: &str) -> PyResult<Option<T>>
+where
+    T: FromPyObject<'a>,
+{
+    match kwargs.is_some() {
+        true => {
+            let kw = kwargs.unwrap();
+            match kw.get_item(name)? {
+                None => Ok(None),
+                Some(v) => {
+                    kw.del_item(name)?;
+                    Ok(Some(v.extract::<T>()?))
+                }
+            }
+        }
+        false => Ok(None),
+    }
+}
 
 pub fn py_vec3_of_time_arr(
     cfunc: &dyn Fn(&AstroTime) -> Vec3,

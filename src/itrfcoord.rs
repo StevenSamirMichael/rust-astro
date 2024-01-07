@@ -34,7 +34,7 @@ impl std::fmt::Display for ITRFCoord {
         let (lat, lon, hae) = self.to_geodetic_deg();
         write!(
             f,
-            "ITRFCoord(lat: {:8.4} deg, lon: {:8.4} deg, hae: {:5.2} km)",
+            "ITRFCoord(lat: {:8.4} deg, lon: {:8.4} deg, altitude: {:5.2} km)",
             lat,
             lon,
             hae / 1.0e3

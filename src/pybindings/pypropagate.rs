@@ -2,6 +2,7 @@ use super::pyastrotime::PyAstroTime;
 use super::pyduration::PyDuration;
 use super::pypropsettings::PyPropSettings;
 use super::pysatproperties::PySatProperties;
+use super::pyutils::*;
 
 use nalgebra as na;
 use numpy as np;
@@ -10,44 +11,6 @@ use crate::orbitprop;
 
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString};
-
-fn kwargs_or_default<'a, T>(kwargs: &mut Option<&'a PyDict>, name: &str, default: T) -> PyResult<T>
-where
-    T: FromPyObject<'a>,
-{
-    match kwargs.is_some() {
-        true => {
-            let kw = kwargs.unwrap();
-            match kw.get_item(name)? {
-                None => Ok(default),
-                Some(v) => {
-                    kw.del_item(name)?;
-                    Ok(v.extract::<T>()?)
-                }
-            }
-        }
-        false => Ok(default),
-    }
-}
-
-fn kwargs_or_none<'a, T>(kwargs: &mut Option<&'a PyDict>, name: &str) -> PyResult<Option<T>>
-where
-    T: FromPyObject<'a>,
-{
-    match kwargs.is_some() {
-        true => {
-            let kw = kwargs.unwrap();
-            match kw.get_item(name)? {
-                None => Ok(None),
-                Some(v) => {
-                    kw.del_item(name)?;
-                    Ok(Some(v.extract::<T>()?))
-                }
-            }
-        }
-        false => Ok(None),
-    }
-}
 
 fn lowlevel_propagate<const C: usize>(
     pos: &np::PyArray1<f64>,

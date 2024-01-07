@@ -698,7 +698,7 @@ class quaternion():
     rust "nalgebra" crate.
     """
     
-    def new() -> satkit.quaternion:
+    def __init__() -> satkit.quaternion:
         """
         Return unit quaternion (no rotation)
         """
@@ -818,39 +818,92 @@ class itrfcoord():
     Functions are also available to provide rotation
     quaternions to the East-North-Up frame
     and North-East-Down frame at this coordinate
-    """
 
-    def __init__(x: float, y: float, z: float) -> itrfcoord:
-        """
-        Represent a coordinate in the ITRF (International Terrestrial Reference Frame)
-        Inputs are 3 separate floats representing ITRF Cartesian position in meters
-        """ 
-        
-    @staticmethod
-    def from_vector(v: list[float]|npt.ArrayLike[np.float64]) -> itrfcoord:
-        """
-        Create ITRF coordinate from 3-element list or numpy array
-        representing ITRF cartesian position in meters
-        """
-            
-    @staticmethod                
-    def from_geodetic() -> itrfcoord:
-        """            
-        Create coordinate from input geodetic
-        Optional inputs, in order:
-        
-        latitude, radians
-        longitude, radians
-        heigth above ellipsoid, meters
-        
-        
+    Coordinate from "Cartesian" inputs can be set via folloing:
+
+        1: single 3-element list of floats representing ITRF Cartesian location in meters
+        2: single 3-element numpy array of floats representing ITRF Cartesian location in meters
+        3. 3 separate input arguments representing x,y,z ITRF Cartesian location in meters
+
+    Input can also be set from geodetic coordinate using kwargs
         Optional kwargs:
-        
+
         latitude_deg: latitude, degrees
         longitude_deg: longitude, degrees
         latitude_rad: latitude, radians
         longitude_rad: longitude, radians
-        altitude: height above ellipsoid, meters    
+        altitude: height above ellipsoid, meters
+        height: height above ellipsoid, meters
+
+        Note that there are 2 ways to specify latitude, longitude, and altitude
+        All 3 must be specified or an error will be triffered
+
+    Output:
+
+        New "ITRF" Coordinate
+
+    Examples:
+
+        1. Create ITRF coord from cartesian
+
+        coord = itrfcoord([ 1523128.63570828 -4461395.28873207  4281865.94218203 ])
+        print(coord)
+
+        ITRFCoord(lat:  42.4400 deg, lon: -71.1500 deg, hae:  0.10 km)
+
+        2. Create same ITRF coord from geodetic
+
+        coord = itrfcoord(latitude_deg=42.44, longitude_deg=-71.15, altitude=100)
+        
+        print(coord)
+
+        ITRFCoord(lat:  42.4400 deg, lon: -71.1500 deg, hae:  0.10 km) 
+    """
+
+    def __init__(*args, **kwargs) -> itrfcoord:
+        """
+        Create a coordinate in the ITRF (International Terrestrial Reference Frame)
+
+
+        Coordinate from "Cartesian" inputs can be set via folloing:
+
+            1: single 3-element list of floats representing ITRF Cartesian location in meters
+            2: single 3-element numpy array of floats representing ITRF Cartesian location in meters
+            3. 3 separate input arguments representing x,y,z ITRF Cartesian location in meters
+
+        Input can also be set from geodetic coordinate using kwargs
+            Optional kwargs:
+
+            latitude_deg: latitude, degrees
+            longitude_deg: longitude, degrees
+            latitude_rad: latitude, radians
+            longitude_rad: longitude, radians
+            altitude: height above ellipsoid, meters
+            height: height above ellipsoid, meters
+
+            Note that there are 2 ways to specify latitude, longitude, and altitude
+            All 3 must be specified or an error will be triffered
+
+        Output:
+
+            New "ITRF" Coordinate
+
+        Examples:
+
+            1. Create ITRF coord from cartesian
+
+            coord = itrfcoord([ 1523128.63570828 -4461395.28873207  4281865.94218203 ])
+            print(coord)
+
+            ITRFCoord(lat:  42.4400 deg, lon: -71.1500 deg, hae:  0.10 km)
+
+            2. Create same ITRF coord from geodetic
+
+            coord = itrfcoord(latitude_deg=42.44, longitude_deg=-71.15, altitude=100)
+            
+            print(coord)
+
+            ITRFCoord(lat:  42.4400 deg, lon: -71.1500 deg, hae:  0.10 km) 
         """
     
     @property
@@ -896,7 +949,7 @@ class itrfcoord():
         """
         
     @property
-    def vec(self) -> npt.NDArray[np.float64]:
+    def vector(self) -> npt.NDArray[np.float64]:
         """
         Cartesian ITRF coord as numpy array
         """
