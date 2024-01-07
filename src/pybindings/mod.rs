@@ -66,14 +66,6 @@ fn moon(_py: Python, m: &PyModule) -> PyResult<()> {
     Ok(())
 }
 
-/// Low-precision ephemerides
-#[pymodule]
-fn lpephem(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_wrapped(wrap_pymodule!(sun))?;
-    m.add_wrapped(wrap_pymodule!(moon))?;
-    Ok(())
-}
-
 /// Frame transform module: transform between varias coordinate frames
 #[pymodule]
 fn frametransform(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -127,7 +119,8 @@ pub fn satkit(_py: Python, m: &PyModule) -> PyResult<()> {
 
     m.add_wrapped(wrap_pymodule!(frametransform))?;
     m.add_wrapped(wrap_pymodule!(jplephem))?;
-    m.add_wrapped(wrap_pymodule!(lpephem))?;
+    m.add_wrapped(wrap_pymodule!(sun))?;
+    m.add_wrapped(wrap_pymodule!(moon))?;
     m.add_wrapped(wrap_pymodule!(satprop))?;
 
     m.add_wrapped(wrap_pymodule!(mod_utils::utils))?;

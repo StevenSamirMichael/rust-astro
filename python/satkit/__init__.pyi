@@ -12,8 +12,14 @@ import satkit
 import datetime
 from . import jplephem
 from . import frametransform
+from . import moon
+from . import sun
+from . import satprop
 
-__all__ = ['time', 'duration', 'timescale', 'quaternion', 'sgp4', 'gravmodel', 'gravity', 'nrlmsise00', 'univ', 'solarsystem', 'TLE', 'itrfcoord', 'frametransform', 'lpephem', 'satprop', 'jplephem', 'utils']
+__all__ = ['time', 'duration', 'timescale', 'quaternion', 'sgp4', 'gravmodel', 'gravity',
+           'nrlmsise00', 'univ', 'solarsystem', 'TLE',
+           'itrfcoord', 'frametransform', 'moon', 'sun',
+           'satprop', 'jplephem', 'utils']
 
 
 class TLE():
@@ -38,14 +44,14 @@ class TLE():
  
     """
 
-    @typing.staticmethod
+    @staticmethod
     def from_lines(lines: list[str]) -> list[satkit.TLE]:
         """
         Return a list of TLEs from input lines, represented as a 
         list of strings
         """
 
-    @typing.staticmethod
+    @staticmethod
     def single_from_lines(lines: list[str]) -> satkit.TLE:
         """
         Return a single TLE from a 2 or 3-element list of lines
@@ -814,21 +820,21 @@ class itrfcoord():
     and North-East-Down frame at this coordinate
     """
 
-    def __init__(x: float, y: float, z: float) -> satkit.itrfcoord:
+    def __init__(x: float, y: float, z: float) -> itrfcoord:
         """
         Represent a coordinate in the ITRF (International Terrestrial Reference Frame)
         Inputs are 3 separate floats representing ITRF Cartesian position in meters
         """ 
         
-    @typing.static_method
-    def from_vector(v: list[float]|npt.ArrayLike[np.float64]) -> satkit.itrfcoord:
+    @staticmethod
+    def from_vector(v: list[float]|npt.ArrayLike[np.float64]) -> itrfcoord:
         """
         Create ITRF coordinate from 3-element list or numpy array
         representing ITRF cartesian position in meters
         """
             
-    @typing.staticmethod                
-    def from_geodetic() -> satkit.itrfcoord:
+    @staticmethod                
+    def from_geodetic() -> itrfcoord:
         """            
         Create coordinate from input geodetic
         Optional inputs, in order:
@@ -895,13 +901,13 @@ class itrfcoord():
         Cartesian ITRF coord as numpy array
         """
         
-    def qned2itrf(self) -> satkit.quaternion:
+    def qned2itrf(self) -> quaternion:
         """
         Quaternion representing rotation from North-East-Down (NED)
         to ITRF at this location
         """
         
-    def qenu2itrf(self) -> satkit.quaternion:
+    def qenu2itrf(self) -> quaternion:
         """
         Quaternion representiong rotation from East-North-Up (ENU)
         to ITRF at this location

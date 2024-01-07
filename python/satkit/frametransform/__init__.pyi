@@ -32,7 +32,7 @@ def gmst(tm: satkit.time|npt.ArrayLike[satkit.time]) -> float|npt.ArrayLike[np.f
     to the input times.    
     """
     
-def gmst(tm: satkit.time|npt.ArrayLike[satkit.time]) -> float|npt.ArrayLike[np.float]:
+def gast(tm: satkit.time|npt.ArrayLike[satkit.time]) -> float|npt.ArrayLike[np.float]:
     """    
     Greenwich Apparent Sidereal Time
     
