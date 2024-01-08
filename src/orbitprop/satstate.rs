@@ -29,9 +29,31 @@ impl SatState {
         }
     }
 
+    pub fn pos(&self) -> na::Vector3<f64> {
+        self.pv.fixed_view::<3, 1>(0, 0).into()
+    }
+
+    pub fn vel(&self) -> na::Vector3<f64> {
+        self.pv.fixed_view::<3, 1>(3, 0).into()
+    }
+
     /// set covariance
     pub fn set_cov(&mut self, cov: StateCov) {
         self.cov = cov;
+    }
+
+    /// Quaternion to go from gcrf to position, velocity, angular momentum frame
+    pub fn qgcrf2pvh(&self) -> na::UnitQuaternion<f64> {
+        type Quat = na::UnitQuaternion<f64>;
+
+        // position and velocity might not be orthogonal ; orbits are not perfect
+        // 2-body problems, so remove any position component of velocity
+        let p = self.pos();
+        let mut v = self.vel();
+        v = v - p * (p.dot(&v)) / p.norm_squared();
+        let q1 = Quat::rotation_between(&na::Vector3::x_axis(), &p).unwrap();
+        let q2 = Quat::rotation_between(&(q1 * na::Vector3::y_axis()), &v).unwrap();
+        q2 * q1
     }
 
     /// Set position uncertainty (1-sigma) in the
@@ -161,6 +183,27 @@ impl std::fmt::Display for SatState {
 mod test {
     use super::*;
     use crate::univ;
+
+    #[test]
+    fn test_qgcrf2pvh() -> AstroResult<()> {
+        let satstate = SatState::from_pv(
+            &AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0),
+            &na::vector![univ::GEO_R, 0.0, 0.0],
+            &na::vector![0.0, (univ::MU_EARTH / univ::GEO_R).sqrt(), 0.0],
+        );
+
+        let state2 = satstate.propagate(&(satstate.time + crate::Duration::Hours(3.56)), None)?;
+
+        let rx = state2.qgcrf2pvh().conjugate() * state2.pos();
+        let ry = state2.qgcrf2pvh().conjugate() * state2.vel();
+        let rz = state2.qgcrf2pvh().conjugate() * (state2.pos().cross(&state2.vel()));
+
+        assert!((rx.dot(&na::Vector3::<f64>::x_axis()) / rx.norm() - 1.0).abs() < 1.0e-6);
+        assert!((ry.dot(&na::Vector3::<f64>::y_axis()) / ry.norm() - 1.0).abs() < 1.0e-6);
+        assert!((rz.dot(&na::Vector3::<f64>::z_axis()) / rz.norm() - 1.0).abs() < 1.0e-6);
+
+        Ok(())
+    }
 
     #[test]
     fn test_satstate() -> AstroResult<()> {
