@@ -88,6 +88,15 @@ class satstate():
         """
         
     @property
+    def qgcrf2pvh(self) -> satkit.quaternion:
+        """
+        Return quaternion that rotates from the 
+        Geocentric Celestrial Reference Frame (GCRF) 
+        to the local position-velocity-angular momentum
+        (PVH) frame for the current state
+        """
+        
+    @property
     def cov(self) -> npt.ArrayLike[np.float64]|None:
         """
         return state covariance matrix in GCRF frame

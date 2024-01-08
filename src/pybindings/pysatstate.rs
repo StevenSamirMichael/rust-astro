@@ -1,5 +1,6 @@
 use super::pyastrotime::PyAstroTime;
 use super::pypropsettings::PyPropSettings;
+use super::pyquaternion::Quaternion;
 
 use nalgebra as na;
 use numpy as np;
@@ -110,6 +111,13 @@ impl PySatState {
                 }
             }
         })
+    }
+
+    #[getter]
+    fn get_qgcrf2pvh(&self) -> Quaternion {
+        Quaternion {
+            inner: self.inner.qgcrf2pvh(),
+        }
     }
 
     #[getter]
