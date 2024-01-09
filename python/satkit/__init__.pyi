@@ -15,11 +15,12 @@ from . import frametransform
 from . import moon
 from . import sun
 from . import satprop
+from . import density
 
 __all__ = ['time', 'duration', 'timescale', 'quaternion', 'sgp4', 'gravmodel', 'gravity',
            'nrlmsise00', 'univ', 'solarsystem', 'TLE',
            'itrfcoord', 'frametransform', 'moon', 'sun',
-           'satprop', 'jplephem', 'utils']
+           'satprop', 'jplephem', 'utils', 'density']
 
 
 class TLE():

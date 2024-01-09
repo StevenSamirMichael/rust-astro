@@ -3,6 +3,7 @@ use pyo3::{wrap_pyfunction, wrap_pymodule};
 
 mod mod_utils;
 mod pyastrotime;
+mod pydensity;
 mod pyduration;
 mod pyframetransform;
 mod pygravity;
@@ -124,6 +125,7 @@ pub fn satkit(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(satprop))?;
 
     m.add_wrapped(wrap_pymodule!(mod_utils::utils))?;
+    m.add_wrapped(wrap_pymodule!(pydensity::density))?;
 
     Ok(())
 }

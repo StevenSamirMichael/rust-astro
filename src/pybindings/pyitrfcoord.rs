@@ -24,6 +24,7 @@ use super::pyutils::*;
 /// and North-East-Down frame at this coordinate
 ///
 #[pyclass(name = "itrfcoord")]
+#[derive(Clone)]
 pub struct PyITRFCoord {
     pub inner: ITRFCoord,
 }
