@@ -165,7 +165,7 @@ pub fn nrlmsise(
             std::ptr::addr_of_mut!(output),
         );
     }
-    (output.d[5] * 1.0e-3, output.t[1])
+    (output.d[5] * 1.0e3, output.t[1])
 }
 
 #[cfg(test)]
