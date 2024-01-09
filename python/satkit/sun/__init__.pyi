@@ -154,6 +154,6 @@ def rise_set(time: satkit.time,
 
     Returns Tuple:
 
-    (sunrise: satkitTime, sunset: satkitTime)
+    (sunrise: satkit.time, sunset: satkit.time)
 
     """
