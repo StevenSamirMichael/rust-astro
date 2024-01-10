@@ -1,4 +1,4 @@
-use crate::univ;
+use crate::consts;
 use crate::AstroTime;
 use crate::TimeScale;
 
@@ -56,7 +56,7 @@ pub fn pos_gcrf(time: &AstroTime) -> na::Vector3<f64> {
     // Convert values above from degrees to radians
     // for remainder of computations
 
-    let rmag: f64 = univ::EARTH_RADIUS / f64::sin(hparallax);
+    let rmag: f64 = consts::EARTH_RADIUS / f64::sin(hparallax);
 
     rmag * na::Vector3::<f64>::new(
         f64::cos(phi_ecliptic) * f64::cos(lambda_ecliptic),

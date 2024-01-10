@@ -6,6 +6,8 @@ pub mod types;
 
 /// Time and time bases (UTC, TAI, GPS, TT, etc...)
 pub mod astrotime;
+/// Universal constants
+pub mod consts;
 /// Earth orientation parameters (polar motion, delta-UT1, lenth of day)
 pub mod earth_orientation_params;
 /// Zonal gravity model
@@ -29,8 +31,6 @@ mod solarsystem;
 pub mod spaceweather;
 /// Two-line Element Set
 pub mod tle;
-/// Universal constants
-pub mod univ;
 /// Utility functions
 pub mod utils;
 

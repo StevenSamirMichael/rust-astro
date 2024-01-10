@@ -491,9 +491,9 @@ mod tests {
 
     use super::*;
 
+    use crate::consts::OMEGA_EARTH;
     use crate::itrfcoord::ITRFCoord;
     use crate::types::Vec3;
-    use crate::univ::OMEGA_EARTH;
     use std::f64::consts::PI;
 
     #[test]

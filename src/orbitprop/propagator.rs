@@ -8,6 +8,7 @@ use crate::lpephem;
 use crate::ode;
 use crate::ode::RKAdaptive;
 use crate::SolarSystem;
+use lpephem::sun::shadowfunc;
 
 use crate::utils::AstroResult;
 
@@ -15,8 +16,8 @@ use num_traits::identities::Zero;
 
 use std::vec::Vec;
 
+use crate::consts;
 use crate::orbitprop::SatProperties;
-use crate::univ;
 
 use thiserror::Error;
 
@@ -133,22 +134,25 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
             accel += qitrf2gcrf * gravity_itrf;
 
             // Acceleration due to moon
-            accel += point_gravity(&pos_gcrf, &moon_gcrf, crate::univ::MU_MOON);
+            accel += point_gravity(&pos_gcrf, &moon_gcrf, crate::consts::MU_MOON);
 
             // Acceleration due to sun
-            accel += point_gravity(&pos_gcrf, &sun_gcrf, crate::univ::MU_SUN);
+            accel += point_gravity(&pos_gcrf, &sun_gcrf, crate::consts::MU_SUN);
 
             // Add solar pressure & drag if that is defined in satellite properties
             if let Some(props) = self.satprops {
                 let ss = y.fixed_view::<6, 1>(0, 0);
 
                 // Compute solar pressure
-                let solarpressure =
-                    -props.cr_a_over_m(&tm, &ss.into()) * 4.56e-6 * sun_gcrf / sun_gcrf.norm();
+                let solarpressure = -shadowfunc(&sun_gcrf, &pos_gcrf)
+                    * props.cr_a_over_m(&tm, &ss.into())
+                    * 4.56e-6
+                    * sun_gcrf
+                    / sun_gcrf.norm();
                 accel += solarpressure;
 
                 // Compute drag
-                if pos_gcrf.norm() < 700.0e3 + crate::univ::EARTH_RADIUS {
+                if pos_gcrf.norm() < 700.0e3 + crate::consts::EARTH_RADIUS {
                     let cd_a_over_m = props.cd_a_over_m(&tm, &ss.into());
 
                     if cd_a_over_m > 1e-6 {
@@ -161,7 +165,7 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
                             self.settings.use_spaceweather,
                         );
                         const OMEGA_EARTH: na::Vector3<f64> =
-                            na::vector![0.0, 0.0, crate::univ::OMEGA_EARTH];
+                            na::vector![0.0, 0.0, crate::consts::OMEGA_EARTH];
 
                         // See Vallado section 3.7.2: Velocity & Acceleration Transformations
                         let vel_itrf = qgcrf2itrf * vel_gcrf - OMEGA_EARTH.cross(&pos_itrf);
@@ -189,9 +193,9 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
             let (gravity_accel, gravity_partials) = earthgravity::jgm3()
                 .accel_and_partials(&pos_itrf, self.settings.gravity_order as usize);
             let (sun_accel, sun_partials) =
-                point_gravity_and_partials(&pos_gcrf, &sun_gcrf, univ::MU_SUN);
+                point_gravity_and_partials(&pos_gcrf, &sun_gcrf, consts::MU_SUN);
             let (moon_accel, moon_partials) =
-                point_gravity_and_partials(&pos_gcrf, &moon_gcrf, univ::MU_MOON);
+                point_gravity_and_partials(&pos_gcrf, &moon_gcrf, consts::MU_MOON);
 
             let accel = qitrf2gcrf * gravity_accel + sun_accel + moon_accel;
 
@@ -310,7 +314,7 @@ pub fn propagate<const C: usize>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::univ;
+    use crate::consts;
 
     #[test]
     fn test_propagate() -> AstroResult<()> {
@@ -318,8 +322,8 @@ mod tests {
         let stoptime = starttime + 1.0;
 
         let mut state: SimpleState = SimpleState::zeros();
-        state[0] = univ::GEO_R;
-        state[4] = (univ::MU_EARTH / univ::GEO_R).sqrt();
+        state[0] = consts::GEO_R;
+        state[4] = (consts::MU_EARTH / consts::GEO_R).sqrt();
 
         let mut settings = PropSettings::default();
         settings.abs_error = 1.0e-9;
@@ -347,8 +351,8 @@ mod tests {
         let stoptime = starttime + 1.0;
 
         let mut state: CovState = CovState::zeros();
-        state[0] = univ::GEO_R;
-        state[4] = (univ::MU_EARTH / univ::GEO_R).sqrt();
+        state[0] = consts::GEO_R;
+        state[4] = (consts::MU_EARTH / consts::GEO_R).sqrt();
         state
             .fixed_view_mut::<6, 6>(0, 1)
             .copy_from(&na::Matrix6::<f64>::identity());

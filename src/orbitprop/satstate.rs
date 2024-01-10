@@ -182,14 +182,14 @@ impl std::fmt::Display for SatState {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::univ;
+    use crate::consts;
 
     #[test]
     fn test_qgcrf2pvh() -> AstroResult<()> {
         let satstate = SatState::from_pv(
             &AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0),
-            &na::vector![univ::GEO_R, 0.0, 0.0],
-            &na::vector![0.0, (univ::MU_EARTH / univ::GEO_R).sqrt(), 0.0],
+            &na::vector![consts::GEO_R, 0.0, 0.0],
+            &na::vector![0.0, (consts::MU_EARTH / consts::GEO_R).sqrt(), 0.0],
         );
 
         let state2 = satstate.propagate(&(satstate.time + crate::Duration::Hours(3.56)), None)?;
@@ -209,8 +209,8 @@ mod test {
     fn test_satstate() -> AstroResult<()> {
         let satstate = SatState::from_pv(
             &AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0),
-            &na::vector![univ::GEO_R, 0.0, 0.0],
-            &na::vector![0.0, (univ::MU_EARTH / univ::GEO_R).sqrt(), 0.0],
+            &na::vector![consts::GEO_R, 0.0, 0.0],
+            &na::vector![0.0, (consts::MU_EARTH / consts::GEO_R).sqrt(), 0.0],
         );
         println!("state orig = {:?}", satstate);
 
@@ -227,8 +227,8 @@ mod test {
     fn test_satcov() -> AstroResult<()> {
         let mut satstate = SatState::from_pv(
             &AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0),
-            &na::vector![univ::GEO_R, 0.0, 0.0],
-            &na::vector![0.0, (univ::MU_EARTH / univ::GEO_R).sqrt(), 0.0],
+            &na::vector![consts::GEO_R, 0.0, 0.0],
+            &na::vector![0.0, (consts::MU_EARTH / consts::GEO_R).sqrt(), 0.0],
         );
         satstate.set_pvh_pos_uncertainty(&na::vector![1.0, 1.0, 1.0]);
         println!("state orig = {:?}", satstate.cov);

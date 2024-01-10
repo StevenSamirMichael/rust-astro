@@ -1,4 +1,4 @@
-use crate::univ;
+use crate::consts;
 use crate::AstroTime;
 use crate::ITRFCoord;
 use crate::TimeScale;
@@ -6,6 +6,8 @@ use crate::TimeScale;
 use crate::utils::{astroerr, AstroResult};
 
 use nalgebra as na;
+
+type Vec3 = na::Vector3<f64>;
 
 ///
 /// Sun position in the Geocentric Celestial Reference Frame (GCRF)
@@ -64,13 +66,40 @@ pub fn pos_mod(time: &AstroTime) -> na::Vector3<f64> {
 
     // Magnitude of sun vector
     let r: f64 =
-        univ::AU * (1.000140612 - 0.016708617 * f64::cos(M) - 0.000139589 * f64::cos(2. * M));
+        consts::AU * (1.000140612 - 0.016708617 * f64::cos(M) - 0.000139589 * f64::cos(2. * M));
 
     na::Vector3::<f64>::new(
         r * f64::cos(lambda_ecliptic),
         r * f64::sin(lambda_ecliptic) * f64::cos(epsilon),
         r * f64::sin(lambda_ecliptic) * f64::sin(epsilon),
     )
+}
+
+///
+/// Fraction of sunlight shadowed by Earth
+/// in range [0,1]
+///
+/// 0 = full occlusion
+/// 1 = full sunlight
+///
+/// See algorithm in Section 3.4.2 of Montenbruck and Gill for calculation
+///
+///
+pub fn shadowfunc(psun: &Vec3, psat: &Vec3) -> f64 {
+    let a = (consts::SUN_RADIUS / (psun - psat).norm()).asin();
+    let b = (consts::EARTH_RADIUS / psat.norm()).asin();
+    let snorm = psat.norm();
+    let c = (-psat.dot(&(psun - psat)) / snorm / (psun - psat).norm()).acos();
+    if a + b <= c {
+        1.0
+    } else if c < b - a {
+        0.0
+    } else {
+        let x = (c * c + a * a - b * b) / 2.0 / c;
+        let y = (a * a - x * x).sqrt();
+        let big_a = a * a * (x / a).acos() + b * b * ((c - x) / b).acos() - c * y;
+        1.0 - big_a / std::f64::consts::PI / a / a
+    }
 }
 
 ///

@@ -3,6 +3,7 @@ use pyo3::{wrap_pyfunction, wrap_pymodule};
 
 mod mod_utils;
 mod pyastrotime;
+mod pyconsts;
 mod pydensity;
 mod pyduration;
 mod pyframetransform;
@@ -17,7 +18,6 @@ mod pysatstate;
 mod pysgp4;
 mod pysolarsystem;
 mod pytle;
-mod pyuniv;
 
 mod pypropagate;
 mod pypropsettings;
@@ -112,7 +112,7 @@ pub fn satkit(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pynrlmsise::nrlmsise00, m)?)
         .unwrap();
 
-    m.add_class::<pyuniv::Consts>()?;
+    m.add_class::<pyconsts::Consts>()?;
     m.add_class::<SolarSystem>()?;
     m.add_class::<pytle::PyTLE>()?;
 
