@@ -1,6 +1,6 @@
 !#######################################################################
-! MSIS® (NRL-SOF-014-1) SOFTWARE
-! NRLMSIS® empirical atmospheric model software. Use is governed by the
+! MSISï¿½ (NRL-SOF-014-1) SOFTWARE
+! NRLMSISï¿½ empirical atmospheric model software. Use is governed by the
 ! Open Source Academic Research License Agreement contained in the file
 ! nrlmsis2.1_license.txt, which is part of this software package. BY
 ! USING OR MODIFYING THIS SOFTWARE, YOU ARE AGREEING TO THE TERMS AND
@@ -155,11 +155,12 @@ contains
   ! MSISINIT: Entry point for initializing model and loading parameters
   !==================================================================================================
   subroutine msisinit(parmpath,parmfile,iun,switch_gfn,switch_legacy, &
-                      lzalt_type,lspec_select,lmass_include,lN2_msis00)
+                      lzalt_type,lspec_select,lmass_include,lN2_msis00) bind(c, name="c_msisinit")
 
     use msis_constants, only : specmass, nspec, maxnbf 
 
     implicit none
+
 
     character(len=*), intent(in), optional    :: parmpath                 !Path to parameter file
     character(len=*), intent(in), optional    :: parmfile                 !Parameter file name

@@ -14,6 +14,7 @@ use crate::AstroTime;
 ///   6 : Average of eight 3 hr AP indicies from 36 to 57 hrs
 ///           prior to current time
 #[repr(C)]
+#[allow(non_camel_case_types)]
 struct ap_array {
     a: [cty::c_double; 7],
 }
@@ -26,6 +27,7 @@ struct ap_array {
 ///   array "switches" needs to be set accordingly by the calling program.
 //   The arrays sw and swc are set internally.
 #[repr(C)]
+#[allow(non_camel_case_types)]
 struct nrlmsise_flags {
     switches: [cty::c_int; 24],
     sw: [cty::c_double; 24],
@@ -33,6 +35,7 @@ struct nrlmsise_flags {
 }
 
 #[repr(C)]
+#[allow(non_camel_case_types)]
 struct nrlmsise_input {
     year: cty::c_int,     /* Year, currently ignored */
     day: cty::c_int,      /* day of year */
@@ -60,6 +63,7 @@ struct nrlmsise_input {
 ///      t[0] - EXOSPHERIC TEMPERATURE
 ///      t[1] - TEMPERATURE AT ALT
 #[repr(C)]
+#[allow(non_camel_case_types)]
 struct nrlmsise_output {
     d: [cty::c_double; 9],
     t: [cty::c_double; 2],

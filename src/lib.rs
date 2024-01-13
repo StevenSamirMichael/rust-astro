@@ -20,8 +20,12 @@ pub mod itrfcoord;
 /// Solar system body ephemerides, as published by JPL
 pub mod jplephem;
 pub mod lpephem;
-/// NRL-MISE00 Density model
+/// NRL-MISE00 Density Model
 pub mod nrlmsise;
+/// NRL-MSIES 2.1 Density Model
+#[cfg(feature = "nrlmsise2")]
+pub mod nrlmsise2;
+
 /// Orbit Propagation
 pub mod orbitprop;
 /// SGP-4 Orbit Propagator

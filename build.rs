@@ -1,6 +1,7 @@
 use std::process::Command;
 
-fn main() {
+#[cfg(feature = "nrlmsise2")]
+fn build_nrlmsise2() {
     let nrlmsise21_files = [
         "msis_constants.F90",
         "msis_utils.F90",
@@ -18,11 +19,19 @@ fn main() {
                 .map(|&file| format!("extern/nrlmsise2.1/{}", file)),
         )
         .compiler("gfortran")
-        .flag("-std=legacy")
         .flag("-w")
         .flag("-O3")
         .flag("-Jextern/nrlmsise2.1/")
         .compile("nrlmsise21");
+
+    println!("cargo:rustc-link-search=all=/usr/local/gfortran/lib");
+    println!("cargo:rustc-link-lib=static=gfortran");
+    println!("cargo:rustc-link-lib=static=gomp");
+}
+
+fn main() {
+    #[cfg(feature = "nrlmsise2")]
+    build_nrlmsise2();
 
     cc::Build::new()
         .file("extern/nrlmsise/nrlmsise-00.c")
@@ -38,6 +47,8 @@ fn main() {
     println!("cargo:rustc-env=GIT_HASH={}", git_hash);
     let build_date = chrono::Utc::now().to_rfc3339();
     println!("cargo:rustc-env=BUILD_DATE={}", build_date);
+
+    //println!("cargo:rustc-link-lib=gfortran");
     #[cfg(feature = "pybindings")]
     pyo3_build_config::add_extension_module_link_args();
 }
