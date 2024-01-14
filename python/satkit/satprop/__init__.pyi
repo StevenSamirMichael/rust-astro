@@ -127,11 +127,24 @@ class satproperties_static:
     paramters be set to static values for duration of propagation
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """
-        Create default object with:
-        Cd A over M = 0 m^2/kg
-        Cr A over M = 0 m^2/kg
+        Create a satproperties_static object
+        with given craoverm and cdaoverm in m^2/kg
+
+        if arguments are passed in,
+        1st is craoverm
+        2nd is cdaoverm
+
+        Can also set via keywords"
+        "craoverm" and "cdaoverm"
+
+        Example:
+
+        properties = satproperties_static(craoverm = 0.5, cdaoverm = 0.4)
+        or with same output
+        properties = satproperties_static(0.5, 0.4)
+
 
         properties that are gettable / settable:
         "craoverm"
