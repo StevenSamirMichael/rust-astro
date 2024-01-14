@@ -153,6 +153,7 @@ impl std::fmt::Display for AstroTime {
 
 impl std::ops::Add<f64> for AstroTime {
     type Output = Self;
+    #[inline]
     fn add(self, other: f64) -> Self::Output {
         AstroTime::from_mjd(self.mjd_tai + other, Scale::TAI)
     }
@@ -160,6 +161,7 @@ impl std::ops::Add<f64> for AstroTime {
 
 impl std::ops::Add<Duration> for AstroTime {
     type Output = Self;
+    #[inline]
     fn add(self, other: Duration) -> Self::Output {
         Self {
             mjd_tai: self.mjd_tai + other.days(),
@@ -169,6 +171,7 @@ impl std::ops::Add<Duration> for AstroTime {
 
 impl std::ops::Sub<Duration> for AstroTime {
     type Output = Self;
+    #[inline]
     fn sub(self, other: Duration) -> Self::Output {
         Self {
             mjd_tai: self.mjd_tai - other.days(),

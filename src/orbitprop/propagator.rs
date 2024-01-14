@@ -1,3 +1,5 @@
+use super::drag::{drag_and_partials, drag_force};
+use super::point_gravity::{point_gravity, point_gravity_and_partials};
 use super::settings::PropSettings;
 
 use crate::astrotime::AstroTime;
@@ -7,7 +9,7 @@ use crate::jplephem;
 use crate::lpephem;
 use crate::ode;
 use crate::ode::RKAdaptive;
-use crate::ITRFCoord;
+use crate::Duration;
 use crate::SolarSystem;
 use lpephem::sun::shadowfunc;
 
@@ -24,19 +26,6 @@ use thiserror::Error;
 
 use nalgebra as na;
 
-const OMEGA_EARTH: na::Vector3<f64> = na::vector![0.0, 0.0, crate::consts::OMEGA_EARTH];
-const OMEGA_EARTH_MATRIX: na::Matrix3<f64> = na::Matrix3::new(
-    0.0,
-    -crate::consts::OMEGA_EARTH,
-    0.0,
-    crate::consts::OMEGA_EARTH,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-);
-
 #[derive(Debug)]
 pub struct PropagationResult<T> {
     pub time: Vec<AstroTime>,
@@ -52,86 +41,6 @@ pub type SimpleState = StateType<1>;
 // Covariance State in includes
 pub type CovState = StateType<7>;
 
-// Equation 3.37 in Montenbruck & Gill
-fn point_gravity(
-    r: &na::Vector3<f64>, // object
-    s: &na::Vector3<f64>, // distant attractor
-    mu: f64,
-) -> na::Vector3<f64> {
-    let sr = s - r;
-    let srnorm2 = sr.norm_squared();
-    let srnorm = srnorm2.sqrt();
-    let snorm2 = s.norm_squared();
-    let snorm = snorm2.sqrt();
-    mu * (sr / (srnorm * srnorm2) - s / (snorm * snorm2))
-}
-
-// Return tuple with point gravity force and
-// point gravity partial (da/dr)
-// Equation 3.37 in Montenbruck & Gill for point gravity
-// Equation 7.75 in Montenbruck & Gill for partials
-
-fn point_gravity_and_partials(
-    r: &na::Vector3<f64>, // object
-    s: &na::Vector3<f64>, // distant attractur
-    mu: f64,
-) -> (na::Vector3<f64>, na::Matrix3<f64>) {
-    let rs = r - s;
-    let rsnorm2 = rs.norm_squared();
-    let rsnorm = rsnorm2.sqrt();
-    let snorm2 = s.norm_squared();
-    let snorm = snorm2.sqrt();
-    (
-        -mu * (rs / (rsnorm * rsnorm2) + s / (snorm * snorm2)),
-        -mu * (na::Matrix3::<f64>::identity() / (rsnorm2 * rsnorm)
-            - 3.0 * rs * rs.transpose() / (rsnorm2 * rsnorm2 * rsnorm)),
-    )
-}
-
-//
-// Return density (rho)
-// and density partials (drho / dr)
-//
-// Partials are used for computing state transition matrix
-// and must be explicitly computed ... ughhh.
-fn compute_rho_drhodr(
-    pgcrf: &na::Vector3<f64>,
-    qgcrf2itrf: &crate::frametransform::Quat,
-    tm: &AstroTime,
-    use_spaceweather: bool,
-) -> (f64, na::Vector3<f64>) {
-    let dx = 10.0;
-    let itrf = ITRFCoord::from(qgcrf2itrf * pgcrf);
-    let offset_vecs = vec![
-        na::vector![dx, 0.0, 0.0],
-        na::vector![0.0, dx, 0.0],
-        na::vector![0.0, 0.0, dx],
-    ];
-    let (density0, _temperature) = crate::nrlmsise::nrlmsise(
-        itrf.hae() / 1.0e3,
-        Some(itrf.latitude_rad()),
-        Some(itrf.longitude_rad()),
-        Some(*tm),
-        use_spaceweather,
-    );
-    let drhodr: Vec<f64> = offset_vecs
-        .iter()
-        .map(|v| {
-            let itrf_off = ITRFCoord::from(qgcrf2itrf * (pgcrf + v));
-            let (density, _temperature) = crate::nrlmsise::nrlmsise(
-                itrf_off.hae() / 1.0e3,
-                Some(itrf_off.latitude_rad()),
-                Some(itrf_off.longitude_rad()),
-                Some(*tm),
-                use_spaceweather,
-            );
-            (density - density0) / dx
-        })
-        .collect();
-
-    (density0, na::vector![drhodr[0], drhodr[1], drhodr[2]])
-}
-
 #[derive(Debug, Error)]
 pub enum PropagationError {
     #[error("Invalid number of columns: {c}")]
@@ -145,12 +54,26 @@ struct Propagation<'a, const C: usize> {
     satprops: Option<&'a dyn SatProperties>,
 }
 
+//
+// This actually implements the force model that is used to
+// integrate the ODE to get position and velocity
+//
+// State is position and velocity
+// Force is computed and integrated to get velocity
+// Velocity is integrated to get position
+//
+// If C=7, a 6x6 state transition matrix is appended as additional
+// colums, making the integrated "state" a 6x7 matrix
+// The state transition matrix can be used to propagate covariances
+//
+// See Montenbruk & Gill for details (Chapter 7)
+//
 impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
     type Output = StateType<C>;
 
     fn ydot(&mut self, x: f64, y: &Self::Output) -> ode::ODEResult<Self::Output> {
-        let tm: AstroTime = self.start + x / 86400.0;
-        //println!("tm = {} :: {} :: x = {}", self.start, tm, x);
+        // The time variable in the ODE is in seconds
+        let time: AstroTime = self.start + Duration::Seconds(x);
 
         // get GCRS position & velocity;
         let pos_gcrf: na::Vector3<f64> = y.fixed_view::<3, 1>(0, 0).into();
@@ -159,10 +82,13 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
         // Moon position
         let (sun_gcrf, moon_gcrf) = match self.settings.use_jplephem {
             true => (
-                jplephem::geocentric_pos(SolarSystem::SUN, &tm)?,
-                jplephem::geocentric_pos(SolarSystem::MOON, &tm)?,
+                jplephem::geocentric_pos(SolarSystem::SUN, &time)?,
+                jplephem::geocentric_pos(SolarSystem::MOON, &time)?,
             ),
-            false => (lpephem::sun::pos_gcrf(&tm), lpephem::moon::pos_gcrf(&tm)),
+            false => (
+                lpephem::sun::pos_gcrf(&time),
+                lpephem::moon::pos_gcrf(&time),
+            ),
         };
 
         // Get rotation from gcrf to itrf frame from interpolation table
@@ -203,7 +129,7 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
 
                 // Compute solar pressure
                 let solarpressure = -shadowfunc(&sun_gcrf, &pos_gcrf)
-                    * props.cr_a_over_m(&tm, &ss.into())
+                    * props.cr_a_over_m(&time, &ss.into())
                     * 4.56e-6
                     * sun_gcrf
                     / sun_gcrf.norm();
@@ -211,26 +137,17 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
 
                 // Compute drag
                 if pos_gcrf.norm() < 700.0e3 + crate::consts::EARTH_RADIUS {
-                    let cd_a_over_m = props.cd_a_over_m(&tm, &ss.into());
+                    let cd_a_over_m = props.cd_a_over_m(&time, &ss.into());
 
                     if cd_a_over_m > 1e-6 {
-                        let itrf = ITRFCoord::from(pos_itrf.as_slice());
-                        let (density, _temperature) = crate::nrlmsise::nrlmsise(
-                            itrf.hae() / 1.0e3,
-                            Some(itrf.latitude_rad()),
-                            Some(itrf.longitude_rad()),
-                            Some(tm),
+                        accel += drag_force(
+                            &pos_gcrf,
+                            &pos_itrf,
+                            &vel_gcrf,
+                            &time,
+                            cd_a_over_m,
                             self.settings.use_spaceweather,
                         );
-
-                        // The "wind" moves along with the rotation earth, so we subtract off the
-                        // rotation Earth part in while still staying in the gcrf frame
-                        // to get velocity relative to wind in gcrf frame
-                        // This is a little confusing, but if you think about it long enough
-                        // it will make sense
-                        let vrel = vel_gcrf - OMEGA_EARTH.cross(&pos_gcrf);
-                        let drag_accel_gcrf = -0.5 * cd_a_over_m * density * vrel * vrel.norm();
-                        accel += drag_accel_gcrf;
                     }
                 }
             } // end of handling drag & solarpressure
@@ -243,7 +160,11 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
             dy.fixed_view_mut::<3, 1>(3, 0).copy_from(&accel);
 
             Ok(dy)
-        } else if C == 7 {
+        }
+        // If C==7, we are also integrating the state transition matrix
+        else if C == 7 {
+            // For state transition matrix, we need to compute force partials with respect to position
+            // (for all forces but drag, partial with respect to velocity are zero)
             let (gravity_accel, gravity_partials) = earthgravity::jgm3()
                 .accel_and_partials(&pos_itrf, self.settings.gravity_order as usize);
             let (sun_accel, sun_partials) =
@@ -259,65 +180,57 @@ impl<'a, const C: usize> ode::ODESystem for Propagation<'a, C> {
                 .copy_from(&na::Matrix3::<f64>::identity());
 
             let ritrf2gcrf = qitrf2gcrf.to_rotation_matrix();
+            // Sum partials with respect to position for gravity, sun, and moon
+            // Note: gravity partials need to be rotated into the gcrf frame from itrf
             let mut dadr = ritrf2gcrf * gravity_partials * ritrf2gcrf.transpose()
                 + sun_partials
                 + moon_partials;
 
             // Handle satellite properties for drag and radiation pressure
             if let Some(props) = self.satprops {
+                // Satellite state as 6-element position, velcoity matrix
+                // used to query cd_a_over_m
+                let ss = y.fixed_view::<6, 1>(0, 0);
+
+                // Compute solar pressure
+                // Partials for this are very small since the sun is very very far away, changes in
+                // satellite position don't change radiaion pressure much, so we will ignore...
+                let solarpressure = -shadowfunc(&sun_gcrf, &pos_gcrf)
+                    * props.cr_a_over_m(&time, &ss.into())
+                    * 4.56e-6
+                    * sun_gcrf
+                    / sun_gcrf.norm();
+                accel += solarpressure;
+
+                // We know drag is negligible above 700 km, so ignore if this is the case
                 if pos_gcrf.norm() < 700.0e3 + crate::consts::EARTH_RADIUS {
-                    // Satellite state as 6-element position, velcoity matrix
-                    // used to query cd_a_over_m
-                    let ss = y.fixed_view::<6, 1>(0, 0);
-
-                    // Compute solar pressure
-                    // Partials for this are very small since the sun is very very far away, changes in
-                    // satellite position don't change radiaion pressure much, so we will ignore...
-                    let solarpressure = -shadowfunc(&sun_gcrf, &pos_gcrf)
-                        * props.cr_a_over_m(&tm, &ss.into())
-                        * 4.56e-6
-                        * sun_gcrf
-                        / sun_gcrf.norm();
-                    accel += solarpressure;
-
-                    let cd_a_over_m = props.cd_a_over_m(&tm, &ss.into());
+                    let cd_a_over_m = props.cd_a_over_m(&time, &ss.into());
                     if cd_a_over_m > 1e-6 {
-                        let (density, drhodr) = compute_rho_drhodr(
+                        let (drag_accel, ddragaccel_dr, ddragaccel_dv) = drag_and_partials(
                             &pos_gcrf,
                             &qgcrf2itrf,
-                            &tm,
+                            &vel_gcrf,
+                            &time,
+                            cd_a_over_m,
                             self.settings.use_spaceweather,
                         );
 
-                        // The "wind" moves along with the rotation earth, so we subtract off the
-                        // rotation Earth part in while still staying in the gcrf frame
-                        // to get velocity relative to wind in gcrf frame
-                        // This is a little confusing, but if you think about it long enough
-                        // it will make sense
-                        let vrel = vel_gcrf - OMEGA_EARTH.cross(&pos_gcrf);
+                        // Add acceleration from drag to accel vector
+                        accel += drag_accel;
 
-                        let drag_accel_gcrf = -0.5 * cd_a_over_m * density * vrel * vrel.norm();
-                        accel += drag_accel_gcrf;
+                        // Add drag partials with respect to position to
+                        // daccel dr
+                        dadr += ddragaccel_dr;
 
-                        // Now partials
-                        // Equation 7.81 and 7.84
-                        let dacceldv = -0.5
-                            * cd_a_over_m
-                            * density
-                            * (vrel * vrel.transpose() / vrel.norm()
-                                - vrel.norm() * na::Matrix3::<f64>::identity());
-
-                        let dacceldr =
-                            -0.5 * cd_a_over_m * density * vrel * vrel.norm() * drhodr.transpose()
-                                - dacceldv * OMEGA_EARTH_MATRIX;
-
-                        dadr += dacceldr;
-                        dfdy.fixed_view_mut::<3, 3>(3, 3).copy_from(&dacceldv);
+                        // Drag is the only force term that produces a finite partial with respect
+                        // to velocity, so copy it directly into dfdy here.
+                        dfdy.fixed_view_mut::<3, 3>(3, 3).copy_from(&ddragaccel_dv);
                     }
                 }
             }
             dfdy.fixed_view_mut::<3, 3>(3, 0).copy_from(&dadr);
 
+            // Derivative of state transition matrix is dfdy * state transition matrix
             let dphi: na::Matrix<f64, na::Const<6>, na::Const<6>, na::ArrayStorage<f64, 6, 6>> =
                 dfdy * y.fixed_view::<6, 6>(0, 1);
 

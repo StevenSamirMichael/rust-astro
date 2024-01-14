@@ -10,6 +10,7 @@ pub enum Duration {
 }
 
 impl Duration {
+    #[inline]
     pub fn days(&self) -> f64 {
         match self {
             Duration::Days(v) => *v,
@@ -19,6 +20,7 @@ impl Duration {
             Duration::Hours(v) => *v / 24.0,
         }
     }
+    #[inline]
     pub fn seconds(&self) -> f64 {
         match self {
             Duration::Days(v) => *v * 86400.0,
@@ -28,6 +30,7 @@ impl Duration {
             Duration::Hours(v) => *v * 3600.0,
         }
     }
+    #[inline]
     pub fn hours(&self) -> f64 {
         match self {
             Duration::Days(v) => *v * 24.0,
@@ -37,7 +40,7 @@ impl Duration {
             Duration::Years(v) => *v * 24.0 * 365.25,
         }
     }
-
+    #[inline]
     pub fn minutes(&self) -> f64 {
         match self {
             Duration::Days(v) => *v * 1440.0,
@@ -76,6 +79,7 @@ impl Duration {
 
 impl std::ops::Add<AstroTime> for Duration {
     type Output = AstroTime;
+    #[inline]
     fn add(self, other: AstroTime) -> AstroTime {
         other + self.days()
     }
@@ -83,6 +87,7 @@ impl std::ops::Add<AstroTime> for Duration {
 
 impl std::ops::Add<&AstroTime> for Duration {
     type Output = AstroTime;
+    #[inline]
     fn add(self, other: &AstroTime) -> AstroTime {
         *other + self.days()
     }
@@ -90,6 +95,7 @@ impl std::ops::Add<&AstroTime> for Duration {
 
 impl std::ops::Add<Duration> for Duration {
     type Output = Duration;
+    #[inline]
     fn add(self, other: Duration) -> Self::Output {
         Duration::Seconds(self.seconds() + other.seconds())
     }
@@ -97,6 +103,7 @@ impl std::ops::Add<Duration> for Duration {
 
 impl std::ops::Add<&Duration> for Duration {
     type Output = Duration;
+    #[inline]
     fn add(self, other: &Duration) -> Self::Output {
         Duration::Seconds(self.seconds() + other.seconds())
     }
@@ -104,6 +111,7 @@ impl std::ops::Add<&Duration> for Duration {
 
 impl std::ops::Add<Duration> for &Duration {
     type Output = Duration;
+    #[inline]
     fn add(self, other: Duration) -> Self::Output {
         Duration::Seconds(self.seconds() + other.seconds())
     }
@@ -111,6 +119,7 @@ impl std::ops::Add<Duration> for &Duration {
 
 impl std::ops::Sub<Duration> for Duration {
     type Output = Duration;
+    #[inline]
     fn sub(self, other: Duration) -> Self::Output {
         Duration::Seconds(self.seconds() - other.seconds())
     }
@@ -118,6 +127,7 @@ impl std::ops::Sub<Duration> for Duration {
 
 impl std::ops::Sub<&Duration> for Duration {
     type Output = Duration;
+    #[inline]
     fn sub(self, other: &Duration) -> Self::Output {
         Duration::Seconds(self.seconds() - other.seconds())
     }
@@ -125,6 +135,7 @@ impl std::ops::Sub<&Duration> for Duration {
 
 impl std::ops::Sub<Duration> for &Duration {
     type Output = Duration;
+    #[inline]
     fn sub(self, other: Duration) -> Self::Output {
         Duration::Seconds(self.seconds() - other.seconds())
     }
@@ -132,6 +143,7 @@ impl std::ops::Sub<Duration> for &Duration {
 
 impl std::ops::Sub<&Duration> for &Duration {
     type Output = Duration;
+    #[inline]
     fn sub(self, other: &Duration) -> Self::Output {
         Duration::Seconds(self.seconds() - other.seconds())
     }

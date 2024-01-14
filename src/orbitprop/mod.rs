@@ -1,9 +1,11 @@
 pub mod propagator;
 mod satproperties;
+mod satstate;
 /// Propagator Settings
 mod settings;
 
-mod satstate;
+mod drag;
+mod point_gravity;
 
 pub use propagator::*;
 pub use satproperties::SatProperties;
