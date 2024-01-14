@@ -26,8 +26,8 @@ impl SatPropertiesStatic {
     pub fn to_string(&self) -> String {
         format!(
             r#"Static Sat Properties:
-            Cd A / M : {} m^2/kg
-            Cr A / M : {} m^2/kg"#,
+              Cd A / M : {} m^2/kg
+              Cr A / M : {} m^2/kg"#,
             self.cdaoverm, self.craoverm,
         )
     }

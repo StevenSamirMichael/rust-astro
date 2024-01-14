@@ -199,30 +199,28 @@ pub fn propagate(
     pos: &np::PyArray1<f64>,
     vel: &np::PyArray1<f64>,
     start: &PyAstroTime,
-    kwargs: Option<&PyDict>,
+    mut kwargs: Option<&PyDict>,
 ) -> PyResult<Py<PyAny>> {
-    let mut mkwargs = kwargs.clone();
-
     if pos.len() != 3 || vel.len() != 3 {
         return Err(pyo3::exceptions::PyRuntimeError::new_err(
             "Position and velocity must be 1-d numpy arrays with length 3",
         ));
     }
-    let pypropsettings: Option<PyPropSettings> = kwargs_or_none(&mut mkwargs, "propsettings")?;
+    let pypropsettings: Option<PyPropSettings> = kwargs_or_none(&mut kwargs, "propsettings")?;
 
     let propsettings = match pypropsettings {
         Some(p) => p.inner,
         None => crate::orbitprop::PropSettings::default(),
     };
-    let mut dt_secs: Option<f64> = kwargs_or_none(&mut mkwargs, "dt_secs")?;
-    let dt_days: Option<f64> = kwargs_or_none(&mut mkwargs, "dt_days")?;
-    let dt_dur: Option<PyDuration> = kwargs_or_none(&mut mkwargs, "dt")?;
-    let duration_secs: Option<f64> = kwargs_or_none(&mut mkwargs, "duration_secs")?;
-    let pyduration: Option<PyDuration> = kwargs_or_none(&mut mkwargs, "duration")?;
-    let duration_days: Option<f64> = kwargs_or_none(&mut mkwargs, "duration_days")?;
-    let pystoptime: Option<PyAstroTime> = kwargs_or_none(&mut mkwargs, "stoptime")?;
-    let output_phi: bool = kwargs_or_default(&mut mkwargs, "output_phi", false)?;
-    let pysatproperties: Option<PySatProperties> = kwargs_or_none(&mut mkwargs, "satproperties")?;
+    let mut dt_secs: Option<f64> = kwargs_or_none(&mut kwargs, "dt_secs")?;
+    let dt_days: Option<f64> = kwargs_or_none(&mut kwargs, "dt_days")?;
+    let dt_dur: Option<PyDuration> = kwargs_or_none(&mut kwargs, "dt")?;
+    let duration_secs: Option<f64> = kwargs_or_none(&mut kwargs, "duration_secs")?;
+    let pyduration: Option<PyDuration> = kwargs_or_none(&mut kwargs, "duration")?;
+    let duration_days: Option<f64> = kwargs_or_none(&mut kwargs, "duration_days")?;
+    let pystoptime: Option<PyAstroTime> = kwargs_or_none(&mut kwargs, "stoptime")?;
+    let output_phi: bool = kwargs_or_default(&mut kwargs, "output_phi", false)?;
+    let pysatproperties: Option<PySatProperties> = kwargs_or_none(&mut kwargs, "satproperties")?;
 
     // get duration over which to compute solution
     match dt_dur {
@@ -234,10 +232,10 @@ pub fn propagate(
     }
 
     // Look for extraneous kwargs and return error
-    if mkwargs.is_some() {
-        if !mkwargs.unwrap().is_empty() {
+    if kwargs.is_some() {
+        if !kwargs.unwrap().is_empty() {
             let keystring: String =
-                mkwargs
+                kwargs
                     .unwrap()
                     .iter()
                     .fold(String::from(""), |acc, (k, _v)| {

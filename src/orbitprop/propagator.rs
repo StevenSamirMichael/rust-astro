@@ -335,7 +335,8 @@ pub fn propagate<const C: usize>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consts;
+    use crate::{consts, orbitprop::SatPropertiesStatic};
+    use std::f64::consts::PI;
 
     #[test]
     fn test_propagate() -> AstroResult<()> {
@@ -343,6 +344,8 @@ mod tests {
         let stoptime = starttime + 1.0;
 
         let mut state: SimpleState = SimpleState::zeros();
+        // Inclination
+
         state[0] = consts::GEO_R;
         state[4] = (consts::MU_EARTH / consts::GEO_R).sqrt();
 
@@ -353,31 +356,41 @@ mod tests {
         settings.gravity_interp_dt_secs = 300.0;
         settings.use_jplephem = false;
 
-        println!("state0 = {}", state.transpose());
-        println!("running");
         let res = propagate(&state, &starttime, &stoptime, None, &settings, None)?;
-        println!("res = {:?}", res);
-        println!("time = {}", res.time.last().unwrap());
 
         // Try to propagate back to original time
-        let res2 = propagate(&res.state[0], &stoptime, &starttime, None, &settings, None);
-        println!("res2 = {:?}", res2);
+        let res2 = propagate(&res.state[0], &stoptime, &starttime, None, &settings, None)?;
+        // See if propagating back to original time matches
+        for ix in 0..6 as usize {
+            assert!((res2.state[0][ix] - state[ix]).abs() < 1.0)
+        }
 
         Ok(())
     }
 
     #[test]
     fn test_state_transition() -> AstroResult<()> {
+        // Check the state transition matrix:
+        // Explicitly propagate two slightly different states,
+        // separated by "dstate",
+        // and compare with difference in final states as predicted
+        // by state transition matrix
+        // Note also: drag partials are very small relative to other terms,
+        // making it difficult to confirm that calculations are correct.
+
         let starttime = AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0);
-        let stoptime = starttime + 1.0;
+        let stoptime = starttime + 0.5;
 
         let mut state: CovState = CovState::zeros();
-        state[0] = consts::GEO_R;
-        state[4] = (consts::MU_EARTH / consts::GEO_R).sqrt();
+
+        let theta = PI / 6.0;
+        state[0] = consts::GEO_R * theta.cos();
+        state[2] = consts::GEO_R * theta.sin();
+        state[4] = (consts::MU_EARTH / consts::GEO_R).sqrt() * theta.cos();
+        state[5] = (consts::MU_EARTH / consts::GEO_R).sqrt() * theta.sin();
         state
             .fixed_view_mut::<6, 6>(0, 1)
             .copy_from(&na::Matrix6::<f64>::identity());
-        println!("state 0 = {}", state);
 
         let mut settings = PropSettings::default();
         settings.abs_error = 1.0e-9;
@@ -386,14 +399,107 @@ mod tests {
         settings.gravity_interp_dt_secs = 300.0;
         settings.use_jplephem = false;
 
-        println!("running");
-        let res = propagate(&state, &starttime, &stoptime, None, &settings, None)?;
-        println!("res = {:?}", res);
-        println!("time = {}", res.time.last().unwrap());
-        println!("state end = {}", res.state[0]);
+        // Made-up small variations in the state
+        let dstate = na::vector![6.0, -10.0, 120.5, 0.1, 0.2, -0.3];
 
-        let res2 = propagate(&res.state[0], &stoptime, &starttime, None, &settings, None)?;
-        println!("res2 state = {}", res2.state[0]);
+        // Propagate state (and state-transition matrix)
+        let res = propagate(&state, &starttime, &stoptime, None, &settings, None)?;
+
+        // Explicitly propagate state + dstate
+        let res2 = propagate(
+            &(state.fixed_view::<6, 1>(0, 0) + dstate),
+            &starttime,
+            &stoptime,
+            None,
+            &settings,
+            None,
+        )?;
+
+        // Difference in states from explicitly propagating with
+        // "dstate" change in initial conditions
+        let dstate_prop = res2.state[0] - res.state[0].fixed_view::<6, 1>(0, 0);
+
+        // Difference in states estimated from state transition matrix
+        let dstate_phi = res.state[0].fixed_view::<6, 6>(0, 1) * dstate;
+        for ix in 0..6 as usize {
+            assert!((dstate_prop[ix] - dstate_phi[ix]).abs() / dstate_prop[ix] < 1e-3);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_state_transition_drag() -> AstroResult<()> {
+        // Check the state transition matrix:
+        // Explicitly propagate two slightly different states,
+        // separated by "dstate",
+        // and compare with difference in final states as predicted
+        // by state transition matrix
+        // This version has a low-altitude satellite and we will
+        // set a fininte cdaoverm value so that there is drag
+        // and we can check drag partials
+
+        let starttime = AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0);
+        let stoptime = starttime + crate::Duration::Days(0.2);
+
+        let mut state: CovState = CovState::zeros();
+
+        let pgcrf = na::vector![3059573.85713792, 5855177.98848048, -7191.45042671];
+        let vgcrf = na::vector![916.08123489, -468.22498656, 7700.48460839];
+
+        // 30-deg inclination
+        state.fixed_view_mut::<3, 1>(0, 0).copy_from(&pgcrf);
+        state.fixed_view_mut::<3, 1>(3, 0).copy_from(&vgcrf);
+        state
+            .fixed_view_mut::<6, 6>(0, 1)
+            .copy_from(&na::Matrix6::<f64>::identity());
+
+        let mut settings = PropSettings::default();
+        settings.abs_error = 1.0e-8;
+        settings.rel_error = 1.0e-8;
+        settings.gravity_order = 4;
+        settings.gravity_interp_dt_secs = 300.0;
+        settings.use_jplephem = false;
+
+        let satprops = SatPropertiesStatic::new(2.0 * 0.3 * 0.1 / 5.0, 0.0);
+
+        // Made-up small variations in the state
+        let dstate = na::vector![2.0, -4.0, 20.5, 0.05, 0.02, -0.01];
+
+        // Propagate state (and state-transition matrix)
+
+        let res = propagate(
+            &state,
+            &starttime,
+            &stoptime,
+            None,
+            &settings,
+            Some(&satprops),
+        )?;
+
+        // Explicitly propagate state + dstate
+        let res2 = propagate(
+            &(state.fixed_view::<6, 1>(0, 0) + dstate),
+            &starttime,
+            &stoptime,
+            None,
+            &settings,
+            Some(&satprops),
+        )?;
+
+        // Difference in states from explicitly propagating with
+        // "dstate" change in initial conditions
+        let dstate_prop = res2.state[0] - res.state[0].fixed_view::<6, 1>(0, 0);
+
+        let dstate_phi = res.state[0].fixed_view::<6, 6>(0, 1) * dstate;
+
+        println!("dstate_prop = {}", dstate_prop);
+        println!("dstate_phi = {}", dstate_phi);
+
+        // Are differences within 1%?
+        for ix in 0..6 as usize {
+            assert!((dstate_prop[ix] - dstate_phi[ix]).abs() / dstate_prop[ix] < 0.1);
+        }
 
         Ok(())
     }

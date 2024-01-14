@@ -58,8 +58,13 @@ fn compute_rho_drhodr(
     time: &AstroTime,
     use_spaceweather: bool,
 ) -> (f64, na::Vector3<f64>) {
-    let dx = 10.0;
-    let itrf = ITRFCoord::from(qgcrf2itrf * pgcrf);
+    let dx = 100.0;
+
+    let pitrf = qgcrf2itrf * pgcrf;
+    let itrf = ITRFCoord::from(pitrf);
+    let qned2itrf = itrf.q_ned2itrf();
+
+    // Offset in the NED frame
     let offset_vecs = vec![
         na::vector![dx, 0.0, 0.0],
         na::vector![0.0, dx, 0.0],
@@ -72,10 +77,13 @@ fn compute_rho_drhodr(
         Some(*time),
         use_spaceweather,
     );
-    let drhodr: Vec<f64> = offset_vecs
+
+    // Compute drhodr in the ned frame
+    let drhodr_ned: Vec<f64> = offset_vecs
         .iter()
         .map(|v| {
-            let itrf_off = ITRFCoord::from(qgcrf2itrf * (pgcrf + v));
+            let itrf_off = itrf + qned2itrf * v;
+
             let (density, _temperature) = crate::nrlmsise::nrlmsise(
                 itrf_off.hae() / 1.0e3,
                 Some(itrf_off.latitude_rad()),
@@ -86,8 +94,13 @@ fn compute_rho_drhodr(
             (density - density0) / dx
         })
         .collect();
+    // note: we have checked ... this appears to be correct in ned frame
 
-    (density0, na::vector![drhodr[0], drhodr[1], drhodr[2]])
+    let qned2gcrf = qgcrf2itrf.conjugate() * qned2itrf;
+    (
+        density0,
+        qned2gcrf * na::vector![drhodr_ned[0], drhodr_ned[1], drhodr_ned[2]],
+    )
 }
 
 // Compute drag force and partials with respect to
@@ -118,7 +131,7 @@ pub fn drag_and_partials(
     let dacceldv = -0.5
         * cd_a_over_m
         * density
-        * (vrel * vrel.transpose() / vrel.norm() - vrel.norm() * na::Matrix3::<f64>::identity());
+        * (vrel * vrel.transpose() / vrel.norm() + vrel.norm() * na::Matrix3::<f64>::identity());
 
     let dacceldr = -0.5 * cd_a_over_m * density * vrel * vrel.norm() * drhodr.transpose()
         - dacceldv * OMEGA_EARTH_MATRIX;

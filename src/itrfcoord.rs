@@ -428,5 +428,9 @@ mod tests {
         println!("{}", q);
         println!("{}", q.to_rotation_matrix());
         */
+
+        let itrf1 = ITRFCoord::from_geodetic_deg(lat_deg, lon_deg, hae);
+        let itrf2 = itrf1 + itrf1.q_ned2itrf() * na::vector![0.0, 0.0, 10000.0];
+        println!("height diff = {}", itrf2.hae() - itrf1.hae());
     }
 }
