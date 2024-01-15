@@ -368,7 +368,7 @@ impl Gravity {
     /// Files are at:
     /// http://icgem.gfz-potsdam.de/tom_longtime
     pub fn from_file(filename: &str) -> AstroResult<Gravity> {
-        let path = datadir::get().unwrap_or(PathBuf::from(".")).join(filename);
+        let path = datadir().unwrap_or(PathBuf::from(".")).join(filename);
         if !path.is_file() {
             return astroerr!("File does not exist");
         }

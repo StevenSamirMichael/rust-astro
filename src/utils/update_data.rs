@@ -1,5 +1,5 @@
-use super::datadir::get_testdirs;
 use super::download_file;
+use super::testdirs;
 use crate::astroerr;
 use crate::AstroResult;
 use std::path::PathBuf;
@@ -9,7 +9,7 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> Astr
     let downloaddir = match dir {
         Some(pb) => pb,
         None => {
-            let d: Vec<PathBuf> = get_testdirs()
+            let d: Vec<PathBuf> = testdirs()
                 .into_iter()
                 .filter(|x| x.is_dir())
                 .filter(|x| x.metadata().unwrap().permissions().readonly() == false)

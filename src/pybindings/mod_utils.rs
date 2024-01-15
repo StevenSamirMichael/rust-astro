@@ -63,7 +63,7 @@ fn update_datafiles(kwds: Option<&PyDict>) -> PyResult<()> {
 #[pyfunction]
 fn datadir() -> PyResult<String> {
     Ok(String::from(
-        crate::utils::datadir::get().unwrap().to_str().unwrap(),
+        crate::utils::datadir().unwrap().to_str().unwrap(),
     ))
 }
 

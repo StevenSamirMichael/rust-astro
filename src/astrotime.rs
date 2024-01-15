@@ -109,7 +109,7 @@ pub enum Scale {
 fn deltaat_new() -> &'static Vec<[u64; 2]> {
     static INSTANCE: OnceCell<Vec<[u64; 2]>> = OnceCell::new();
     INSTANCE.get_or_init(|| {
-        let path = datadir::get()
+        let path = datadir()
             .unwrap_or(PathBuf::from("."))
             .join("leap-seconds.list");
         if !path.is_file() {

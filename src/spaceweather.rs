@@ -4,7 +4,7 @@ use std::io::{self, BufRead};
 use std::path::PathBuf;
 
 use crate::astrotime::AstroTime;
-use crate::utils::{astroerr, datadir, download_file, AstroResult};
+use crate::utils::{astroerr, datadir, download_file, testdirs, AstroResult};
 
 use std::sync::RwLock;
 
@@ -77,7 +77,7 @@ impl PartialOrd<AstroTime> for SpaceWeatherRecord {
 }
 
 fn load_space_weather() -> AstroResult<Vec<SpaceWeatherRecord>> {
-    let path = datadir::get()
+    let path = datadir()
         .unwrap_or(PathBuf::from("."))
         .join("sw19571001.txt");
     if !path.is_file() {
@@ -171,7 +171,7 @@ pub fn get(tm: AstroTime) -> AstroResult<SpaceWeatherRecord> {
 
 pub fn reload() -> AstroResult<()> {
     // Find writeabld data directory
-    let d: Vec<PathBuf> = datadir::get_testdirs()
+    let d: Vec<PathBuf> = testdirs()
         .into_iter()
         .filter(|x| x.is_dir())
         .filter(|x| x.metadata().unwrap().permissions().readonly() == false)

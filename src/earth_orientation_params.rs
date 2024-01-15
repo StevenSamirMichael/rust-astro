@@ -4,8 +4,8 @@ use std::path::PathBuf;
 use std::sync::RwLock;
 
 use super::astrotime;
-use crate::utils::datadir;
 use crate::utils::download_file;
+use crate::utils::{datadir, testdirs};
 
 use crate::{astroerr, AstroResult};
 
@@ -23,7 +23,7 @@ struct EOPEntry {
 fn load_eop_file(filename: Option<PathBuf>) -> Vec<EOPEntry> {
     let path: PathBuf = match filename {
         Some(pb) => pb,
-        None => datadir::get()
+        None => datadir()
             .unwrap_or(PathBuf::from("."))
             .join("finals2000A.all"),
     };
@@ -102,7 +102,7 @@ fn eop_params_singleton() -> &'static RwLock<Vec<EOPEntry>> {
 /// data files for this crate are stored: crate::datadir::get()
 pub fn update() -> AstroResult<()> {
     // Find writeabld data directory
-    let d: Vec<PathBuf> = datadir::get_testdirs()
+    let d: Vec<PathBuf> = testdirs()
         .into_iter()
         .filter(|x| x.is_dir())
         .filter(|x| x.metadata().unwrap().permissions().readonly() == false)

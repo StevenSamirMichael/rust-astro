@@ -5,7 +5,7 @@ use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
 
 #[inline]
-fn get_dylib_path() -> Option<PathBuf> {
+fn dylib_path() -> Option<PathBuf> {
     let mut dl_info = libc::Dl_info {
         dli_fname: core::ptr::null(),
         dli_fbase: core::ptr::null_mut(),
@@ -14,7 +14,7 @@ fn get_dylib_path() -> Option<PathBuf> {
     };
     if unsafe {
         libc::dladdr(
-            get_dylib_path as *const c_void,
+            dylib_path as *const c_void,
             &mut dl_info as *mut libc::Dl_info,
         ) != 0
     } {
@@ -31,7 +31,7 @@ fn get_dylib_path() -> Option<PathBuf> {
     }
 }
 
-pub fn get_testdirs() -> Vec<PathBuf> {
+pub fn testdirs() -> Vec<PathBuf> {
     let mut testdirs: Vec<PathBuf> = Vec::new();
 
     // Look for paths in environment variable
@@ -59,7 +59,7 @@ pub fn get_testdirs() -> Vec<PathBuf> {
     }
 
     // Look for paths in current library directory
-    match get_dylib_path() {
+    match dylib_path() {
         Some(v) => {
             testdirs.push(Path::new(&v).join("share").join("astro-data"));
             testdirs.push(PathBuf::from(&v).join("astro-data"));
@@ -95,10 +95,10 @@ pub fn get_testdirs() -> Vec<PathBuf> {
 ///  * Option<<std::path::PathBuf>> representing directory
 ///    where files are stored
 ///
-pub fn get() -> AstroResult<PathBuf> {
+pub fn datadir() -> AstroResult<PathBuf> {
     static INSTANCE: OnceCell<AstroResult<PathBuf>> = OnceCell::new();
     let res = INSTANCE.get_or_init(|| {
-        for ref dir in get_testdirs() {
+        for ref dir in testdirs() {
             let p = PathBuf::from(&dir).join("tab5.2a.txt");
             if p.is_file() {
                 return Ok(dir.to_path_buf().clone());
@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn datadir() {
         use crate::utils::datadir;
-        let d = datadir::get();
+        let d = datadir::datadir();
         assert_eq!(d.is_err(), false);
     }
 }

@@ -21,9 +21,7 @@ impl IERSTable {
             ],
         };
 
-        let path = utils::datadir::get()
-            .unwrap_or(PathBuf::from("."))
-            .join(fname);
+        let path = utils::datadir().unwrap_or(PathBuf::from(".")).join(fname);
         if !path.is_file() {
             return utils::astroerr!("Could not open file: {}", fname);
         }

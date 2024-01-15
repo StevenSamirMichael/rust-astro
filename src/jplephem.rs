@@ -151,7 +151,7 @@ impl JPLEphem {
         }
 
         // Open the file
-        let path = datadir::get().unwrap_or(PathBuf::from(".")).join(fname);
+        let path = datadir().unwrap_or(PathBuf::from(".")).join(fname);
         if !path.is_file() {
             return astroerr!("Cannot open JPL Ephemeris file");
         }

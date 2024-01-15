@@ -3,7 +3,9 @@ pub use astroerr::AstroErr;
 pub use astroerr::AstroResult;
 
 mod astroerr;
-pub mod datadir;
+mod datadir;
+pub use datadir::datadir;
+pub use datadir::testdirs;
 
 #[cfg(test)]
 pub mod test;
