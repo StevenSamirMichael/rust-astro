@@ -9,7 +9,8 @@ type Vec3 = na::Vector3<f64>;
 pub type Quat = na::UnitQuaternion<f64>;
 
 use super::earth_orientation_params;
-use qcirs2gcrs::qcirs2gcrs;
+pub use qcirs2gcrs::qcirs2gcrs;
+pub use qcirs2gcrs::qcirs2gcrs_dxdy;
 
 /// Right-handed rotation of coordinate sytstem about x axis
 /// (left-handed rotation of vector)
@@ -253,9 +254,22 @@ pub fn qtod2mod_approx(tm: &AstroTime) -> Quat {
 ///       precession, and nutation
 ///
 pub fn qitrf2gcrf(tm: &AstroTime) -> Quat {
-    let w = qitrf2tirs(tm);
+    // w is rotation from international terrestrial reference frame
+    // to terrestrial intermediate reference frame
+    let eop = earth_orientation_params::get(tm).unwrap();
+
+    // Compute this here instead of using function above, so that
+    // we only have to get earth orientation parameters once
+    let w = {
+        const ASEC2RAD: f64 = PI / 180.0 / 3600.0;
+        let xp = eop[1] * ASEC2RAD;
+        let yp = eop[2] * ASEC2RAD;
+        let t_tt = (tm.to_mjd(Scale::TT) - 51544.5) / 36525.0;
+        let sp = -47.0e-6 * ASEC2RAD * t_tt;
+        qrot_zcoord(-sp) * qrot_ycoord(xp) * qrot_xcoord(yp)
+    };
     let r = qtirs2cirs(tm);
-    let q = qcirs2gcrs(tm);
+    let q = qcirs2gcrs_dxdy(tm, Some((eop[4], eop[5])));
     q * r * w
 }
 
@@ -351,7 +365,7 @@ mod tests {
         assert!((pcirs[0] - 5100.0184047).abs() < 1e-3);
         assert!((pcirs[1] - 6122.7863648).abs() < 1e-3);
         assert!((pcirs[2] - 6380.3446237).abs() < 1e-3);
-        let pgcrf = qcirs2gcrs(tm) * pcirs;
+        let pgcrf = qcirs2gcrs_dxdy(tm, None) * pcirs;
         println!("pgcrf = {:?}", pgcrf);
         assert!((pgcrf[0] - 5102.508959).abs() < 1e-3);
         assert!((pgcrf[1] - 6123.011403).abs() < 1e-3);

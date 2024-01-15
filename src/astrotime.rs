@@ -383,7 +383,7 @@ impl AstroTime {
                 },
             },
             Scale::UT1 => {
-                let utc: f64 = val - eop::get_from_mjd_utc(val).unwrap()[0] / 86400.0;
+                let utc: f64 = val - eop::eop_from_mjd_utc(val).unwrap()[0] / 86400.0;
                 AstroTime {
                     mjd_tai: utc + mjd_utc2tai_seconds(val) / 86400.0,
                 }
@@ -498,7 +498,7 @@ impl AstroTime {
                 // Then convert to UT1
                 // First earth-orientation parameter is dut1
                 // which is (UT1 - UTC) in seconds
-                utc + eop::get_from_mjd_utc(utc).unwrap()[0] / 86400.0
+                utc + eop::eop_from_mjd_utc(utc).unwrap()[0] / 86400.0
             }
 
             &Scale::UTC => self.mjd_tai + mjd_tai2utc_seconds(self.mjd_tai) / 86400.0,

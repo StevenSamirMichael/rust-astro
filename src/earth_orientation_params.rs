@@ -12,12 +12,15 @@ use crate::{skerror, SKResult};
 use once_cell::sync::OnceCell;
 
 #[derive(Debug)]
+#[allow(non_snake_case)]
 struct EOPEntry {
     mjd_utc: f64,
     xp: f64,
     yp: f64,
     dut1: f64,
     lod: f64,
+    dX: f64,
+    dY: f64,
 }
 
 fn load_eop_file(filename: Option<PathBuf>) -> Vec<EOPEntry> {
@@ -53,11 +56,14 @@ fn load_eop_file(filename: Option<PathBuf>) -> Vec<EOPEntry> {
                 ()
             }
             v => {
+                // Pull from "Bulliten A"
                 let mjd_str: String = v.chars().skip(7).take(8).collect();
                 let xp_str: String = v.chars().skip(18).take(9).collect();
                 let yp_str: String = v.chars().skip(37).take(9).collect();
                 let dut1_str: String = v.chars().skip(58).take(10).collect();
                 let lod_str: String = v.chars().skip(79).take(7).collect();
+                let dx_str: String = v.chars().skip(97).take(9).collect();
+                let dy_str: String = v.chars().skip(116).take(9).collect();
 
                 eopvec.push(EOPEntry {
                     mjd_utc: {
@@ -85,6 +91,18 @@ fn load_eop_file(filename: Option<PathBuf>) -> Vec<EOPEntry> {
                         }
                     },
                     lod: lod_str.trim().parse().unwrap_or(0.0),
+                    dX: {
+                        match dx_str.trim().parse() {
+                            Ok(v) => v,
+                            Err(_) => 0.0,
+                        }
+                    },
+                    dY: {
+                        match dy_str.trim().parse() {
+                            Ok(v) => v,
+                            Err(_) => 0.0,
+                        }
+                    },
                 })
             }
         }
@@ -121,7 +139,7 @@ pub fn update() -> SKResult<()> {
     Ok(())
 }
 
-pub fn get_from_mjd_utc(mjd_utc: f64) -> Option<[f64; 4]> {
+pub fn eop_from_mjd_utc(mjd_utc: f64) -> Option<[f64; 6]> {
     let eop = eop_params_singleton().read().unwrap();
 
     let idx = eop.iter().position(|x| x.mjd_utc > mjd_utc);
@@ -141,6 +159,8 @@ pub fn get_from_mjd_utc(mjd_utc: f64) -> Option<[f64; 4]> {
                 g0 * v0.xp + g1 * v1.xp,
                 g0 * v0.yp + g1 * v1.yp,
                 g0 * v0.lod + g1 * v1.lod,
+                g0 * v0.dX + g1 * v1.dX,
+                g0 * v0.dY + g1 * v1.dY,
             ])
         }
     }
@@ -160,10 +180,12 @@ pub fn get_from_mjd_utc(mjd_utc: f64) -> Option<[f64; 4]> {
 ///   * 1 : X polar motion in arcsecs
 ///   * 2 : Y polar motion in arcsecs
 ///   * 3 : LOD: instantaneous rate of change in (UT1-UTC), msec/day
+///   * 4 : dX wrt IAU-2000 Nutation, milli-arcsecs
+///   * 5 : dY wrt IAU-2000 Nutation, milli-arcsecs
 ///
 #[inline]
-pub fn get(tm: &astrotime::AstroTime) -> Option<[f64; 4]> {
-    get_from_mjd_utc(tm.to_mjd(astrotime::Scale::UTC))
+pub fn get(tm: &astrotime::AstroTime) -> Option<[f64; 6]> {
+    eop_from_mjd_utc(tm.to_mjd(astrotime::Scale::UTC))
 }
 
 #[cfg(test)]
@@ -183,7 +205,7 @@ mod tests {
     /// Check value against manual value from file
     #[test]
     fn checkval() {
-        let v = get_from_mjd_utc(59464.00).unwrap();
+        let v = eop_from_mjd_utc(59464.00).unwrap();
         println!("v = {:?}", v);
         const TRUTH: [f64; 4] = [-0.1145640, 0.241133, 0.317269, -0.2467];
         for it in v.iter().zip(TRUTH.iter()) {
@@ -200,7 +222,7 @@ mod tests {
         const TRUTH1: [f64; 4] = [0.3743671, 0.10402, 0.458388, 1.0584];
         for x in 0..101 {
             let dt: f64 = x as f64 / 100.0;
-            let vt = get_from_mjd_utc(mjd0 + dt).unwrap();
+            let vt = eop_from_mjd_utc(mjd0 + dt).unwrap();
             let g0: f64 = 1.0 - dt;
             let g1: f64 = dt;
             for it in vt.iter().zip(TRUTH0.iter().zip(TRUTH1.iter())) {

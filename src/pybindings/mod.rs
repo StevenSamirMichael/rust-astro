@@ -83,6 +83,10 @@ fn frametransform(_py: Python, m: &PyModule) -> PyResult<()> {
         .unwrap();
     m.add_function(wrap_pyfunction!(pyft::qteme2itrf, m)?)
         .unwrap();
+    m.add_function(wrap_pyfunction!(pyft::qcirs2gcrf, m)?)
+        .unwrap();
+    m.add_function(wrap_pyfunction!(pyft::pyeop, m)?).unwrap();
+
     Ok(())
 }
 
@@ -97,7 +101,7 @@ fn satprop(_py: Python, m: &PyModule) -> PyResult<()> {
     Ok(())
 }
 
-#[pymodule] 
+#[pymodule]
 pub fn satkit(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyAstroTime>()?;
     m.add_class::<PyDuration>()?;

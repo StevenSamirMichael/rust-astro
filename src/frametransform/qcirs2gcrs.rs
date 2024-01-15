@@ -26,7 +26,7 @@ fn table5d_singleton() -> &'static IERSTable {
     INSTANCE.get_or_init(|| IERSTable::from_file("tab5.2d.txt").unwrap())
 }
 
-pub fn qcirs2gcrs(tm: &AstroTime) -> Quat {
+pub fn qcirs2gcrs_dxdy(tm: &AstroTime, dxdy: Option<(f64, f64)>) -> Quat {
     let t_tt = (tm.to_mjd(Scale::TT) - 51544.5) / 36525.0;
     const ASEC2RAD: f64 = PI / 180.0 / 3600.0;
 
@@ -97,14 +97,29 @@ pub fn qcirs2gcrs(tm: &AstroTime) -> Quat {
     let xsums = table5a_singleton().compute(t_tt, &delaunay);
     let ysums = table5b_singleton().compute(t_tt, &delaunay);
     let ssums = table5d_singleton().compute(t_tt, &delaunay);
-    let x = (x0 + xsums * 1.0e-6) * ASEC2RAD;
-    let y = (y0 + ysums * 1.0e-6) * ASEC2RAD;
+    let mut x = (x0 + xsums * 1.0e-6) * ASEC2RAD;
+    let mut y = (y0 + ysums * 1.0e-6) * ASEC2RAD;
+    // If dX and dY are passed in, they are in milli-arcsecs
+    if dxdy.is_some() {
+        let (dx, dy) = dxdy.unwrap();
+        x += dx * 1e-3 * ASEC2RAD;
+        y += dy * 1e-3 * ASEC2RAD;
+    }
+
     let s = (s0 + ssums) * 1.0e-6 * ASEC2RAD - x * y / 2.0;
 
     // Compute expression for the celestial motion of the
     // celestial intermediate pole (CIP)
     // Equations 5.6 & 5.7 of IERS technical note 36
     let e = f64::atan2(y, x);
-    let d = f64::atan(f64::sqrt((x * x + y * y) / (1.0 - x * x - y * y)));
+    let d = f64::asin(f64::sqrt(x * x + y * y));
     qrot_zcoord(-e) * qrot_ycoord(-d) * qrot_zcoord(e + s)
+}
+
+pub fn qcirs2gcrs(tm: &AstroTime) -> Quat {
+    let dxdy: Option<(f64, f64)> = match crate::earth_orientation_params::get(&tm) {
+        None => None,
+        Some(v) => Some((v[4], v[5])),
+    };
+    qcirs2gcrs_dxdy(tm, dxdy)
 }

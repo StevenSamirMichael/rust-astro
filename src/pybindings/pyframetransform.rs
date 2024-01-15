@@ -1,4 +1,5 @@
 use super::pyutils::*;
+use super::PyAstroTime;
 use crate::frametransform as ft;
 use pyo3::prelude::*;
 
@@ -96,6 +97,11 @@ pub fn qtirs2cirs(tm: &PyAny) -> PyResult<PyObject> {
     py_quat_from_time_arr(ft::qtirs2cirs, tm)
 }
 
+#[pyfunction]
+pub fn qcirs2gcrf(tm: &PyAny) -> PyResult<PyObject> {
+    py_quat_from_time_arr(ft::qcirs2gcrs, tm)
+}
+
 ///
 /// Quaternion representing rotation from the
 /// International Terrestrial Reference Frame (ITRF)
@@ -138,4 +144,29 @@ pub fn qitrf2gcrf(tm: &PyAny) -> PyResult<PyObject> {
 #[pyfunction]
 pub fn qteme2itrf(tm: &PyAny) -> PyResult<PyObject> {
     py_quat_from_time_arr(ft::qteme2itrf, tm)
+}
+
+///
+/// Get Earth Orientation Parameters at given instant
+///
+/// # Arguments:
+///
+/// * tm: Instant at which to query parameters
+///
+/// # Return:
+///
+/// * Vector [f64; 4] with following elements:
+///   * 0 : (UT1 - UTC) in seconds
+///   * 1 : X polar motion in arcsecs
+///   * 2 : Y polar motion in arcsecs
+///   * 3 : LOD: instantaneous rate of change in (UT1-UTC), msec/day
+///   * 4 : dX wrt IAU-2000A nutation, milli-arcsecs
+///   * 5 : dY wrt IAU-2000A nutation, milli-arcsecs
+///
+#[pyfunction(name = "earth_orientation_params")]
+pub fn pyeop(time: &PyAstroTime) -> Option<(f64, f64, f64, f64, f64, f64)> {
+    match crate::earth_orientation_params::get(&time.inner) {
+        None => None,
+        Some(r) => Some((r[0], r[1], r[2], r[3], r[4], r[5])),
+    }
 }
