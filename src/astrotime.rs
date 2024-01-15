@@ -38,7 +38,7 @@ pub struct AstroTime {
     mjd_tai: f64,
 }
 
-use crate::utils::{astroerr, SKResult};
+use crate::utils::{skerror, SKResult};
 use crate::Duration;
 
 use super::earth_orientation_params as eop;
@@ -315,7 +315,7 @@ impl AstroTime {
                 v.as_millis() as f64 / 86400000.0 + UTC1970,
                 Scale::UTC,
             )),
-            Err(v) => astroerr!("Cannot get current time: {}", v),
+            Err(v) => skerror!("Cannot get current time: {}", v),
         }
     }
 

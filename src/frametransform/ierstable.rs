@@ -23,7 +23,7 @@ impl IERSTable {
 
         let path = utils::datadir().unwrap_or(PathBuf::from(".")).join(fname);
         if !path.is_file() {
-            return utils::astroerr!("Could not open file: {}", fname);
+            return utils::skerror!("Could not open file: {}", fname);
         }
 
         let mut tnum: i32 = -1;
@@ -43,7 +43,7 @@ impl IERSTable {
                         let s: Vec<&str> = tline.split_whitespace().collect();
                         let tsize: usize = s[s.len() - 1].parse().unwrap_or(0);
                         if tnum < 0 || tnum > 5 || tsize == 0 {
-                            return utils::astroerr!(
+                            return utils::skerror!(
                                 "Error parsing file {}, invalid table definition line",
                                 fname
                             );
@@ -53,7 +53,7 @@ impl IERSTable {
                         continue;
                     } else if tnum >= 0 {
                         if table.data[tnum as usize].ncols() < 17 {
-                            return Err(utils::AstroErr::new(
+                            return Err(utils::SKErr::new(
                                 format!("Error parsing file {}, table not initialized", fname)
                                     .as_str(),
                             )

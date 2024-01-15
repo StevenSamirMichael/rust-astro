@@ -1,4 +1,4 @@
-use crate::astroerr;
+use crate::skerror;
 use crate::SKResult;
 use once_cell::sync::OnceCell;
 use std::path::Path;
@@ -104,11 +104,11 @@ pub fn datadir() -> SKResult<PathBuf> {
                 return Ok(dir.to_path_buf().clone());
             }
         }
-        astroerr!("Could not find valid data directory.")
+        skerror!("Could not find valid data directory.")
     });
     match res.as_ref() {
         Ok(v) => Ok(v.clone()),
-        Err(_e) => astroerr!("Could not find valid data directory."),
+        Err(_e) => skerror!("Could not find valid data directory."),
     }
 }
 

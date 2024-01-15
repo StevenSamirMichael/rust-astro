@@ -4,7 +4,7 @@ use std::io::{self, BufRead};
 use std::path::PathBuf;
 
 use crate::astrotime::AstroTime;
-use crate::utils::{astroerr, datadir, download_file, testdirs, SKResult};
+use crate::utils::{datadir, download_file, skerror, testdirs, SKResult};
 
 use std::sync::RwLock;
 
@@ -81,7 +81,7 @@ fn load_space_weather() -> SKResult<Vec<SpaceWeatherRecord>> {
         .unwrap_or(PathBuf::from("."))
         .join("sw19571001.txt");
     if !path.is_file() {
-        return astroerr!("cannot load space weather data: file \"sw19571001.txt\" is missing");
+        return skerror!("cannot load space weather data: file \"sw19571001.txt\" is missing");
     }
 
     let file = File::open(&path)?;
@@ -163,7 +163,7 @@ pub fn get(tm: AstroTime) -> SKResult<SpaceWeatherRecord> {
     // Increase efficiency by looking backward
     let rec = sw.iter().rev().find(|x| x.date <= tm);
     if rec.is_none() {
-        astroerr!("Invalid date")
+        skerror!("Invalid date")
     } else {
         Ok(rec.unwrap().clone())
     }
@@ -178,7 +178,7 @@ pub fn reload() -> SKResult<()> {
         .collect();
 
     if d.len() == 0 {
-        return astroerr!("Cannot find writable data directory");
+        return skerror!("Cannot find writable data directory");
     }
 
     // Download most-recent EOP

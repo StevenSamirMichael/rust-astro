@@ -7,7 +7,7 @@ pub const WGS84_F: f64 = 0.003352810664747;
 
 use nalgebra as na;
 
-use crate::astroerr;
+use crate::skerror;
 use crate::types::Quaternion as Quat;
 use crate::types::Vec3;
 use crate::SKResult;
@@ -173,7 +173,7 @@ impl ITRFCoord {
     /// representing Cartesian coordinates, in meters
     pub fn from_slice(v: &[f64]) -> SKResult<ITRFCoord> {
         if v.len() != 3 {
-            return astroerr!("Input slice must have 3 elements");
+            return skerror!("Input slice must have 3 elements");
         }
         Ok(ITRFCoord {
             itrf: Vec3::from_row_slice(v),

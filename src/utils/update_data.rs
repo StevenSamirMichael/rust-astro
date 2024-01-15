@@ -1,6 +1,6 @@
 use super::download_file;
 use super::testdirs;
-use crate::astroerr;
+use crate::skerror;
 use crate::SKResult;
 use std::path::PathBuf;
 
@@ -15,7 +15,7 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> SKRe
                 .filter(|x| x.metadata().unwrap().permissions().readonly() == false)
                 .collect();
             if d.len() == 0 {
-                return astroerr!("Cannot find writable data directory");
+                return skerror!("Cannot find writable data directory");
             }
             d[0].clone()
         }

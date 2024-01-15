@@ -3,7 +3,7 @@ use crate::AstroTime;
 use crate::ITRFCoord;
 use crate::TimeScale;
 
-use crate::utils::{astroerr, SKResult};
+use crate::utils::{skerror, SKResult};
 
 use nalgebra as na;
 
@@ -172,7 +172,7 @@ pub fn riseset(
         let coslha =
             (cosd(sigma) - sind(deltasun) * sind(latitude)) / (cosd(deltasun) * cosd(latitude));
         if coslha.abs() > 1.0 {
-            return astroerr!(
+            return skerror!(
                 "Invalid position.  Sun doesn't rise/set on this day at \
                  this location (e.g., Alaska in summer)"
             );

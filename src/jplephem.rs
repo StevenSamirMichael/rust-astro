@@ -27,7 +27,7 @@ use nalgebra as na;
 pub type Vec3 = na::Vector3<f64>;
 pub type Quat = na::UnitQuaternion<f64>;
 
-use crate::astroerr;
+use crate::skerror;
 use crate::utils::datadir;
 use crate::utils::SKResult;
 
@@ -153,7 +153,7 @@ impl JPLEphem {
         // Open the file
         let path = datadir().unwrap_or(PathBuf::from(".")).join(fname);
         if !path.is_file() {
-            return astroerr!("Cannot open JPL Ephemeris file");
+            return skerror!("Cannot open JPL Ephemeris file");
         }
 
         // Read in bytes

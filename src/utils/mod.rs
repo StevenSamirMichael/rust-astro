@@ -1,9 +1,9 @@
-pub(crate) use astroerr::astroerr;
-pub use astroerr::AstroErr;
-pub use astroerr::SKResult;
+pub(crate) use skerror::skerror;
+pub use skerror::SKErr;
+pub use skerror::SKResult;
 
-mod astroerr;
 mod datadir;
+mod skerror;
 pub use datadir::datadir;
 pub use datadir::testdirs;
 

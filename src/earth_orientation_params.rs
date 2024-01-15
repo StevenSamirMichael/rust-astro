@@ -7,7 +7,7 @@ use super::astrotime;
 use crate::utils::download_file;
 use crate::utils::{datadir, testdirs};
 
-use crate::{astroerr, SKResult};
+use crate::{skerror, SKResult};
 
 use once_cell::sync::OnceCell;
 
@@ -108,7 +108,7 @@ pub fn update() -> SKResult<()> {
         .filter(|x| x.metadata().unwrap().permissions().readonly() == false)
         .collect();
     if d.len() == 0 {
-        return astroerr!("Cannot find writable data directory");
+        return skerror!("Cannot find writable data directory");
     }
 
     // Download most-recent EOP

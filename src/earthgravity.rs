@@ -1,4 +1,4 @@
-use crate::utils::{astroerr, datadir, SKResult};
+use crate::utils::{datadir, skerror, SKResult};
 use std::collections::HashMap;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
@@ -370,7 +370,7 @@ impl Gravity {
     pub fn from_file(filename: &str) -> SKResult<Gravity> {
         let path = datadir().unwrap_or(PathBuf::from(".")).join(filename);
         if !path.is_file() {
-            return astroerr!("File does not exist");
+            return skerror!("File does not exist");
         }
         let file = std::fs::File::open(&path)?;
 
@@ -410,7 +410,7 @@ impl Gravity {
             }
         }
         if max_degree == 0 {
-            return astroerr!("Invalid file; did not find max degree");
+            return skerror!("Invalid file; did not find max degree");
         }
 
         // Create matrix with lookup values
@@ -419,7 +419,7 @@ impl Gravity {
         for line in &lines[header_cnt..] {
             let s: Vec<&str> = line.split_whitespace().collect();
             if s.len() < 3 {
-                return astroerr!("Invalid line: {}", line);
+                return skerror!("Invalid line: {}", line);
             }
 
             let n: usize = s[1].parse()?;
