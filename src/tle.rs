@@ -1,6 +1,6 @@
 use super::astrotime::AstroTime;
 use crate::sgp4::SatRec;
-use crate::utils::AstroResult;
+use crate::utils::SKResult;
 
 ///
 /// Stucture representing a Two-Line Element Set (TLE), a satellite
@@ -103,7 +103,7 @@ pub struct TLE {
 }
 
 impl TLE {
-    pub fn from_lines(lines: &Vec<String>) -> AstroResult<Vec<TLE>> {
+    pub fn from_lines(lines: &Vec<String>) -> SKResult<Vec<TLE>> {
         let mut tles: Vec<TLE> = Vec::<TLE>::new();
         let mut line0: &String = &String::new();
         let mut line1: &String = &String::new();

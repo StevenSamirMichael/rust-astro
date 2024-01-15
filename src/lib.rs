@@ -47,7 +47,7 @@ pub use itrfcoord::ITRFCoord;
 pub use solarsystem::SolarSystem;
 pub use tle::TLE;
 pub use utils::AstroErr;
-pub use utils::AstroResult;
+pub use utils::SKResult;
 
 #[cfg(feature = "pybindings")]
 pub mod pybindings;

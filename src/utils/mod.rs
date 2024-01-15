@@ -1,6 +1,6 @@
 pub(crate) use astroerr::astroerr;
 pub use astroerr::AstroErr;
-pub use astroerr::AstroResult;
+pub use astroerr::SKResult;
 
 mod astroerr;
 mod datadir;

@@ -1,5 +1,5 @@
 use crate::astroerr;
-use crate::AstroResult;
+use crate::SKResult;
 use once_cell::sync::OnceCell;
 use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
@@ -95,8 +95,8 @@ pub fn testdirs() -> Vec<PathBuf> {
 ///  * Option<<std::path::PathBuf>> representing directory
 ///    where files are stored
 ///
-pub fn datadir() -> AstroResult<PathBuf> {
-    static INSTANCE: OnceCell<AstroResult<PathBuf>> = OnceCell::new();
+pub fn datadir() -> SKResult<PathBuf> {
+    static INSTANCE: OnceCell<SKResult<PathBuf>> = OnceCell::new();
     let res = INSTANCE.get_or_init(|| {
         for ref dir in testdirs() {
             let p = PathBuf::from(&dir).join("tab5.2a.txt");

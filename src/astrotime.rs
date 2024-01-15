@@ -38,7 +38,7 @@ pub struct AstroTime {
     mjd_tai: f64,
 }
 
-use crate::utils::{astroerr, AstroResult};
+use crate::utils::{astroerr, SKResult};
 use crate::Duration;
 
 use super::earth_orientation_params as eop;
@@ -308,7 +308,7 @@ impl AstroTime {
 
     /// Construt new AstroTime object, representing
     /// current date and time
-    pub fn now() -> AstroResult<AstroTime> {
+    pub fn now() -> SKResult<AstroTime> {
         let now = SystemTime::now();
         match now.duration_since(UNIX_EPOCH) {
             Ok(v) => Ok(AstroTime::from_mjd(

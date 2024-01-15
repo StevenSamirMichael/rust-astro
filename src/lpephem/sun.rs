@@ -3,7 +3,7 @@ use crate::AstroTime;
 use crate::ITRFCoord;
 use crate::TimeScale;
 
-use crate::utils::{astroerr, AstroResult};
+use crate::utils::{astroerr, SKResult};
 
 use nalgebra as na;
 
@@ -130,14 +130,14 @@ pub fn shadowfunc(psun: &Vec3, psat: &Vec3) -> f64 {
 ///
 /// Returns:
 ///
-///    AstroResult<(sunrise: AstroTime, sunset: AstroTime)>
+///    SKResult<(sunrise: AstroTime, sunset: AstroTime)>
 ///
 ///
 pub fn riseset(
     time: &AstroTime,
     coord: &ITRFCoord,
     osigma: Option<f64>,
-) -> AstroResult<(AstroTime, AstroTime)> {
+) -> SKResult<(AstroTime, AstroTime)> {
     use std::f64::consts::PI;
     let sigma = osigma.unwrap_or(90.0 + 50.0 / 60.0);
     let latitude: f64 = coord.latitude_deg();
@@ -154,7 +154,7 @@ pub fn riseset(
     };
 
     let jd0h = (time.to_jd(TimeScale::UTC) * 2.0).round() / 2.0;
-    let criseset = |jdoffset: f64, lhafunc: fn(f64) -> f64| -> AstroResult<AstroTime> {
+    let criseset = |jdoffset: f64, lhafunc: fn(f64) -> f64| -> SKResult<AstroTime> {
         let jd = time.to_jd(TimeScale::UTC) + jdoffset - longitude / 360.0;
         let t = (jd - 2451545.0) / 36525.0;
 

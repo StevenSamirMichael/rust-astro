@@ -1,4 +1,4 @@
-use crate::utils::{self, AstroResult};
+use crate::utils::{self, SKResult};
 use nalgebra as na;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
@@ -9,7 +9,7 @@ pub struct IERSTable {
 }
 
 impl IERSTable {
-    pub fn from_file(fname: &str) -> AstroResult<IERSTable> {
+    pub fn from_file(fname: &str) -> SKResult<IERSTable> {
         let mut table = IERSTable {
             data: [
                 na::DMatrix::<f64>::zeros(0, 0),

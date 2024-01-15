@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
-pub type AstroResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
+pub type SKResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
 #[derive(Debug)]
 pub struct AstroErr {

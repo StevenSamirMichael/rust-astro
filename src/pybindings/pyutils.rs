@@ -3,7 +3,7 @@ use super::pyquaternion::Quaternion;
 
 use crate::astrotime::AstroTime;
 use crate::frametransform::Quat;
-use crate::utils::AstroResult;
+use crate::utils::SKResult;
 use nalgebra as na;
 use numpy as np;
 use numpy::ndarray;
@@ -91,7 +91,7 @@ pub fn py_vec3_of_time_arr(
 }
 
 pub fn py_vec3_of_time_result_arr(
-    cfunc: &dyn Fn(&AstroTime) -> AstroResult<Vec3>,
+    cfunc: &dyn Fn(&AstroTime) -> SKResult<Vec3>,
     tmarr: &PyAny,
 ) -> PyResult<PyObject> {
     let tm = tmarr.to_time_vec()?;
@@ -170,7 +170,7 @@ pub fn py_quat_from_time_arr(cfunc: fn(&AstroTime) -> Quat, tmarr: &PyAny) -> Py
 #[inline]
 pub fn tuple_func_of_time_arr<F>(cfunc: F, tmarr: &PyAny) -> PyResult<PyObject>
 where
-    F: Fn(&AstroTime) -> AstroResult<(na::Vector3<f64>, na::Vector3<f64>)>,
+    F: Fn(&AstroTime) -> SKResult<(na::Vector3<f64>, na::Vector3<f64>)>,
 {
     let tm = tmarr.to_time_vec()?;
     match tm.len() {

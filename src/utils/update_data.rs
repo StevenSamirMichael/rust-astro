@@ -1,10 +1,10 @@
 use super::download_file;
 use super::testdirs;
 use crate::astroerr;
-use crate::AstroResult;
+use crate::SKResult;
 use std::path::PathBuf;
 
-pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> AstroResult<()> {
+pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> SKResult<()> {
     // Find directory where files will be downloaded
     let downloaddir = match dir {
         Some(pb) => pb,
@@ -41,7 +41,7 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> Astr
         "https://celestrak.org/SpaceData/sw19571001.txt",
     ];
 
-    let mut joiners: Vec<std::thread::JoinHandle<AstroResult<bool>>> = Vec::new();
+    let mut joiners: Vec<std::thread::JoinHandle<SKResult<bool>>> = Vec::new();
 
     // Walk through & download files
     for url in urls {

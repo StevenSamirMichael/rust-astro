@@ -1,11 +1,11 @@
-use crate::AstroResult;
+use crate::SKResult;
 use std::path::PathBuf;
 
 pub fn download_file(
     url: &str,
     downloaddir: &PathBuf,
     overwrite_if_exists: bool,
-) -> AstroResult<bool> {
+) -> SKResult<bool> {
     let fname = std::path::Path::new(url).file_name().unwrap();
     let fullpath = downloaddir.join(fname);
     if fullpath.exists() && !overwrite_if_exists {

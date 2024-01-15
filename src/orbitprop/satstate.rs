@@ -2,8 +2,8 @@ use nalgebra as na;
 
 use crate::orbitprop;
 use crate::orbitprop::PropSettings;
-use crate::AstroResult;
 use crate::AstroTime;
+use crate::SKResult;
 
 type PVCovType = na::SMatrix<f64, 6, 6>;
 
@@ -105,7 +105,7 @@ impl SatState {
         &self,
         time: &AstroTime,
         option_settings: Option<&PropSettings>,
-    ) -> AstroResult<SatState> {
+    ) -> SKResult<SatState> {
         let default = orbitprop::PropSettings::default();
         let settings = option_settings.unwrap_or(&default);
         match self.cov {
@@ -185,7 +185,7 @@ mod test {
     use crate::consts;
 
     #[test]
-    fn test_qgcrf2pvh() -> AstroResult<()> {
+    fn test_qgcrf2pvh() -> SKResult<()> {
         let satstate = SatState::from_pv(
             &AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0),
             &na::vector![consts::GEO_R, 0.0, 0.0],
@@ -206,7 +206,7 @@ mod test {
     }
 
     #[test]
-    fn test_satstate() -> AstroResult<()> {
+    fn test_satstate() -> SKResult<()> {
         let satstate = SatState::from_pv(
             &AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0),
             &na::vector![consts::GEO_R, 0.0, 0.0],
@@ -224,7 +224,7 @@ mod test {
     }
 
     #[test]
-    fn test_satcov() -> AstroResult<()> {
+    fn test_satcov() -> SKResult<()> {
         let mut satstate = SatState::from_pv(
             &AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0),
             &na::vector![consts::GEO_R, 0.0, 0.0],

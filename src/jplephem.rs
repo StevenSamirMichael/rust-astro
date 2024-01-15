@@ -29,7 +29,7 @@ pub type Quat = na::UnitQuaternion<f64>;
 
 use crate::astroerr;
 use crate::utils::datadir;
-use crate::utils::AstroResult;
+use crate::utils::SKResult;
 
 use once_cell::sync::OnceCell;
 
@@ -100,8 +100,8 @@ struct JPLEphem {
     cheby: DMatrix<f64>,
 }
 
-fn jplephem_singleton() -> &'static AstroResult<JPLEphem> {
-    static INSTANCE: OnceCell<AstroResult<JPLEphem>> = OnceCell::new();
+fn jplephem_singleton() -> &'static SKResult<JPLEphem> {
+    static INSTANCE: OnceCell<SKResult<JPLEphem>> = OnceCell::new();
     INSTANCE.get_or_init(|| JPLEphem::from_file("linux_p1550p2650.440"))
 }
 
@@ -135,7 +135,7 @@ impl JPLEphem {
     /// println!("p = {}", p);
     /// ```
     ///
-    fn from_file(fname: &str) -> AstroResult<JPLEphem> {
+    fn from_file(fname: &str) -> SKResult<JPLEphem> {
         use std::collections::HashMap;
         use std::path::PathBuf;
 
@@ -274,7 +274,7 @@ impl JPLEphem {
         &self,
         body: SolarSystem,
         tm: &AstroTime,
-    ) -> AstroResult<Vec3> {
+    ) -> SKResult<Vec3> {
         // Terrestrial time
         let tt = tm.to_jd(Scale::TT);
         if (self.jd_start > tt) || (self.jd_stop < tt) {
@@ -336,7 +336,7 @@ impl JPLEphem {
     ///  * EMB (2) is the Earth-Moon barycenter
     ///  * The sun position is relative to the solar system barycenter
     ///    (it will be close to origin)
-    fn barycentric_pos(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
+    fn barycentric_pos(&self, body: SolarSystem, tm: &AstroTime) -> SKResult<Vec3> {
         match self.ipt[body as usize][1] {
             6 => self.body_pos_optimized::<6>(body, tm),
             7 => self.body_pos_optimized::<7>(body, tm),
@@ -370,7 +370,7 @@ impl JPLEphem {
     ///  * EMB (2) is the Earth-Moon barycenter
     ///  * The sun position is relative to the solar system barycenter
     ///    (it will be close to origin)
-    fn barycentric_state(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
+    fn barycentric_state(&self, body: SolarSystem, tm: &AstroTime) -> SKResult<(Vec3, Vec3)> {
         match self.ipt[body as usize][1] {
             6 => self.body_state_optimized::<6>(body, tm),
             7 => self.body_state_optimized::<7>(body, tm),
@@ -388,7 +388,7 @@ impl JPLEphem {
         &self,
         body: SolarSystem,
         tm: &AstroTime,
-    ) -> AstroResult<(Vec3, Vec3)> {
+    ) -> SKResult<(Vec3, Vec3)> {
         // Terrestrial time
         let tt = tm.to_jd(Scale::TT);
         if (self.jd_start > tt) || (self.jd_stop < tt) {
@@ -452,7 +452,7 @@ impl JPLEphem {
     ///
     ///    3-vector of cartesian Geocentric position in meters
     ///
-    fn geocentric_pos(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
+    fn geocentric_pos(&self, body: SolarSystem, tm: &AstroTime) -> SKResult<Vec3> {
         if body == SolarSystem::MOON {
             return self.barycentric_pos(body, tm);
         } else {
@@ -482,7 +482,7 @@ impl JPLEphem {
     ///     * 3-vector of cartesian Geocentric velocity in meters / second
     ///       Note: velocity is relative to Earth
     ///
-    fn geocentric_state(&self, body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
+    fn geocentric_state(&self, body: SolarSystem, tm: &AstroTime) -> SKResult<(Vec3, Vec3)> {
         if body == SolarSystem::MOON {
             return self.barycentric_state(body, tm);
         } else {
@@ -524,7 +524,7 @@ pub fn consts(s: &String) -> Option<&f64> {
 ///  * EMB (2) is the Earth-Moon barycenter
 ///  * The sun position is relative to the solar system barycenter
 ///    (it will be close to origin)
-pub fn barycentric_pos(body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
+pub fn barycentric_pos(body: SolarSystem, tm: &AstroTime) -> SKResult<Vec3> {
     jplephem_singleton()
         .as_ref()
         .unwrap()
@@ -546,7 +546,7 @@ pub fn barycentric_pos(body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
 ///     * 3-vector of cartesian Geocentric velocity in meters / second
 ///       Note: velocity is relative to Earth
 ///
-pub fn geocentric_state(body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
+pub fn geocentric_state(body: SolarSystem, tm: &AstroTime) -> SKResult<(Vec3, Vec3)> {
     jplephem_singleton()
         .as_ref()
         .unwrap()
@@ -565,7 +565,7 @@ pub fn geocentric_state(body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3,
 ///
 ///    3-vector of cartesian Geocentric position in meters
 ///
-pub fn geocentric_pos(body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
+pub fn geocentric_pos(body: SolarSystem, tm: &AstroTime) -> SKResult<Vec3> {
     jplephem_singleton()
         .as_ref()
         .unwrap()
@@ -593,7 +593,7 @@ pub fn geocentric_pos(body: SolarSystem, tm: &AstroTime) -> AstroResult<Vec3> {
 ///  * EMB (2) is the Earth-Moon barycenter
 ///  * The sun position is relative to the solar system barycenter
 ///    (it will be close to origin)
-pub fn barycentric_state(body: SolarSystem, tm: &AstroTime) -> AstroResult<(Vec3, Vec3)> {
+pub fn barycentric_state(body: SolarSystem, tm: &AstroTime) -> SKResult<(Vec3, Vec3)> {
     jplephem_singleton()
         .as_ref()
         .unwrap()

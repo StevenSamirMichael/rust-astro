@@ -1,4 +1,4 @@
-use crate::utils::{astroerr, datadir, AstroResult};
+use crate::utils::{astroerr, datadir, SKResult};
 use std::collections::HashMap;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
@@ -367,7 +367,7 @@ impl Gravity {
     /// Load Gravity model coefficients from file
     /// Files are at:
     /// http://icgem.gfz-potsdam.de/tom_longtime
-    pub fn from_file(filename: &str) -> AstroResult<Gravity> {
+    pub fn from_file(filename: &str) -> SKResult<Gravity> {
         let path = datadir().unwrap_or(PathBuf::from(".")).join(filename);
         if !path.is_file() {
             return astroerr!("File does not exist");

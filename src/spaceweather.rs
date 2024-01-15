@@ -4,7 +4,7 @@ use std::io::{self, BufRead};
 use std::path::PathBuf;
 
 use crate::astrotime::AstroTime;
-use crate::utils::{astroerr, datadir, download_file, testdirs, AstroResult};
+use crate::utils::{astroerr, datadir, download_file, testdirs, SKResult};
 
 use std::sync::RwLock;
 
@@ -76,7 +76,7 @@ impl PartialOrd<AstroTime> for SpaceWeatherRecord {
     }
 }
 
-fn load_space_weather() -> AstroResult<Vec<SpaceWeatherRecord>> {
+fn load_space_weather() -> SKResult<Vec<SpaceWeatherRecord>> {
     let path = datadir()
         .unwrap_or(PathBuf::from("."))
         .join("sw19571001.txt");
@@ -142,12 +142,12 @@ fn load_space_weather() -> AstroResult<Vec<SpaceWeatherRecord>> {
     Ok(sw)
 }
 
-fn space_weather_singleton() -> &'static RwLock<AstroResult<Vec<SpaceWeatherRecord>>> {
-    static INSTANCE: OnceCell<RwLock<AstroResult<Vec<SpaceWeatherRecord>>>> = OnceCell::new();
+fn space_weather_singleton() -> &'static RwLock<SKResult<Vec<SpaceWeatherRecord>>> {
+    static INSTANCE: OnceCell<RwLock<SKResult<Vec<SpaceWeatherRecord>>>> = OnceCell::new();
     INSTANCE.get_or_init(|| RwLock::new(load_space_weather()))
 }
 
-pub fn get(tm: AstroTime) -> AstroResult<SpaceWeatherRecord> {
+pub fn get(tm: AstroTime) -> SKResult<SpaceWeatherRecord> {
     let sw_lock = space_weather_singleton().read().unwrap();
     let sw = sw_lock.as_ref().unwrap();
 
@@ -169,7 +169,7 @@ pub fn get(tm: AstroTime) -> AstroResult<SpaceWeatherRecord> {
     }
 }
 
-pub fn reload() -> AstroResult<()> {
+pub fn reload() -> SKResult<()> {
     // Find writeabld data directory
     let d: Vec<PathBuf> = testdirs()
         .into_iter()

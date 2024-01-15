@@ -13,7 +13,7 @@ use crate::Duration;
 use crate::SolarSystem;
 use lpephem::sun::shadowfunc;
 
-use crate::utils::AstroResult;
+use crate::utils::SKResult;
 
 use num_traits::identities::Zero;
 
@@ -252,7 +252,7 @@ pub fn propagate<const C: usize>(
     step_seconds: Option<f64>,
     settings: &PropSettings,
     satprops: Option<&dyn SatProperties>,
-) -> AstroResult<PropagationResult<StateType<C>>> {
+) -> SKResult<PropagationResult<StateType<C>>> {
     // Propagation structure
     let duration_days: f64 = (*stop - *start).days().abs();
     let duration_secs: f64 = duration_days * 86400.0;
@@ -339,7 +339,7 @@ mod tests {
     use std::f64::consts::PI;
 
     #[test]
-    fn test_propagate() -> AstroResult<()> {
+    fn test_propagate() -> SKResult<()> {
         let starttime = AstroTime::from_datetime(2015, 3, 20, 0, 0, 0.0);
         let stoptime = starttime + 1.0;
 
@@ -369,7 +369,7 @@ mod tests {
     }
 
     #[test]
-    fn test_state_transition() -> AstroResult<()> {
+    fn test_state_transition() -> SKResult<()> {
         // Check the state transition matrix:
         // Explicitly propagate two slightly different states,
         // separated by "dstate",
@@ -429,7 +429,7 @@ mod tests {
     }
 
     #[test]
-    fn test_state_transition_drag() -> AstroResult<()> {
+    fn test_state_transition_drag() -> SKResult<()> {
         // Check the state transition matrix:
         // Explicitly propagate two slightly different states,
         // separated by "dstate",

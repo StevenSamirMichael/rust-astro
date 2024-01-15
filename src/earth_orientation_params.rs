@@ -7,7 +7,7 @@ use super::astrotime;
 use crate::utils::download_file;
 use crate::utils::{datadir, testdirs};
 
-use crate::{astroerr, AstroResult};
+use crate::{astroerr, SKResult};
 
 use once_cell::sync::OnceCell;
 
@@ -100,7 +100,7 @@ fn eop_params_singleton() -> &'static RwLock<Vec<EOPEntry>> {
 /// Download new Earth Orientation Parameters file, and load it.
 /// By default, tries to download into writeable directory where
 /// data files for this crate are stored: crate::datadir::get()
-pub fn update() -> AstroResult<()> {
+pub fn update() -> SKResult<()> {
     // Find writeabld data directory
     let d: Vec<PathBuf> = testdirs()
         .into_iter()

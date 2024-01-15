@@ -10,7 +10,7 @@ use nalgebra as na;
 use crate::astroerr;
 use crate::types::Quaternion as Quat;
 use crate::types::Vec3;
-use crate::AstroResult;
+use crate::SKResult;
 
 ///
 /// Representation of a coordinate in the
@@ -171,7 +171,7 @@ impl ITRFCoord {
 
     /// Return an ITRF coordinate given input slice
     /// representing Cartesian coordinates, in meters
-    pub fn from_slice(v: &[f64]) -> AstroResult<ITRFCoord> {
+    pub fn from_slice(v: &[f64]) -> SKResult<ITRFCoord> {
         if v.len() != 3 {
             return astroerr!("Input slice must have 3 elements");
         }

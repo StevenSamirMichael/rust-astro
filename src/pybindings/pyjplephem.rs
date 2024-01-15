@@ -5,7 +5,7 @@ use super::pyutils::*;
 use crate::astrotime::AstroTime;
 use crate::jplephem;
 use crate::solarsystem::SolarSystem;
-use crate::utils::AstroResult;
+use crate::utils::SKResult;
 use nalgebra as na;
 
 /// Return the position and velocity of the given body in
@@ -29,7 +29,7 @@ use nalgebra as na;
 #[pyfunction]
 pub fn geocentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
     let rbody: SolarSystem = body.into();
-    let f = |tm: &AstroTime| -> AstroResult<(na::Vector3<f64>, na::Vector3<f64>)> {
+    let f = |tm: &AstroTime| -> SKResult<(na::Vector3<f64>, na::Vector3<f64>)> {
         jplephem::geocentric_state(rbody, tm)
     };
     tuple_func_of_time_arr(f, tm)
@@ -62,7 +62,7 @@ pub fn geocentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResu
 #[pyfunction]
 pub fn barycentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
     let rbody: SolarSystem = body.into();
-    let f = |tm: &AstroTime| -> AstroResult<(na::Vector3<f64>, na::Vector3<f64>)> {
+    let f = |tm: &AstroTime| -> SKResult<(na::Vector3<f64>, na::Vector3<f64>)> {
         jplephem::barycentric_state(rbody, tm)
     };
     tuple_func_of_time_arr(f, tm)
@@ -83,8 +83,7 @@ pub fn barycentric_state(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyRes
 #[pyfunction]
 pub fn geocentric_pos(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
     let rbody: SolarSystem = body.into();
-    let f =
-        |tm: &AstroTime| -> AstroResult<na::Vector3<f64>> { jplephem::geocentric_pos(rbody, tm) };
+    let f = |tm: &AstroTime| -> SKResult<na::Vector3<f64>> { jplephem::geocentric_pos(rbody, tm) };
     py_vec3_of_time_result_arr(&f, tm)
 }
 
@@ -111,7 +110,6 @@ pub fn geocentric_pos(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult
 #[pyfunction]
 pub fn barycentric_pos(body: &pysolarsystem::SolarSystem, tm: &PyAny) -> PyResult<PyObject> {
     let rbody: SolarSystem = body.into();
-    let f =
-        |tm: &AstroTime| -> AstroResult<na::Vector3<f64>> { jplephem::barycentric_pos(rbody, tm) };
+    let f = |tm: &AstroTime| -> SKResult<na::Vector3<f64>> { jplephem::barycentric_pos(rbody, tm) };
     py_vec3_of_time_result_arr(&f, tm)
 }
