@@ -247,7 +247,7 @@ impl PyITRFCoord {
     #[getter]
     fn get_qenu2itrf(&self) -> Quaternion {
         Quaternion {
-            inner: self.inner.q_ned2itrf(),
+            inner: self.inner.q_enu2itrf(),
         }
     }
 
