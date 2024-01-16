@@ -63,7 +63,7 @@ fn pynrlmsise(args: &PyTuple) -> PyResult<(f64, f64)> {
     } else if args[0].is_instance_of::<PyFloat>() {
         let altitude = args[0].extract::<f64>().unwrap();
         let latitude: Option<f64> = {
-            if args.len() > 0 && args[1].is_instance_of::<PyFloat>() {
+            if args.len() > 1 && args[1].is_instance_of::<PyFloat>() {
                 Some(args[1].extract::<f64>().unwrap())
             } else {
                 None
