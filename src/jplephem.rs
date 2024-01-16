@@ -614,6 +614,7 @@ mod tests {
         let tm = AstroTime::from_jd(2451545.0, Scale::TT);
         //let tm = &AstroTime::from_jd(2451545.0, Scale::UTC);
         let (_, _): (Vec3, Vec3) = jpl.geocentric_state(SolarSystem::MOON, &tm).unwrap();
+        println!("au = {:.20}", jpl._au);
     }
 
     /// Load the test vectors that come with the JPL ephemeris files

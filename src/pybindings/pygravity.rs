@@ -122,7 +122,7 @@ pub fn gravity(pos: &PyAny, kwds: Option<&PyDict>) -> PyResult<PyObject> {
         })
     } else {
         Err(pyo3::exceptions::PyTypeError::new_err(
-            "Input must be 3-elemnent numpy or itrfcoord",
+            "Input must be 3-element numpy or itrfcoord",
         ))
     }
 }

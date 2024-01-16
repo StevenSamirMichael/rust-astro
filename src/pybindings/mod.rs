@@ -46,6 +46,7 @@ fn jplephem(_py: Python, m: &PyModule) -> PyResult<()> {
         .unwrap();
     m.add_function(wrap_pyfunction!(pyjplephem::barycentric_state, m)?)
         .unwrap();
+
     Ok(())
 }
 

@@ -149,6 +149,24 @@ impl PyAstroTime {
         })
     }
 
+    /// Return time object representing input
+    /// modified Julian date an dtime scale
+    #[staticmethod]
+    fn from_mjd(mjd: f64, scale: &PyTimeScale) -> Self {
+        PyAstroTime {
+            inner: AstroTime::from_mjd(mjd, scale.into()),
+        }
+    }
+
+    /// Return time object representing input
+    /// Julian date and time scale
+    #[staticmethod]
+    fn from_jd(jd: f64, scale: &PyTimeScale) -> Self {
+        PyAstroTime {
+            inner: AstroTime::from_jd(jd, scale.into()),
+        }
+    }
+
     /// Convert time object to UTC Gegorian date, with
     /// returns tuple with 3 elements:
     /// 1 : Gregorian Year
