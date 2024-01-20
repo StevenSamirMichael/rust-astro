@@ -113,6 +113,8 @@ pub fn satkit(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<pygravity::GravModel>()?;
     m.add_function(wrap_pyfunction!(pygravity::gravity, m)?)
         .unwrap();
+    m.add_function(wrap_pyfunction!(pygravity::gravity_and_partials, m)?)
+        .unwrap();
 
     m.add_function(wrap_pyfunction!(pynrlmsise::nrlmsise00, m)?)
         .unwrap();

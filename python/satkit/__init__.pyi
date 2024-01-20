@@ -272,6 +272,49 @@ def gravity(
 
     """
 
+def gravity_and_partials(
+    pos: satkit.itrfcoord | npt.ArrayLike[np.float], **kwargs
+) -> (npt.ArrayLike[np.float], np.arrayLike[np.float]):
+    """
+    gravity_and_partials(pos)
+    --
+
+    Return acceleration due to Earth gravity at the input position. The
+    acceleration does not include the centrifugal force, and is output
+    in m/s^2 in the International Terrestrial Reference Frame (ITRF)
+
+    Also return partial derivative of acceleration with respect to
+    ITRF Cartesian coordinate, in m/s^2 / m
+
+    Inputs:
+
+        pos:   Position as ITRF coordinate (satkit.itrfcoord) or numpy
+                3-vector representing ITRF position in meters or
+                list 3-vector representing ITRF position in meters
+
+    Kwargs:
+
+        model:   The gravity model to use.  Options are:
+                    satkit.gravmodel.jgm3
+                    satkit.gravmodel.jgm2
+                    satkit.gravmodel.egm96
+                    satkit.gravmodel.itugrace16
+
+                Default is satkit.gravmodel.jgm3
+
+                For details of models, see:
+                http://icgem.gfz-potsdam.de/tom_longtime
+
+        order:    The order of the gravity model to use.
+                Default is 6, maximum is 16
+
+
+                For details of calculation, see Chapter 3.2 of:
+                "Satellite Orbits: Models, Methods, Applications",
+                O. Montenbruck and B. Gill, Springer, 2012.
+
+    """
+
 class solarsystem:
     """
     Solar system bodies for which high-precision ephemeris can be computed
@@ -696,7 +739,7 @@ class quaternion:
     def rotx(theta) -> satkit.quaternion:
         """
         Return quaternion representing right-handed rotation of vector
-        by "theta" degrees about the xhat unit vector
+        by "theta" radians about the xhat unit vector
 
         Equivalent rotation matrix:
         | 1             0            0|
@@ -707,7 +750,7 @@ class quaternion:
     def roty(theta) -> satkit.quaternion:
         """
         Return quaternion representing right-handed rotation of vector
-        by "theta" degrees about the yhat unit vector
+        by "theta" radians about the yhat unit vector
 
         Equivalent rotation matrix:
         | cos(theta)     0   -sin(theta)|
@@ -718,7 +761,7 @@ class quaternion:
     def rotz(theta) -> satkit.quaternion:
         """
         Return quaternion representing right-handed rotation of vector
-        by "theta" degrees about the zhat unit vector
+        by "theta" radians about the zhat unit vector
 
         Equivalent rotation matrix:
         |  cos(theta)      sin(theta)   0|

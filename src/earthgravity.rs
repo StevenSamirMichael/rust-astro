@@ -81,6 +81,37 @@ pub fn accel(pos_itrf: &Vec3, order: usize, model: GravityModel) -> Vec3 {
     gravhash().get(&model).unwrap().accel(pos_itrf, order)
 }
 
+///
+/// Return acceleration due to Earth gravity at the input position. , as
+/// well as acceleratian partials with respect to ITRF position, e.e.
+/// d a / dr
+///
+/// The acceleration does not include the centrifugal force, and is output
+/// in m/s^2 in the International Terrestrial Reference Frame (ITRF)
+///
+/// Inputs:
+///
+///       pos:    Position as nalgebra 3-vecotr
+///
+///     order:    The order of the gravity model to use.
+///               Maximum is 16
+///
+///     model:    The gravity model to use, of type "GravityModel"
+///
+///               For details of models, see:
+///               http://icgem.gfz-potsdam.de/tom_longtime
+///
+///               For details of calculation, see Chapter 3.2 of:
+///               "Satellite Orbits: Models, Methods, Applications",
+///               O. Montenbruck and B. Gill, Springer, 2012.
+///
+pub fn accel_and_partials(pos_itrf: &Vec3, order: usize, model: GravityModel) -> (Vec3, Mat3) {
+    gravhash()
+        .get(&model)
+        .unwrap()
+        .accel_and_partials(pos_itrf, order)
+}
+
 pub fn accel_jgm3(pos_itrf: &Vec3, order: usize) -> Vec3 {
     jgm3().accel(pos_itrf, order)
 }
@@ -98,6 +129,7 @@ pub struct Gravity {
 
 type Legendre<const N: usize> = na::SMatrix<f64, N, N>;
 type Vec3 = na::Vector3<f64>;
+type Mat3 = na::Matrix3<f64>;
 
 ///
 /// Return acceleration due to Earth gravity at the input position. The
