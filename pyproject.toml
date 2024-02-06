@@ -4,7 +4,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "satkit"
-version = "0.1"
+version = "0.15"
+dependencies = [
+    "datetime>=3.0",
+    "numpy>=1.20.0"
+]
+requires-python = ">= 3.8"
+authors = [
+    {name = "Steven Michael", email = "ssmichael@gmail.com"}
+]
+maintainers = [
+    {name = "Steven Michael", email = "ssmichael@gmail.com"}
+]
+readme = "README.md"
+description = "Satellite dynamics toolkit"
+keywords = ["satellite", "orbit", "astrodynamics", "SGP4", "TLE"]
 
 [tool.setuptools.packages]
 find = { where = ["python"] }

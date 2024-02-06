@@ -7,7 +7,7 @@ use nalgebra::{Const, Dyn, OMatrix};
 
 type StateArr = OMatrix<f64, Const<3>, Dyn>;
 pub type SGP4State = (StateArr, StateArr);
-pub type SGP4Result = Result<SGP4State, (i32, String)>;
+pub type SGP4Result = Result<SGP4State, (i32, String, usize)>;
 
 use std::f64::consts::PI;
 
@@ -117,7 +117,7 @@ pub fn sgp4_full<'a>(
             nodeo,
         ) {
             Ok(sr) => tle.satrec = Some(sr),
-            Err(e) => return Err((e, String::from(SGP4_ERRS[e as usize]))),
+            Err(e) => return Err((e, String::from(SGP4_ERRS[e as usize]), 0)),
         }
     }
 
@@ -126,6 +126,7 @@ pub fn sgp4_full<'a>(
     let n = tm.len();
     let mut rarr = StateArr::zeros(n);
     let mut varr = StateArr::zeros(n);
+
     for (pos, thetime) in tm.iter().enumerate() {
         let tsince = (*thetime - tle.epoch).days() * 1440.0;
 
@@ -134,7 +135,7 @@ pub fn sgp4_full<'a>(
                 rarr.index_mut((.., pos)).copy_from_slice(&r);
                 varr.index_mut((.., pos)).copy_from_slice(&v);
             }
-            Err(e) => return Err((e, String::from(SGP4_ERRS[e as usize]))),
+            Err(e) => return Err((e, String::from(SGP4_ERRS[e as usize]), pos)),
         }
     }
     Ok((rarr * 1.0e3, varr * 1.0e3))
