@@ -5,9 +5,32 @@ use crate::astrotime::{AstroTime, Scale};
 use crate::tle::TLE;
 use nalgebra::{Const, Dyn, OMatrix};
 
+pub enum SGP4Error {
+    SGP4Success = 0,
+    SGP4ErrorEccen = 1,
+    SGP4ErrorMeanMotion = 2,
+    SGP4ErrorPerturbEccen = 3,
+    SGP4ErrorSemiLatusRectum = 4,
+    SGP4ErrorUnused = 5,
+    SGP4ErrorOrbitDecay = 6,
+}
+impl From<i32> for SGP4Error {
+    fn from(val: i32) -> SGP4Error {
+        match val {
+            0 => SGP4Error::SGP4Success,
+            1 => SGP4Error::SGP4ErrorEccen,
+            2 => SGP4Error::SGP4ErrorMeanMotion,
+            3 => SGP4Error::SGP4ErrorPerturbEccen,
+            4 => SGP4Error::SGP4ErrorSemiLatusRectum,
+            6 => SGP4Error::SGP4ErrorOrbitDecay,
+            _ => SGP4Error::SGP4ErrorUnused,
+        }
+    }
+}
+
 type StateArr = OMatrix<f64, Const<3>, Dyn>;
 pub type SGP4State = (StateArr, StateArr);
-pub type SGP4Result = Result<SGP4State, (i32, String, usize)>;
+pub type SGP4Result = Result<SGP4State, (SGP4Error, String, usize)>;
 
 use std::f64::consts::PI;
 
@@ -117,7 +140,7 @@ pub fn sgp4_full<'a>(
             nodeo,
         ) {
             Ok(sr) => tle.satrec = Some(sr),
-            Err(e) => return Err((e, String::from(SGP4_ERRS[e as usize]), 0)),
+            Err(e) => return Err((e.into(), String::from(SGP4_ERRS[e as usize]), 0)),
         }
     }
 
@@ -135,7 +158,7 @@ pub fn sgp4_full<'a>(
                 rarr.index_mut((.., pos)).copy_from_slice(&r);
                 varr.index_mut((.., pos)).copy_from_slice(&v);
             }
-            Err(e) => return Err((e, String::from(SGP4_ERRS[e as usize]), pos)),
+            Err(e) => return Err((e.into(), String::from(SGP4_ERRS[e as usize]), pos)),
         }
     }
     Ok((rarr * 1.0e3, varr * 1.0e3))
