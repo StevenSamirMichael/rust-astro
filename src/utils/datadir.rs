@@ -4,8 +4,7 @@ use once_cell::sync::OnceCell;
 use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
 
-#[inline]
-fn dylib_path() -> Option<PathBuf> {
+pub fn dylib_path() -> Option<PathBuf> {
     let mut dl_info = libc::Dl_info {
         dli_fname: core::ptr::null(),
         dli_fbase: core::ptr::null_mut(),
@@ -22,7 +21,7 @@ fn dylib_path() -> Option<PathBuf> {
             None
         } else {
             match unsafe { CStr::from_ptr(dl_info.dli_fname) }.to_str() {
-                Ok(path) => Some(PathBuf::from(path)),
+                Ok(path) => Some(PathBuf::from(PathBuf::from(path).parent().unwrap())),
                 Err(_) => None,
             }
         }
@@ -38,6 +37,14 @@ pub fn testdirs() -> Vec<PathBuf> {
     match std::env::var(&"ASTROLIB_DATA") {
         Ok(val) => testdirs.push(Path::new(&val).to_path_buf()),
         Err(_) => (),
+    }
+
+    #[cfg(feature = "pybindings")]
+    match dylib_path() {
+        Some(v) => {
+            testdirs.push(Path::new(&v).join("astro-data"));
+        }
+        None => (),
     }
 
     // Look for paths under home directory
@@ -114,6 +121,14 @@ pub fn datadir() -> SKResult<PathBuf> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[test]
+    fn dylib() {
+        let p = dylib_path();
+        println!("p = {:?}", p);
+    }
+
     #[test]
     fn datadir() {
         use crate::utils::datadir;

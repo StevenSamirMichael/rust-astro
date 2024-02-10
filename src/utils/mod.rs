@@ -5,6 +5,7 @@ pub use skerror::SKResult;
 mod datadir;
 mod skerror;
 pub use datadir::datadir;
+pub use datadir::dylib_path;
 pub use datadir::testdirs;
 
 #[cfg(test)]

@@ -73,6 +73,14 @@ fn githash() -> PyResult<String> {
     Ok(String::from(crate::utils::githash()))
 }
 
+#[pyfunction]
+fn dylib_path() -> PyResult<String> {
+    match crate::utils::dylib_path() {
+        Some(v) => Ok(String::from(v.to_str().unwrap())),
+        None => Ok(String::from("none")),
+    }
+}
+
 /// Build date of compiled library
 #[pyfunction]
 fn build_date() -> PyResult<String> {
@@ -83,6 +91,7 @@ fn build_date() -> PyResult<String> {
 #[pymodule]
 pub fn utils(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(datadir, m)?).unwrap();
+    m.add_function(wrap_pyfunction!(dylib_path, m)?).unwrap();
     m.add_function(wrap_pyfunction!(update_datafiles, m)?)
         .unwrap();
     m.add_function(wrap_pyfunction!(githash, m)?).unwrap();

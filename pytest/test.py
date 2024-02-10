@@ -252,6 +252,7 @@ class TestSGP4:
         ]
         [p, v] = sk.sgp4(tles, tm)
         [p2, v2] = sk.sgp4(tles[2], tm)
+        # Verify that propagating multiple TLEs matches propagation of a single TLE
         assert p2 == pytest.approx(np.squeeze(p[2, :, :]))
         assert v2 == pytest.approx(np.squeeze(v[2, :, :]))
 

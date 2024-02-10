@@ -5,6 +5,7 @@ use crate::astrotime::{AstroTime, Scale};
 use crate::tle::TLE;
 use nalgebra::{Const, Dyn, OMatrix};
 
+#[derive(Debug, Clone)]
 pub enum SGP4Error {
     SGP4Success = 0,
     SGP4ErrorEccen = 1,
@@ -271,7 +272,10 @@ mod tests {
                         }
                     }
                     // Note: some errors are part of test vectors
-                    Err(e) => println!("SGP4 Error: \"{}\", is expected in testvecs", e.1),
+                    Err(e) => {
+                        println!("SGP4 Error: \"{:?}\"", e.0);
+                        println!("TLE = {}", tle)
+                    }
                 }
             }
         }
