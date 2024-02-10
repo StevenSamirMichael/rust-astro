@@ -16,6 +16,8 @@ jobs:
           - ubuntu-latest
         python-version:
           - "12"
+    env:
+      CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
 
     steps:
       - uses: actions/checkout@v4
