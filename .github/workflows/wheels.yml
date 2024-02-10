@@ -26,7 +26,7 @@ jobs:
       - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
+          profile: default
           toolchain: stable
           override: true
 
