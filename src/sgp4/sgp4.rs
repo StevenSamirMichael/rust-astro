@@ -30,7 +30,7 @@ impl From<i32> for SGP4Error {
 
 type StateArr = OMatrix<f64, Const<3>, Dyn>;
 pub type SGP4State = (StateArr, StateArr);
-pub type SGP4Result = Result<SGP4State, (SGP4Error, String, usize)>;
+pub type SGP4Result = Result<SGP4State, (SGP4Error, usize)>;
 
 use std::f64::consts::PI;
 
@@ -140,7 +140,7 @@ pub fn sgp4_full<'a>(
             nodeo,
         ) {
             Ok(sr) => tle.satrec = Some(sr),
-            Err(e) => return Err((e.into(), String::from(SGP4_ERRS[e as usize]), 0)),
+            Err(e) => return Err((e.into(), 0)),
         }
     }
 
@@ -158,7 +158,7 @@ pub fn sgp4_full<'a>(
                 rarr.index_mut((.., pos)).copy_from_slice(&r);
                 varr.index_mut((.., pos)).copy_from_slice(&v);
             }
-            Err(e) => return Err((e.into(), String::from(SGP4_ERRS[e as usize]), pos)),
+            Err(e) => return Err((e.into(), pos)),
         }
     }
     Ok((rarr * 1.0e3, varr * 1.0e3))

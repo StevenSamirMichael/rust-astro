@@ -111,6 +111,9 @@ pub fn satkit(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pysgp4::sgp4, m)?).unwrap();
 
     m.add_class::<pygravity::GravModel>()?;
+    m.add_class::<pysgp4::GravConst>()?;
+    m.add_class::<pysgp4::OpsMode>()?;
+
     m.add_function(wrap_pyfunction!(pygravity::gravity, m)?)
         .unwrap();
     m.add_function(wrap_pyfunction!(pygravity::gravity_and_partials, m)?)
