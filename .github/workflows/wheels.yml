@@ -20,15 +20,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Used to host cibuildwheel
-      - uses: actions/setup-python@v3
-
       - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
           profile: default
           toolchain: stable
           override: true
+
+      # Used to host cibuildwheel
+      - uses: actions/setup-python@v3
 
       - name: Install rust setuptools and pytest
         run: python -m pip install setuptools setuptools-rust pytest
