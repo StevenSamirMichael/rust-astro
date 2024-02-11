@@ -43,15 +43,16 @@ before-build = [
 ]
 
 [tool.cibuildwheel.windows]
-archs = ["AMD64"]
-skip = ["pp*"]
 before-build = [
     "pip install -U setuptools-rust",
     "rustup toolchain install stable-i686-pc-windows-msvc",
-    "rustup default stable-i686-pc-windows-msvc",
-    "rustup override set stable-i686-pc-windows-msvc",
+    "rustup toolchain install stable-x86_64-pc-windows-msvc",
+    "rustup default stable-x86_64-pc-windows-msvc",
+    "rustup override set stable-x86_64-pc-windows-msvc",
     "rustup show",
 ]
+archs = ["AMD64"]
+skip = ["pp*"]
 environment = { PATH = '$UserProfile\.cargo\bin;$PATH' }
 
 
