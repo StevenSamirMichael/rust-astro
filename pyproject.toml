@@ -16,9 +16,9 @@ keywords = ["satellite", "orbit", "astrodynamics", "SGP4", "TLE"]
 [tool.setuptools.packages]
 find = { where = ["python"] }
 
-[tool.cibuildwheel]
+#[tool.cibuildwheel]
 # Only build on CPython 3.12
-build = "cp312-*"
+#build = "cp312-*"
 
 [[tool.setuptools-rust.ext-modules]]
 features = ["pybindings"]
