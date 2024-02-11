@@ -42,16 +42,6 @@ pub fn sgp4(tle: &mut TLE, tm: &[AstroTime]) -> SGP4Result {
     sgp4_full(tle, tm, GravConst::WGS84, OpsMode::IMPROVED)
 }
 
-const SGP4_ERRS: [&str; 7] = [
-    "Success",
-    "Mean elements, ecc > 1.0 or ecc < -0.001 or a  < 0.95 Earth radius",
-    "Mean motion < 0.0",
-    "Pert. Elements: ecc < 0.0 or ecc > 1.0",
-    "Semi-latus rectum < 0.0",
-    "Epoch elements are sub-orbital",
-    "Satellite has decayed",
-];
-
 ///
 /// Run Simplified General Perturbations (SGP)-4 propagator on
 /// Two-Line Element Set to

@@ -159,7 +159,7 @@ pub fn sgp4(tle: &PyAny, time: &PyAny, kwds: Option<&PyDict>) -> PyResult<PyObje
                     );
                 },
 
-                Err(e) => {}
+                Err(_e) => {}
             });
             let dims = vec![tles.len(), ntimes, 3];
             Ok((

@@ -83,9 +83,6 @@ jobs:
             rustup override set nightly-i686-pc-windows-msvc &&
             rustup show
 
-      - name: list dist files
-        run: ${{ matrix.ls || 'ls -lh' }} dist/
-
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
