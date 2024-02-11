@@ -4,6 +4,12 @@ use once_cell::sync::OnceCell;
 use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
 
+#[cfg(target_os = "windows")]
+pub fn dylib_path() -> Option<PathBuf> {
+    None
+}
+
+#[cfg(not(target_os = "windows"))]
 pub fn dylib_path() -> Option<PathBuf> {
     let mut dl_info = libc::Dl_info {
         dli_fname: core::ptr::null(),
