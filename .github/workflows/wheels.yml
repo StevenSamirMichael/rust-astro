@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: build py3.${{ matrix.python-version }} on ${{ matrix.platform || matrix.os }}
+    name: build on ${{ matrix.platform || matrix.os }}
 
     strategy:
       fail-fast: false
@@ -16,8 +16,6 @@ jobs:
           - macos
           - ubuntu
           - windows
-        python-version:
-          - "12"
         include:
           - os: ubuntu
             platform: linux
@@ -42,6 +40,7 @@ jobs:
       - name: install python dependencies
         run: pip install -U setuptools wheel cibuildwheel
 
+      # Details of cibuildwheel are set in pyproject.toml
       - name: build ${{ matrix.platform || matrix.os }} binaries
         run: cibuildwheel --output-dir wheelhouse
 

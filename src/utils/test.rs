@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::path::PathBuf;
 
 pub fn get_project_root() -> std::io::Result<PathBuf> {
@@ -16,4 +17,15 @@ pub fn get_project_root() -> std::io::Result<PathBuf> {
         std::io::ErrorKind::NotFound,
         "Ran out of places to find Cargo.toml",
     ))
+}
+
+pub fn get_testvec_dir() -> std::io::Result<PathBuf> {
+    match std::env::var(&"SATKIT_TESTVEC_ROOT") {
+        Ok(val) => {
+            return Ok(Path::new(&val).to_path_buf());
+        }
+        Err(_) => (),
+    }
+    let root = get_project_root()?;
+    Ok(root.join("satkit-testvecs"))
 }

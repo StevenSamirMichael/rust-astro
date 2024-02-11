@@ -190,16 +190,14 @@ mod tests {
 
     #[test]
     fn vallado_testvecs() {
-        let testdir = test::get_project_root()
-            .unwrap()
-            .join("testdata")
-            .join("vallado")
-            .join("TestSGP4")
-            .join("TestSGP4");
+        let testdir = test::get_testvec_dir().unwrap().join("sgp4");
         if !testdir.is_dir() {
             panic!(
-                "Required test directory \"{}\" does not exist
-                try running \"getfiles.sh\" script in $(crateroot)/testdata",
+                "Required SGP4 test vectors directory: \"{}\" does not exist
+                    clone test vectors repo at 
+                    https://github.com/StevenSamirMichael/satkit-testvecs.git 
+                    from root of repo or set \"SATKIT_TESTVEC_ROOT\" 
+                    to point to directory",
                 testdir.to_string_lossy()
             );
         }

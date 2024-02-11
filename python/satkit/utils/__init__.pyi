@@ -38,7 +38,7 @@ def update_datafiles(**kwargs):
     overwrite flag
 
     """
-    
+
 def datadir() -> str:
     """
     Return directory currently used to hold
@@ -46,39 +46,39 @@ def datadir() -> str:
 
     e.g., Earth Orientation Parameters, gravity coefficients,
     JPL Ephemeris, etc..
-    
+
     Data directory is 1st of following directories search that contains
     the data files listed in "update_datafiles"
-    
+
     MacOS:
-    
-    1. Directory pointed to by "ASTROLIB_DATA" directory
+
+    1. Directory pointed to by "ASTRO_DATA" environment variable
     2. $HOME/LIBRARY/Application\ Support/astro-data
     3. $HOME/.astro-data
     4. $HOME
     5. /usr/share/astro-data
     6. /Library/Application\ Support/astro-data
-    
+
     Linux:
-    
-    1. Directory pointed to by "ASTROLIB_DATA" directory
+
+    1. Directory pointed to by "ASTRO_DATA" directory
     2. $HOME/.astro-data
     3. $HOME
     4. /usr/share/astro-data
-        
+
     Windows:
-    1. Directory pointed to by "ASTROLIB_DATA" directory
+    1. Directory pointed to by "ASTRO_DATA" directory
     2. $HOME/.astro-data
     3. $HOME
 
-    
+
     """
-    
+
 def githash() -> str:
     """
     Return git hash of this satkit build
     """
-    
+
 def builddate() -> str:
     """
     Return build date of this satkit library as a string

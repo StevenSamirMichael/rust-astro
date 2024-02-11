@@ -5,8 +5,16 @@ use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
 
 #[cfg(target_os = "windows")]
+use windows::Win32::System::LibraryLoader::GetModuleFileNameA;
+
+#[cfg(target_os = "windows")]
 pub fn dylib_path() -> Option<PathBuf> {
     None
+    //let mut buf = [0u8; 1024];
+
+    //unsafe {
+    //    let ret = GetModuleFileNameA(null_mut(), &buf);
+    //}
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -40,7 +48,7 @@ pub fn testdirs() -> Vec<PathBuf> {
     let mut testdirs: Vec<PathBuf> = Vec::new();
 
     // Look for paths in environment variable
-    match std::env::var(&"ASTROLIB_DATA") {
+    match std::env::var(&"ASTRO_DATA") {
         Ok(val) => testdirs.push(Path::new(&val).to_path_buf()),
         Err(_) => (),
     }
@@ -95,7 +103,7 @@ pub fn testdirs() -> Vec<PathBuf> {
 /// Tries the following paths in order, and stops when the
 /// files are found
 ///
-/// *  "ASTROLIB_DATA" environment variable
+/// *  "ASTRO_DATA" environment variable
 /// *  ${HOME}/share/.astro-data
 /// *  ${HOME}
 /// *  /usr/share/astro-data

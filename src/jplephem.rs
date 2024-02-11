@@ -625,15 +625,18 @@ mod tests {
 
         let jpl = jplephem_singleton().as_ref().unwrap();
 
-        let testvecfile = test::get_project_root()
+        let testvecfile = test::get_testvec_dir()
             .unwrap()
-            .join("testdata")
+            .join("jplephem")
             .join("testpo.440");
 
         if !testvecfile.is_file() {
             panic!(
                 "Required JPL ephemeris test vectors file: \"{}\" does not exist
-                try running \"getfiles.sh\" script in $(crateroot)/testdata",
+                clone test vectors repo at 
+                https://github.com/StevenSamirMichael/satkit-testvecs.git 
+                from root of repo or set \"SATKIT_TESTVEC_ROOT\" 
+                to point to directory",
                 testvecfile.to_string_lossy()
             );
         }
