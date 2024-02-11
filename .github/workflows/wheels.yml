@@ -17,8 +17,6 @@ jobs:
           - ubuntu
           - windows
         python-version:
-          - "10"
-          - "11"
           - "12"
         include:
           - os: ubuntu
