@@ -414,6 +414,10 @@ impl PyAstroTime {
                 inner: self.inner - dur.inner,
             }
             .into_py(other.py()))
+        } else if other.is_instance_of::<PyAstroTime>() {
+            let tm2 = other.extract::<PyAstroTime>().unwrap();
+            let pdiff: crate::Duration = self.inner - tm2.inner;
+            Ok(PyDuration { inner: pdiff }.into_py(other.py()))
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Invalid type for rhs",

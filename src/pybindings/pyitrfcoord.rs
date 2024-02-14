@@ -92,22 +92,22 @@ impl PyITRFCoord {
                 None => longitude_deg,
                 Some(v) => Some(v * 180.0 / PI),
             };
-            let mut altitude: Option<f64> = kwargs_or_none(&mut kwargs, "altitude")?;
+            let mut altitude: f64 = kwargs_or_default(&mut kwargs, "altitude", 0.0)?;
             altitude = match kwargs_or_none(&mut kwargs, "height")? {
                 None => altitude,
-                Some(v) => Some(v),
+                Some(v) => v,
             };
 
-            if latitude_deg.is_none() || longitude_deg.is_none() || altitude.is_none() {
+            if latitude_deg.is_none() || longitude_deg.is_none() {
                 return Err(pyo3::exceptions::PyTypeError::new_err(
-                    "Must set latitude, longitude, and altitude",
+                    "Must set latitude, longitude",
                 ));
             }
             Ok(PyITRFCoord {
                 inner: ITRFCoord::from_geodetic_deg(
                     latitude_deg.unwrap(),
                     longitude_deg.unwrap(),
-                    altitude.unwrap(),
+                    altitude,
                 ),
             })
         } else {

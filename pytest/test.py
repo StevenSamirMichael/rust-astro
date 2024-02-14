@@ -12,7 +12,7 @@ class TestJPLEphem:
         """
 
         # File contains test calculation vectors provided by NASA
-        fname = "../testdata/testpo.440"
+        fname = "../satkit-testvecs/jplephem/testpo.440"
 
         # Read in the test vectors
         with open(fname, "r") as fd:
@@ -200,6 +200,20 @@ class TestFrameTransform:
         assert pGCRF[1] == pytest.approx(6123011.403)
         assert pGCRF[2] == pytest.approx(6378136.925)
 
+    def test_gmst(self):
+        """
+        Test GMST : vallado example 3-5
+        """
+
+        tm = sk.time(1992, 8, 20, 12, 14, 0)
+
+        # Spooof UTC as UT1 value (as is done in example from Vallado)
+        tdiff = tm.to_mjd(sk.timescale.UT1) - tm.to_mjd(sk.timescale.UTC)
+        tm = tm - sk.duration.from_days(tdiff)
+        gmst = sk.frametransform.gmst(tm)
+        truth = -207.4212121875 * m.pi / 180
+        assert gmst == pytest.approx(truth)
+
 
 class TestITRFCoord:
     def test_geodetic(self):
@@ -260,7 +274,7 @@ class TestSGP4:
         """
         SGP4 Test Vectors from vallado
         """
-        basedir = "../testdata/vallado/TestSGP4/TestSGP4"
+        basedir = "../satkit-testvecs/sgp4"
         tlefile = basedir + "/SGP4-VER.TLE"
         with open(tlefile, "r") as fh:
             lines = fh.readlines()

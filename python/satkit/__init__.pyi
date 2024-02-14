@@ -966,8 +966,7 @@ class itrfcoord:
         altitude: height above ellipsoid, meters
         height: height above ellipsoid, meters
 
-        Note that there are 2 ways to specify latitude, longitude, and altitude
-        All 3 must be specified or an error will be triffered
+        If altitude is not specified, default is 0
 
     Output:
 

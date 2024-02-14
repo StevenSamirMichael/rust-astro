@@ -53,15 +53,26 @@ impl Duration {
 
     pub fn to_string(&self) -> String {
         let mut secs = self.seconds();
+        let mut sign = String::from("");
+        if secs < 0.0 {
+            sign = String::from("-");
+            secs = -1.0 * secs;
+        }
+        // add 5e-4 seconds so that display will round correctly,
+        // e.g. if seconds = 59.999..., rather than round up and
+        // display "seconds" in second field, show 0 and increment
+        // minutes...
+        secs = secs + 5.0e-4;
 
         if secs < 1.0 {
-            format!("Duration: {:.3} microseconds", (secs % 1.0) * 1.0e6)
+            format!("Duration: {}{:.3} microseconds", sign, (secs % 1.0) * 1.0e6)
         } else {
             let days = (secs / 86400.0) as usize;
             let hours = ((secs % 86400.0) / 3600.0) as usize;
             let minutes = ((secs % 3600.0) / 60.0) as usize;
             secs = secs % 60.0;
             let mut s = String::from("Duration: ");
+            s.push_str(&sign);
             if days > 0 {
                 s.push_str(format!("{} days, ", days).as_str());
             }

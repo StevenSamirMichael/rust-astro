@@ -4,8 +4,8 @@ use once_cell::sync::OnceCell;
 use std::path::Path;
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
 
-#[cfg(target_os = "windows")]
-use windows::Win32::System::LibraryLoader::GetModuleFileNameA;
+// #[cfg(target_os = "windows")]
+// use windows::Win32::System::LibraryLoader::GetModuleFileNameA;
 
 #[cfg(target_os = "windows")]
 pub fn dylib_path() -> Option<PathBuf> {

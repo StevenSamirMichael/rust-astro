@@ -661,6 +661,17 @@ mod tests {
     }
 
     #[test]
+    fn sub_test() {
+        let tm1 = AstroTime::from_datetime(2024, 2, 3, 22, 0, 0.0);
+        let tm2 = AstroTime::from_datetime(2024, 2, 3, 11, 0, 0.0);
+        let diff = tm1 - tm2;
+        println!("diff = {}", diff);
+        let diff2 = tm2 - tm1;
+        println!("diff2 = {}", diff2);
+        println!("diff2 seconds = {}", diff2.seconds());
+    }
+
+    #[test]
     fn add_test() {
         let tm = AstroTime::from_datetime(2021, 3, 4, 11, 20, 41.0);
         let delta: f64 = 0.5;
