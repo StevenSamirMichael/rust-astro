@@ -239,6 +239,19 @@ class TestITRFCoord:
         assert itrf.longitude_deg == pytest.approx(46.4464)
 
 
+class TestMoon:
+    def test_moonpos(self):
+        """
+        Vallado example 5-3 for
+        computing position of the moon
+        """
+        t0 = sk.time(1994, 4, 28)
+        t1 = sk.time.from_mjd(t0.to_mjd(sk.timescale.UTC), sk.timescale.TDB)
+        p = sk.moon.pos_gcrf(t1)
+        ref_pos = np.array([-134240.626e3, -311571.590e3, -126693.785e3])
+        assert p == pytest.approx(ref_pos)
+
+
 class TestSGP4:
     def test_sgp4_multiple(self):
         """
