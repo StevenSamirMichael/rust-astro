@@ -246,10 +246,62 @@ class TestMoon:
         computing position of the moon
         """
         t0 = sk.time(1994, 4, 28)
+        # Vallado approximates UTC as TBD, so we will
+        # make the same approximation
+        # for the purposes of this test case
         t1 = sk.time.from_mjd(t0.to_mjd(sk.timescale.UTC), sk.timescale.TDB)
         p = sk.moon.pos_gcrf(t1)
         ref_pos = np.array([-134240.626e3, -311571.590e3, -126693.785e3])
         assert p == pytest.approx(ref_pos)
+
+
+class TestSun:
+    def test_sunpos_mod(self):
+        """
+        Vallado example 5-1 for computing position of sun
+        """
+        t0 = sk.time(2006, 4, 2)
+        # Vallado approximates UTC as TBD, so we will
+        # make the same approximation
+        # for the purposes of this test case
+        t1 = sk.time.from_mjd(t0.to_mjd(sk.timescale.UTC), sk.timescale.TDB)
+        p = sk.sun.pos_gcrf(t1)
+        pref = np.array([146259922.0e3, 28585947.0e3, 12397430.0e3])
+        assert p == pytest.approx(pref, 5e-4)
+
+    def test_sun_rise_set(self):
+        """
+        Vallado example 5-2
+        """
+        coord = sk.itrfcoord(latitude_deg=40.0, longitude_deg=0.0)
+        tm = sk.time(1996, 3, 23, 0, 0, 0)
+        sunrise, sunset = sk.sun.rise_set(tm, coord)
+        (year, mon, day, hour, minute, sec) = sunrise.to_gregorian()
+        assert year == 1996
+        assert mon == 3
+        assert day == 23
+        assert hour == 5
+        assert minute == 58
+        assert sec == pytest.approx(21.97, 1e-3)
+        (year, mon, day, hour, minute, sec) = sunset.to_gregorian()
+        assert year == 1996
+        assert mon == 3
+        assert day == 23
+        assert hour == 18
+        assert minute == 15
+        assert sec == pytest.approx(17.76, 1.0e-3)
+
+    def test_sun_rise_set_error(self):
+        coord = sk.itrfcoord(latitude_deg=85.0, longitude_deg=30.0)
+        tm = sk.time(2020, 6, 20)
+        try:
+            sunrise, sunset = sk.sun.rise_set(tm, coord)
+        except:
+            # This should throw exception ... there is no sunrise or sunset
+            # at this time of year at the specified location; sun is always up
+            pass
+        else:
+            assert 1 == 0
 
 
 class TestSGP4:
