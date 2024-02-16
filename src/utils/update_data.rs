@@ -2,6 +2,7 @@ use super::download_file;
 use super::testdirs;
 use crate::skerror;
 use crate::SKResult;
+use json::JsonValue;
 use std::path::PathBuf;
 
 pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> SKResult<()> {
@@ -64,10 +65,77 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> SKRe
     Ok(())
 }
 
+fn download_from_json(v: &JsonValue, basedir: std::path::PathBuf, baseurl: String) -> SKResult<()> {
+    if v.is_object() {
+        let r1: Vec<SKResult<()>> = v
+            .entries()
+            .map(|entry: (&str, &JsonValue)| -> SKResult<()> {
+                let pbnew = basedir.join(entry.0);
+                if !pbnew.is_dir() {
+                    std::fs::create_dir_all(pbnew.clone())?;
+                }
+                let mut newurl = baseurl.clone();
+                newurl.push_str(format!("/{}", entry.0).as_str());
+                download_from_json(entry.1, pbnew.clone(), newurl)?;
+                Ok(())
+            })
+            .filter(|res| match res {
+                Ok(_) => false,
+                Err(_) => true,
+            })
+            .collect();
+        if r1.len() > 0 {
+            return skerror!("Could not parse entries");
+        }
+    } else if v.is_array() {
+        let r2: Vec<SKResult<()>> = v
+            .members()
+            .map(|val| -> SKResult<()> {
+                download_from_json(val, basedir.clone(), baseurl.clone())?;
+                Ok(())
+            })
+            .filter(|res| match res {
+                Ok(_) => false,
+                Err(_) => true,
+            })
+            .collect();
+        if r2.len() > 0 {
+            return skerror!("could not parse array entries");
+        }
+    } else if v.is_string() {
+        let mut newurl = baseurl.clone();
+        newurl.push_str(format!("/{}", v).as_str());
+        println!("Downloading {} into {:?}", newurl, basedir);
+        download_file(newurl.as_str(), &basedir, false)?;
+    } else {
+        return skerror!("invalid json for downloading files??!!");
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn parse_json() {
+        let sj = std::fs::read_to_string("satkit-testvecs/files.json").unwrap();
+        let fmap = json::parse(sj.as_str()).unwrap();
+        match download_from_json(
+            &fmap,
+            std::path::PathBuf::new().join("testdl"),
+            String::from("https://stevensamirmichael.github.io/satkit-testvecs/"),
+        ) {
+            Ok(()) => {}
+            Err(e) => {
+                println!("Error: {}", e.to_string());
+                assert!(1 == 0);
+            }
+        }
+        println!("hi steven");
+    }
 
     #[test]
     fn update_data() {
