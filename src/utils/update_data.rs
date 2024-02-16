@@ -1,4 +1,5 @@
 use super::download_file;
+use super::download_to_string;
 use super::testdirs;
 use crate::skerror;
 use crate::SKResult;
@@ -105,7 +106,6 @@ fn download_from_json(v: &JsonValue, basedir: std::path::PathBuf, baseurl: Strin
     } else if v.is_string() {
         let mut newurl = baseurl.clone();
         newurl.push_str(format!("/{}", v).as_str());
-        println!("Downloading {} into {:?}", newurl, basedir);
         download_file(newurl.as_str(), &basedir, false)?;
     } else {
         return skerror!("invalid json for downloading files??!!");
@@ -114,19 +114,34 @@ fn download_from_json(v: &JsonValue, basedir: std::path::PathBuf, baseurl: Strin
     Ok(())
 }
 
+fn download_datadir(basedir: PathBuf, baseurl: String) -> SKResult<()> {
+    let mut fileurl = baseurl.clone();
+    fileurl.push_str("/files.json");
+
+    let json_base = json::parse(download_to_string(fileurl.as_str())?.as_str())?;
+    download_from_json(&json_base, basedir, baseurl)
+}
+
 #[cfg(test)]
 mod tests {
 
     use super::*;
 
     #[test]
+    fn test_downloads() {
+        let url = String::from("https://stevensamirmichael.github.io/satkit-testvecs/");
+        let basedir = PathBuf::from("testdl2");
+        let _ = download_datadir(basedir, url).unwrap();
+    }
+
+    #[test]
     fn parse_json() {
-        let sj = std::fs::read_to_string("satkit-testvecs/files.json").unwrap();
+        let sj = std::fs::read_to_string("../satkit-data/files.json").unwrap();
         let fmap = json::parse(sj.as_str()).unwrap();
         match download_from_json(
             &fmap,
-            std::path::PathBuf::new().join("testdl"),
-            String::from("https://stevensamirmichael.github.io/satkit-testvecs/"),
+            std::path::PathBuf::new().join("testdata"),
+            String::from("https://stevensamirmichael.github.io/satkit-data/"),
         ) {
             Ok(()) => {}
             Err(e) => {
@@ -134,7 +149,6 @@ mod tests {
                 assert!(1 == 0);
             }
         }
-        println!("hi steven");
     }
 
     #[test]

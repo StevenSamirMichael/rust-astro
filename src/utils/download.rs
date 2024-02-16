@@ -1,3 +1,5 @@
+use nalgebra::coordinates::X;
+
 use crate::SKResult;
 use std::path::PathBuf;
 
@@ -22,4 +24,11 @@ pub fn download_file(
         std::io::copy(resp.into_reader().as_mut(), &mut dest)?;
         Ok(true)
     }
+}
+
+pub fn download_to_string(url: &str) -> SKResult<String> {
+    let agent = ureq::AgentBuilder::new().try_proxy_from_env(true).build();
+    let resp = agent.get(url).call()?;
+    let thestring = std::io::read_to_string(resp.into_reader().as_mut())?;
+    Ok(thestring)
 }

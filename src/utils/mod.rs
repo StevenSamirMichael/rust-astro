@@ -16,6 +16,7 @@ pub use update_data::update_datafiles;
 
 mod download;
 pub use download::download_file;
+pub use download::download_to_string;
 
 ///
 /// Return git hash of compiled library
