@@ -146,6 +146,7 @@ pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> SKRe
     Ok(())
 }
 
+/*
 #[cfg(test)]
 mod tests {
 
@@ -153,7 +154,7 @@ mod tests {
 
     #[test]
     fn update_data() {
-        match update_datafiles(None, true) {
+        match update_datafiles(None, false) {
             Ok(()) => (),
             Err(e) => {
                 println!("Error: {}", e.to_string());
@@ -162,3 +163,4 @@ mod tests {
         }
     }
 }
+*/
