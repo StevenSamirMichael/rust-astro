@@ -1,48 +1,9 @@
 use crate::skerror;
 use crate::SKResult;
 use once_cell::sync::OnceCell;
+use process_path::get_dylib_path;
 use std::path::Path;
-use std::{ffi::CStr, os::raw::c_void, path::PathBuf};
-
-// #[cfg(target_os = "windows")]
-// use windows::Win32::System::LibraryLoader::GetModuleFileNameA;
-
-#[cfg(target_os = "windows")]
-pub fn dylib_path() -> Option<PathBuf> {
-    None
-    //let mut buf = [0u8; 1024];
-
-    //unsafe {
-    //    let ret = GetModuleFileNameA(null_mut(), &buf);
-    //}
-}
-
-#[cfg(not(target_os = "windows"))]
-pub fn dylib_path() -> Option<PathBuf> {
-    let mut dl_info = libc::Dl_info {
-        dli_fname: core::ptr::null(),
-        dli_fbase: core::ptr::null_mut(),
-        dli_sname: core::ptr::null(),
-        dli_saddr: core::ptr::null_mut(),
-    };
-    if unsafe {
-        libc::dladdr(
-            dylib_path as *const c_void,
-            &mut dl_info as *mut libc::Dl_info,
-        ) != 0
-    } {
-        if dl_info.dli_fname.is_null() {
-            None
-        } else {
-            match unsafe { CStr::from_ptr(dl_info.dli_fname) }.to_str() {
-                Ok(path) => Some(PathBuf::from(PathBuf::from(path).parent().unwrap())),
-                Err(_) => None,
-            }
-        }
-    } else {
-        None
-    }
-}
+use std::path::PathBuf;
 
 pub fn testdirs() -> Vec<PathBuf> {
     let mut testdirs: Vec<PathBuf> = Vec::new();
@@ -53,14 +14,22 @@ pub fn testdirs() -> Vec<PathBuf> {
         Err(_) => (),
     }
 
-    #[cfg(feature = "pybindings")]
-    match dylib_path() {
+    // Look for paths in current library directory
+    match get_dylib_path() {
         Some(v) => {
-            testdirs.push(Path::new(&v).join("astro-data"));
+            #[cfg(feature = "pybindings")]
+            testdirs.push(Path::new(&v).parent().unwrap().join("astro-data"));
+            testdirs.push(
+                Path::new(&v)
+                    .parent()
+                    .unwrap()
+                    .join("share")
+                    .join("astro-data"),
+            );
+            testdirs.push(v);
         }
         None => (),
     }
-
     // Look for paths under home directory
     match std::env::var(&"HOME") {
         Ok(val) => {
@@ -73,20 +42,10 @@ pub fn testdirs() -> Vec<PathBuf> {
                     .join("Application Support")
                     .join("astro-data"),
             );
-            testdirs.push(Path::new(vstr).join("/astro-data"));
+            testdirs.push(Path::new(vstr).join("astro-data"));
             testdirs.push(Path::new(vstr).to_path_buf());
         }
         Err(_e) => (),
-    }
-
-    // Look for paths in current library directory
-    match dylib_path() {
-        Some(v) => {
-            testdirs.push(Path::new(&v).join("share").join("astro-data"));
-            testdirs.push(PathBuf::from(&v).join("astro-data"));
-            testdirs.push(v);
-        }
-        None => (),
     }
 
     testdirs.push(Path::new(&"/usr/share/astrodata").to_path_buf());
@@ -104,7 +63,7 @@ pub fn testdirs() -> Vec<PathBuf> {
 /// files are found
 ///
 /// *  "ASTRO_DATA" environment variable
-/// *  ${HOME}/share/.astro-data
+/// *  ${HOME}/astro-data
 /// *  ${HOME}
 /// *  /usr/share/astro-data
 /// *  On Mac Only:
@@ -139,7 +98,7 @@ mod tests {
 
     #[test]
     fn dylib() {
-        let p = dylib_path();
+        let p = get_dylib_path();
         println!("p = {:?}", p);
     }
 

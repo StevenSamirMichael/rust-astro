@@ -75,8 +75,8 @@ fn githash() -> PyResult<String> {
 
 #[pyfunction]
 fn dylib_path() -> PyResult<String> {
-    match crate::utils::dylib_path() {
-        Some(v) => Ok(String::from(v.to_str().unwrap())),
+    match process_path::get_dylib_path() {
+        Some(v) => Ok(String::from(v.parent().unwrap().to_str().unwrap())),
         None => Ok(String::from("none")),
     }
 }
