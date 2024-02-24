@@ -179,6 +179,6 @@ mod test {
         assert!(Duration::Hours(1.0).seconds() == 3600.0);
         assert!(Duration::Days(1.0).hours() == 24.0);
         assert!(Duration::Days(1.0).seconds() == 86400.0);
-        assert!((Duration::Days(1.0) + Duration::Days(1.0)).seconds() == 2.0);
+        assert!((Duration::Days(1.0) + Duration::Days(1.0)).seconds() == 2.0 * 86400.0);
     }
 }

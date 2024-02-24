@@ -9,6 +9,7 @@ pub fn download_file(
     let fname = std::path::Path::new(url).file_name().unwrap();
     let fullpath = downloaddir.join(fname);
     if fullpath.exists() && !overwrite_if_exists {
+        println!("File {} exists; skipping download", fname.to_str().unwrap());
         Ok(false)
     } else {
         println!("Downloading {}", fname.to_str().unwrap());
@@ -22,6 +23,17 @@ pub fn download_file(
         std::io::copy(resp.into_reader().as_mut(), &mut dest)?;
         Ok(true)
     }
+}
+
+pub fn download_file_async(
+    url: String,
+    downloaddir: &PathBuf,
+    overwrite_if_exists: bool,
+) -> std::thread::JoinHandle<SKResult<bool>> {
+    let dclone = downloaddir.clone();
+    let urlclone = url.clone();
+    let overwriteclone = overwrite_if_exists.clone();
+    std::thread::spawn(move || download_file(urlclone.as_str(), &dclone, overwriteclone))
 }
 
 pub fn download_to_string(url: &str) -> SKResult<String> {

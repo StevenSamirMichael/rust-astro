@@ -1,72 +1,36 @@
-use super::download_file;
+use super::download_file_async;
 use super::download_to_string;
 use super::testdirs;
 use crate::skerror;
+use crate::utils::datadir;
 use crate::SKResult;
 use json::JsonValue;
 use std::path::PathBuf;
+use std::thread::JoinHandle;
 
-pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> SKResult<()> {
-    // Find directory where files will be downloaded
-    let downloaddir = match dir {
-        Some(pb) => pb,
-        None => {
-            let d: Vec<PathBuf> = testdirs()
-                .into_iter()
-                .filter(|x| x.is_dir())
-                .filter(|x| x.metadata().unwrap().permissions().readonly() == false)
-                .collect();
-            if d.len() == 0 {
-                return skerror!("Cannot find writable data directory");
-            }
-            d[0].clone()
-        }
-    };
-    println!("Downloading to {}", downloaddir.to_str().unwrap());
-
-    // List of files to download
-    let urls: Vec<&str> = vec![
-        "http://icgem.gfz-potsdam.de/getmodel/gfc/971b0a3b49a497910aad23cd85e066d4cd9af0aeafe7ce6301a696bed8570be3/EGM96.gfc",
-        "http://icgem.gfz-potsdam.de/getmodel/gfc/a3375e01a717ac162962138a5e94f10466b71aa4a130d7f7d5b18ab3d5f90c3d/JGM3.gfc",
-        "http://icgem.gfz-potsdam.de/getmodel/gfc/291f7d127f49fe3bcb4a633a06e8b50f461d4b13ff8e7f2046644a8148b57fc6/JGM2.gfc",
-        "http://icgem.gfz-potsdam.de/getmodel/gfc/0cbbaba92c08482d2d221c5d375264f4c6233e8f695cbcfb86ecfc5e19345a42/ITU_GRACE16.gfc",
-        "https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2a.txt",
-        "https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2b.txt",
-        "https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2d.txt",
-        "https://ftp.iana.org/tz/tzdb-2020a/leap-seconds.list",
-        "https://ssd.jpl.nasa.gov/ftp/eph/planets/Linux/de440/linux_p1550p2650.440",
-    ];
-
-    // List of files that are updated daily and may need to get overwritten
-    let urls_overwrite: Vec<&str> = vec![
-        "https://datacenter.iers.org/data/9/finals2000A.all",
-        "https://celestrak.org/SpaceData/sw19571001.txt",
-    ];
-
-    let mut joiners: Vec<std::thread::JoinHandle<SKResult<bool>>> = Vec::new();
-
-    // Walk through & download files
-    for url in urls {
-        let d = downloaddir.clone();
-        joiners.push(std::thread::spawn(move || {
-            download_file(url, &d, overwrite_if_exists.clone())
-        }));
-    }
-    // Walk through & download files
-    for url in urls_overwrite {
-        let d = downloaddir.clone();
-        joiners.push(std::thread::spawn(move || download_file(url, &d, true)));
-    }
-
+fn download_from_url_json(json_url: String, basedir: &std::path::PathBuf) -> SKResult<()> {
+    let json_base: JsonValue = json::parse(download_to_string(json_url.as_str())?.as_str())?;
+    let vresult: Vec<std::thread::JoinHandle<SKResult<bool>>> = json_base
+        .members()
+        .map(|url| -> JoinHandle<SKResult<bool>> {
+            download_file_async(url.to_string(), basedir, true)
+        })
+        .collect();
     // Wait for all the threads to funish
-    for jh in joiners {
+    for jh in vresult {
         jh.join().unwrap()?;
     }
 
     Ok(())
 }
 
-fn download_from_json(v: &JsonValue, basedir: std::path::PathBuf, baseurl: String) -> SKResult<()> {
+fn download_from_json(
+    v: &JsonValue,
+    basedir: std::path::PathBuf,
+    baseurl: String,
+    overwrite: &bool,
+    thandles: &mut Vec<JoinHandle<SKResult<bool>>>,
+) -> SKResult<()> {
     if v.is_object() {
         let r1: Vec<SKResult<()>> = v
             .entries()
@@ -77,7 +41,7 @@ fn download_from_json(v: &JsonValue, basedir: std::path::PathBuf, baseurl: Strin
                 }
                 let mut newurl = baseurl.clone();
                 newurl.push_str(format!("/{}", entry.0).as_str());
-                download_from_json(entry.1, pbnew.clone(), newurl)?;
+                download_from_json(entry.1, pbnew.clone(), newurl, overwrite, thandles)?;
                 Ok(())
             })
             .filter(|res| match res {
@@ -92,7 +56,7 @@ fn download_from_json(v: &JsonValue, basedir: std::path::PathBuf, baseurl: Strin
         let r2: Vec<SKResult<()>> = v
             .members()
             .map(|val| -> SKResult<()> {
-                download_from_json(val, basedir.clone(), baseurl.clone())?;
+                download_from_json(val, basedir.clone(), baseurl.clone(), overwrite, thandles)?;
                 Ok(())
             })
             .filter(|res| match res {
@@ -106,7 +70,7 @@ fn download_from_json(v: &JsonValue, basedir: std::path::PathBuf, baseurl: Strin
     } else if v.is_string() {
         let mut newurl = baseurl.clone();
         newurl.push_str(format!("/{}", v).as_str());
-        download_file(newurl.as_str(), &basedir, false)?;
+        thandles.push(download_file_async(newurl, &basedir, overwrite.clone()));
     } else {
         return skerror!("invalid json for downloading files??!!");
     }
@@ -114,12 +78,72 @@ fn download_from_json(v: &JsonValue, basedir: std::path::PathBuf, baseurl: Strin
     Ok(())
 }
 
-fn download_datadir(basedir: PathBuf, baseurl: String) -> SKResult<()> {
+fn download_datadir(basedir: PathBuf, baseurl: String, overwrite: &bool) -> SKResult<()> {
+    if !basedir.is_dir() {
+        std::fs::create_dir_all(basedir.clone())?;
+    }
+
     let mut fileurl = baseurl.clone();
     fileurl.push_str("/files.json");
 
-    let json_base = json::parse(download_to_string(fileurl.as_str())?.as_str())?;
-    download_from_json(&json_base, basedir, baseurl)
+    let json_base: JsonValue = json::parse(download_to_string(fileurl.as_str())?.as_str())?;
+    let mut thandles: Vec<JoinHandle<SKResult<bool>>> = Vec::new();
+    download_from_json(&json_base, basedir, baseurl, overwrite, &mut thandles)?;
+    // Wait for all the threads to funish
+    for jh in thandles {
+        jh.join().unwrap()?;
+    }
+    Ok(())
+}
+
+pub fn update_datafiles(dir: Option<PathBuf>, overwrite_if_exists: bool) -> SKResult<()> {
+    // Find directory where files will be downloaded
+    let mut downloaddir: Option<PathBuf> = dir.clone();
+    if downloaddir.is_none() {
+        match datadir() {
+            Ok(dd) => {
+                let md = std::fs::metadata(dd.clone())?;
+                let permissions = md.permissions();
+                if !permissions.readonly() {
+                    downloaddir = Some(dd.clone());
+                } else {
+                    return skerror!("Cannot find writable data directory");
+                }
+            }
+            Err(_) => {}
+        }
+    }
+    if downloaddir.is_none() {
+        let d: Vec<PathBuf> = testdirs()
+            .into_iter()
+            .filter(|x| x.is_dir())
+            .filter(|x| x.metadata().unwrap().permissions().readonly() == false)
+            .collect();
+        if d.len() == 0 {
+            return skerror!("Cannot find writable data directory");
+        }
+        downloaddir = Some(d[0].clone());
+    }
+
+    println!(
+        "Downloading data files to {}",
+        downloaddir.clone().unwrap().to_str().unwrap()
+    );
+    // Download old files
+    download_datadir(
+        downloaddir.clone().unwrap(),
+        String::from("https://storage.googleapis.com/astrokit-astro-data"),
+        &overwrite_if_exists,
+    )?;
+
+    println!("Now downloading files that are regularly updated:");
+    println!("  Space Weather & Earth Orientation Parameters");
+    // Get a list of files that are updated with new data, and download them
+    download_from_url_json(
+        String::from("https://storage.googleapis.com/astrokit-astro-data/files_refresh.json"),
+        &downloaddir.unwrap(),
+    )?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -128,32 +152,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_downloads() {
-        let url = String::from("https://stevensamirmichael.github.io/satkit-testvecs/");
-        let basedir = PathBuf::from("testdl2");
-        let _ = download_datadir(basedir, url).unwrap();
-    }
-
-    #[test]
-    fn parse_json() {
-        let sj = std::fs::read_to_string("../satkit-data/files.json").unwrap();
-        let fmap = json::parse(sj.as_str()).unwrap();
-        match download_from_json(
-            &fmap,
-            std::path::PathBuf::new().join("testdata"),
-            String::from("https://stevensamirmichael.github.io/satkit-data/"),
-        ) {
-            Ok(()) => {}
-            Err(e) => {
-                println!("Error: {}", e.to_string());
-                assert!(1 == 0);
-            }
-        }
-    }
-
-    #[test]
     fn update_data() {
-        match update_datafiles(None, false) {
+        match update_datafiles(None, true) {
             Ok(()) => (),
             Err(e) => {
                 println!("Error: {}", e.to_string());

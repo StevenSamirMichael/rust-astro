@@ -61,10 +61,13 @@ fn update_datafiles(kwds: Option<&PyDict>) -> PyResult<()> {
 /// JPL Ephemeris, etc..
 ///
 #[pyfunction]
-fn datadir() -> PyResult<String> {
-    Ok(String::from(
-        crate::utils::datadir().unwrap().to_str().unwrap(),
-    ))
+fn datadir() -> PyResult<PyObject> {
+    pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
+        match crate::utils::datadir() {
+            Ok(v) => Ok(v.to_str().unwrap().to_object(py)),
+            Err(_) => Ok(pyo3::types::PyNone::get(py).into_py(py)),
+        }
+    })
 }
 
 /// Git hash of compiled library
@@ -74,11 +77,13 @@ fn githash() -> PyResult<String> {
 }
 
 #[pyfunction]
-fn dylib_path() -> PyResult<String> {
-    match process_path::get_dylib_path() {
-        Some(v) => Ok(String::from(v.parent().unwrap().to_str().unwrap())),
-        None => Ok(String::from("none")),
-    }
+fn dylib_path() -> PyResult<PyObject> {
+    pyo3::Python::with_gil(|py| -> PyResult<PyObject> {
+        match process_path::get_dylib_path() {
+            Some(v) => Ok(v.to_str().unwrap().to_object(py)),
+            None => Ok(pyo3::types::PyNone::get(py).into_py(py)),
+        }
+    })
 }
 
 /// Build date of compiled library

@@ -15,6 +15,7 @@ pub use update_data::update_datafiles;
 
 mod download;
 pub use download::download_file;
+pub use download::download_file_async;
 pub use download::download_to_string;
 
 ///
