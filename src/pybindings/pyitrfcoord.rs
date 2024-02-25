@@ -269,30 +269,49 @@ impl PyITRFCoord {
         })
     }
 
-    /// Geodesic distance between two coordinates
-    /// Uses Vincenty's formula inverse
-    /// See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
-    /// Return the Geodesic distance (shortest distance along the Earth surface) in meters,
-    /// heading from source in rad,
-    /// and final heading at destination, in rad
+    /// Use Vincenty formula to compute geodesic distance:
+    /// https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    ///
+    /// Return a tuple with:
+    ///
+    ///  1: geodesic distance (shortest distance between two points)
+    ///  between this coordinate and given coordinate, in meters
+    ///
+    ///  2: initial heading, in radians
+    ///
+    ///  3. heading at destination, in radians
+    ///
     fn geodesic_distance(&self, other: &Self) -> (f64, f64, f64) {
         self.inner.geodesic_distance(&other.inner)
     }
 
-    /// Location when moving a given Distance
-    /// at a given heading along the Earth's surface
-    /// Altitude assumed to be zero
-    /// Uses Vincenty's formula
+    /// Takes two input arguments:
     ///
-    /// See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    /// 1: distance (meters)
+    /// 2: heading (rad)
     ///
-    /// Inputs:
-    ///   1: distance in meters
-    ///   2: heading in deg
+    /// Return itrfcoord representing move along Earth surface by given distance
+    /// in direction given by heading
+    ///
+    /// Altitude is assumed to be zero
+    ///
+    /// Use Vincenty formula to compute position:
+    /// https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    ///
     fn move_with_heading(&self, distance: f64, heading_rad: f64) -> PyITRFCoord {
         PyITRFCoord {
             inner: self.inner.move_with_heading(distance, heading_rad),
         }
+    }
+
+    /// 3-vector representing cartesian distance between this
+    /// and other point, in meters
+    fn __sub__(&self, other: &PyITRFCoord) -> PyObject {
+        let vout = self.inner - other.inner;
+        pyo3::Python::with_gil(|py| -> PyObject {
+            let vnd = PyArray1::<f64>::from_vec(py, vec![vout[0], vout[1], vout[2]]);
+            vnd.into_py(py)
+        })
     }
 }
 

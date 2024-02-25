@@ -1100,6 +1100,9 @@ class itrfcoord:
 
     def geodesic_distance(self, other: itrfcoord) -> (float, float, float):
         """
+        Use Vincenty formula to compute geodesic distance:
+        https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+
         Return a tuple with:
 
         1: geodesic distance (shortest distance between two points)
@@ -1121,6 +1124,9 @@ class itrfcoord:
         in direction given by heading
 
         Altitude is assumed to be zero
+
+        Use Vincenty formula to compute position:
+        https://en.wikipedia.org/wiki/Vincenty%27s_formulae
         """
 
 class consts:
