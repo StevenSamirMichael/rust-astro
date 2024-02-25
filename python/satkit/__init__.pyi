@@ -1098,6 +1098,31 @@ class itrfcoord:
         to ITRF at this location
         """
 
+    def geodesic_distance(self, other: itrfcoord) -> (float, float, float):
+        """
+        Return a tuple with:
+
+        1: geodesic distance (shortest distance between two points)
+        between this coordinate and given coordinate, in meters
+
+        2: initial heading, in radians
+
+        3. heading at destination, in radians
+        """
+
+    def move_with_heading(self, distance: float, heading_rad: float) -> itrfcoord:
+        """
+        Takes two input arguments:
+
+        1) distance (meters)
+        2) heading (rad)
+
+        Return itrfcoord representing move along Earth surface by given distance
+        in direction given by heading
+
+        Altitude is assumed to be zero
+        """
+
 class consts:
     """
     Some constants that are useful for saetllite dynamics

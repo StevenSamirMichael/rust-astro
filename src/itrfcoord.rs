@@ -2,8 +2,8 @@ use std::f64::consts::PI;
 const DEG2RAD: f64 = PI / 180.;
 const RAD2DEG: f64 = 180. / PI;
 
-pub const WGS84_A: f64 = 6378137.0;
-pub const WGS84_F: f64 = 0.003352810664747;
+use crate::consts::WGS84_A;
+use crate::consts::WGS84_F;
 
 use nalgebra as na;
 
@@ -303,6 +303,142 @@ impl ITRFCoord {
         self.latitude_rad() * RAD2DEG
     }
 
+    /// Location when moving a given Distance
+    /// at a given heading along the Earth's surface
+    /// Altitude assumed to be zero
+    /// Uses Vincenty's formula
+    ///
+    /// See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    ///
+    /// Inputs:
+    ///   1: distance in meters
+    ///   2: heading in deg
+    pub fn move_with_heading(&self, distance_m: f64, heading_rad: f64) -> ITRFCoord {
+        let phi1 = self.latitude_rad();
+        #[allow(non_upper_case_globals)]
+        const a: f64 = WGS84_A;
+        #[allow(non_upper_case_globals)]
+        const b: f64 = (1.0 - WGS84_F) * WGS84_A;
+
+        let u1 = ((1.0 - WGS84_F) * phi1.tan()).atan();
+        let sigma1 = f64::atan2(u1.tan(), heading_rad.cos());
+        let sinalpha = u1.cos() * heading_rad.sin();
+        let usq = (1.0 - sinalpha.powf(2.0)) * ((a / b).powf(2.0) - 1.0);
+        let big_a = 1.0 + usq / 16384.0 * (4096.0 + usq * (-768.0 + usq * (320.0 - 175.0 * usq)));
+        let big_b = usq / 1024.0 * (256.0 + usq * (-128.0 + usq * (74.0 - 47.0 * usq)));
+        let mut sigma = distance_m / b / big_a;
+        let mut costwosigmam = 0.0;
+        for _ in 0..5 {
+            costwosigmam = (2.0 * sigma1 + sigma).cos();
+            let dsigma = big_b
+                * sigma.sin()
+                * (costwosigmam
+                    + 0.25
+                        * big_b
+                        * (sigma.cos() * (-1.0 + 2.0 * costwosigmam.powf(2.0))
+                            - big_b / 6.0
+                                * costwosigmam
+                                * (-3.0 + 4.0 * sigma.sin().powf(2.0))
+                                * (-3.0 + 4.0 * costwosigmam.powf(2.0))));
+            sigma = distance_m / b / big_a + dsigma;
+        }
+        let phi2 = f64::atan2(
+            u1.sin() * sigma.cos() + u1.cos() * sigma.sin() * heading_rad.cos(),
+            (1.0 - WGS84_F)
+                * (sinalpha.powf(2.0)
+                    + (u1.sin() * sigma.sin() - u1.cos() * sigma.cos() * heading_rad.cos())
+                        .powf(2.0))
+                .sqrt(),
+        );
+        let lam = f64::atan2(
+            sigma.sin() * heading_rad.sin(),
+            u1.cos() * sigma.cos() - u1.sin() * sigma.sin() * heading_rad.cos(),
+        );
+        let cossqalpha = 1.0 - sinalpha.powf(2.0);
+        let big_c = WGS84_F / 16.0 * cossqalpha * (4.0 + WGS84_F * (4.0 - 3.0 * cossqalpha));
+        let delta_lon = lam
+            - (1.0 - big_c)
+                * WGS84_F
+                * sinalpha
+                * (sigma
+                    + big_c
+                        * sigma.sin()
+                        * (costwosigmam
+                            + big_c * sigma.cos() * (-1.0 + 2.0 * costwosigmam.powf(2.0))));
+        let lambda2 = delta_lon + self.longitude_rad();
+        ITRFCoord::from_geodetic_rad(phi2, lambda2, 0.0)
+    }
+
+    /// Geodesic distance between two coordinates
+    /// Uses Vincenty's formula inverse
+    /// See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    /// Return the Geodesic distance (shortest distance along the Earth surface) in meters,
+    /// heading from source in rad,
+    /// and final heading at destination, in rad
+    pub fn geodesic_distance(&self, other: &ITRFCoord) -> (f64, f64, f64) {
+        #[allow(non_upper_case_globals)]
+        const a: f64 = WGS84_A;
+        #[allow(non_upper_case_globals)]
+        const b: f64 = (1.0 - WGS84_F) * WGS84_A;
+
+        let lata = self.latitude_rad();
+        let latb = other.latitude_rad();
+        let lona = self.longitude_rad();
+        let lonb = other.longitude_rad();
+        let u1 = ((1.0 - WGS84_F) * lata.tan()).atan();
+        let u2 = ((1.0 - WGS84_F) * latb.tan()).atan();
+        let lam = lonb - lona;
+        let londiff = lam;
+
+        let mut lam = lonb - lona;
+        let mut cossqalpha = 0.0;
+        let mut sinsigma = 0.0;
+        let mut cossigma = 0.0;
+        let mut cos2sm = 0.0;
+        let mut sigma = 0.0;
+        for _ in 0..5 {
+            sinsigma = ((u2.cos() * lam.sin()).powf(2.0)
+                + (u1.cos() * u2.sin() - u1.sin() * u2.cos() * lam.cos()).powf(2.0))
+            .sqrt();
+            cossigma = u1.sin() * u2.sin() + u1.cos() * u2.cos() * lam.cos();
+            sigma = f64::atan2(sinsigma, cossigma);
+            let sinalpha = (u1.cos() * u2.cos() * lam.sin()) / sigma.sin();
+            cossqalpha = 1.0 - sinalpha.powf(2.0);
+            cos2sm = sigma.cos() - (2.0 * u1.sin() * u2.sin()) / cossqalpha;
+            let c = WGS84_F / 16.0 * cossqalpha * (4.0 + WGS84_F * (4.0 - 3.0 * cossqalpha));
+            lam = londiff
+                + (1.0 - c)
+                    * WGS84_F
+                    * sinalpha
+                    * (sigma
+                        + c * sinsigma * (cos2sm + c * cossigma * (-1.0 + 2.0 * cos2sm.powf(2.0))));
+        }
+
+        let usq = cossqalpha * ((a / b).powf(2.0) - 1.0);
+        let biga = 1.0 + usq / 16384.0 * (4096.0 + usq * (-768.0 + usq * (320.0 - 175.0 * usq)));
+        let bigb = usq / 1024.0 * (256.0 + usq * (-128.0 + usq * (74.0 - 47.0 * usq)));
+        let dsigma = bigb
+            * sinsigma
+            * (cos2sm
+                + 0.25
+                    * bigb
+                    * (cossigma * (-1.0 + 2.0 * cos2sm.powf(2.0))
+                        - bigb / 6.0
+                            * cos2sm
+                            * (-3.0 + 4.0 * sinsigma.powf(2.0))
+                            * (-3.0 + 4.0 * cos2sm.powf(2.0))));
+        let s = b * biga * (sigma - dsigma);
+        let alpha1 = f64::atan2(
+            u2.cos() * lam.sin(),
+            u1.cos() * u2.sin() - u1.sin() * u2.cos() * lam.cos(),
+        );
+        let alpha2 = f64::atan2(
+            u1.cos() * lam.sin(),
+            -u1.sin() * u2.cos() + u1.cos() * u2.sin() * lam.cos(),
+        );
+        (s, alpha1, alpha2)
+    }
+
     /// Return quaternion representing rotation from the
     /// North-East-Down (NED) coordinate frame to the
     /// ITRF coordinate frame
@@ -384,6 +520,30 @@ impl ITRFCoord {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approx::{assert_abs_diff_eq, assert_relative_eq};
+
+    #[test]
+    fn test_geodesic() {
+        // Lets pick a random point and try it out...
+        let mumbai = ITRFCoord::from_geodetic_deg(19.16488608334183, 72.8314881731579, 0.0);
+        let dubai = ITRFCoord::from_geodetic_deg(25.207843059422945, 55.27053859644447, 0.0);
+        let (dist, h0, h1) = mumbai.geodesic_distance(&dubai);
+        // from google maps, distance is 1,926.80 km
+        // From https://geodesyapps.ga.gov.au/vincenty-inverse
+        // Distance = 1928536.609m
+        // Forward azimuth = 293.466588 deg
+        // Reverse azimuth = 106.780805 deg
+        assert_relative_eq!(dist, 1928536.609, max_relative = 1.0e-8);
+        assert_relative_eq!(h0 + 2.0 * PI, 293.466588 * DEG2RAD, max_relative = 1.0e-6);
+        assert_relative_eq!(h1 + PI, 106.780805 * DEG2RAD, max_relative = 1.0e-6);
+
+        // Moving from Mumbai at the given distance and heading should get us to Dubai
+        let testpoint = mumbai.move_with_heading(dist, h0);
+
+        // Check differences
+        let delta = dubai - testpoint;
+        assert_abs_diff_eq!(delta.norm(), 0.0, epsilon = 1.0e-6);
+    }
 
     #[test]
     fn geodetic() {

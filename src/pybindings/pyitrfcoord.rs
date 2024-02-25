@@ -268,6 +268,32 @@ impl PyITRFCoord {
             numpy::PyArray::from_slice(py, v.data.as_slice()).to_object(py)
         })
     }
+
+    /// Geodesic distance between two coordinates
+    /// Uses Vincenty's formula inverse
+    /// See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    /// Return the Geodesic distance (shortest distance along the Earth surface) in meters,
+    /// heading from source in rad,
+    /// and final heading at destination, in rad
+    fn geodesic_distance(&self, other: &Self) -> (f64, f64, f64) {
+        self.inner.geodesic_distance(&other.inner)
+    }
+
+    /// Location when moving a given Distance
+    /// at a given heading along the Earth's surface
+    /// Altitude assumed to be zero
+    /// Uses Vincenty's formula
+    ///
+    /// See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    ///
+    /// Inputs:
+    ///   1: distance in meters
+    ///   2: heading in deg
+    fn move_with_heading(&self, distance: f64, heading_rad: f64) -> PyITRFCoord {
+        PyITRFCoord {
+            inner: self.inner.move_with_heading(distance, heading_rad),
+        }
+    }
 }
 
 impl IntoPy<PyObject> for ITRFCoord {
