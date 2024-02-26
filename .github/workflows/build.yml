@@ -40,6 +40,7 @@ jobs:
           args: --release
 
       # Download the data and the test vectors
+      - run: pip install requests
       - run: python pytest/download_data.py
       - run: python pytest/download_testvecs.py
 
