@@ -76,20 +76,19 @@ extern "C" {
 ///
 /// NRL MSISE-00 model for atmosphere density
 ///
-/// Inputs:
+/// # Arguments
 ///
-///             alt_km: Altitude in kilometers
-///         lat_option: Optional latitude in degrees
-///         lon_option: Optional longitude in detrees
-///        time_option: Optional time
-///   use_spaceweather: Boolean to use space weather data
+///   * `alt_km` -  Altitude in kilometers
+///   * `lat_option` - Optional latitude in degrees (default: 0)
+///   * `lon_option` - Optional longitude in detrees (default: 0)
+///   * `time_option` -  Optional time, for when using space weather
+///   * `use_spaceweather` -  Boolean to use space weather data
 ///
-/// Outputs:
+/// # Outputs
 ///
-///   Tuple with two elements:
-///      
-///      0:  Atmosphere mass density in kg / m^3
-///      1:  Temperature in Kelvin
+///   Tuple with two elements:      
+///      * Atmosphere mass density in kg / m^3
+///      * Temperature in Kelvin
 ///
 pub fn nrlmsise(
     alt_km: f64,

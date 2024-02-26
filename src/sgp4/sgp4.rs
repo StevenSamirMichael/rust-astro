@@ -70,10 +70,11 @@ pub fn sgp4(tle: &mut TLE, tm: &[AstroTime]) -> SGP4Result {
 /// // Compute the Geodetic position of a satellite at
 /// // the TLE epoch time
 ///     
-/// use astro::TLE;
-/// use astro::sgp4::{sgp4_full, GravConst, OpsMode};
-/// use astro::coordconversion::qteme2itrf;
-/// use astro::itrfcoord::ITRFCoord;
+/// use satkit::TLE;
+/// use satkit::sgp4::{sgp4_full, GravConst, OpsMode};
+/// use satkit::frametransform::qteme2itrf;
+/// use satkit::itrfcoord::ITRFCoord;
+/// use nalgebra as na;
 ///
 /// let line0: &str = "0 INTELSAT 902";
 /// let line1: &str = "1 26900U 01039A   06106.74503247  .00000045  00000-0  10000-3 0  8290";
@@ -84,14 +85,17 @@ pub fn sgp4(tle: &mut TLE, tm: &[AstroTime]) -> SGP4Result {
 ///     ).unwrap();
 ///
 /// let tm = tle.epoch;
+///
+/// // SGP4 runs on a slice of times
 /// let (pteme, vteme) = sgp4_full(&mut tle,
-///     &tm,
+///     &[tm],
 ///     GravConst::WGS84,
 ///     OpsMode::IMPROVED
 ///     ).unwrap();
 ///
-/// let pitrf = qteme2itrf(&tm) * pteme;
-/// let itrf = ITRFCoord::from_vec(pitrf.into());
+/// let pitrf = qteme2itrf(&tm).to_rotation_matrix() * pteme;
+/// let itrf = ITRFCoord::from_slice(pitrf.as_slice()).unwrap();
+/// println!("Satellite position is: {}", itrf);
 ///
 /// ```
 ///
@@ -169,23 +173,17 @@ mod tests {
             "2 26900   0.0164 266.5378 0003319  86.1794 182.2590  1.00273847 16981   9300.";
         let line0: &str = "0 INTELSAT 902";
 
-        //let line1: &str = "1 29238U 06022G   06177.28732010  .00766286  10823-4  13334-2 0   101";
-        //let line2: &str = "2 29238  51.5595 213.7903 0202579  95.2503 267.9010 15.73823839  1061";
-        //let line0: &str = "0 SL-12 DEB";
         let mut tle =
             TLE::load_3line(&line0.to_string(), &line1.to_string(), &line2.to_string()).unwrap();
         let tm = tle.epoch;
 
         match sgp4(&mut tle, &[tm]) {
-            Ok((pos, vel)) => {
-                println!("pos = {}", pos);
-                println!("vel = {}", vel);
-            }
+            Ok((_pos, _vel)) => {}
+
             Err(e) => {
                 panic!("Error running sgp4: \"{}\"", e.1);
             }
         }
-        println!("module path = {}", std::module_path!());
     }
 
     #[test]

@@ -8,3 +8,4 @@ build
 *.egg-info
 __pycache__
 /satkit-testvecs
+/astro-data

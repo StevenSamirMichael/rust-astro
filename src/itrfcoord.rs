@@ -157,7 +157,7 @@ impl ITRFCoord {
     /// # Examples:
     /// ```
     /// // Create coord for ~ Boston, MA
-    /// use astro::itrfcoord::ITRFCoord;
+    /// use satkit::itrfcoord::ITRFCoord;
     /// let itrf = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 150.0);
     /// ```
     ///
@@ -192,7 +192,7 @@ impl ITRFCoord {
     /// # Examples:
     /// ```
     /// // Create coord for ~ Boston, MA
-    /// use astro::itrfcoord::ITRFCoord;
+    /// use satkit::itrfcoord::ITRFCoord;
     /// use std::f64::consts::PI;
     /// const DEG2RAD: f64 = PI / 180.0;
     /// let itrf = ITRFCoord::from_geodetic_rad(42.466*DEG2RAD, -71.1516*DEG2RAD, 150.0);
@@ -297,18 +297,26 @@ impl ITRFCoord {
         hae
     }
 
-    /// Return geodetic latitude in degrees, [-pi/2, pi/2]
+    /// Return geodetic latitude in degrees, [-180, 180]
     #[inline]
     pub fn latitude_deg(&self) -> f64 {
         self.latitude_rad() * RAD2DEG
     }
 
-    /// Location when moving a given Distance
+    /// Compute location when moving a given Distance
     /// at a given heading along the Earth's surface
     /// Altitude assumed to be zero
-    /// Uses Vincenty's formula
     ///
-    /// See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    /// # Arguments:
+    /// * `distance_m` - Distance in meters to travel along surface of Earth
+    /// * `heading_rad` - Initial heading, in radians
+    ///
+    /// # Returns:
+    /// * ITRFCoord representing final position
+    ///
+    /// # References:
+    /// * Uses Vincenty's formula
+    ///   See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
     ///
     /// Inputs:
     ///   1: distance in meters
@@ -370,11 +378,27 @@ impl ITRFCoord {
     }
 
     /// Geodesic distance between two coordinates
-    /// Uses Vincenty's formula inverse
-    /// See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
-    /// Return the Geodesic distance (shortest distance along the Earth surface) in meters,
-    /// heading from source in rad,
-    /// and final heading at destination, in rad
+    ///
+    /// Return Geodesic distance (shortest distance along Earth's surface) in meters
+    /// between self and another ITRF coordinate
+    ///
+    /// Also returns initial and final heading
+    ///
+    /// # Arguments:
+    ///
+    /// * `other` - ITRF coordinate for which distance will be computed
+    ///
+    /// # Outputs:
+    ///   Tuple with following values
+    ///
+    /// * `0` - Distance in meters
+    /// * `1` - Starting heading (at self) in radians
+    /// * `2` - Final heading (at other) in radians
+    //
+    /// # References
+    //  * Vincenty's formula inverse
+    ///   See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    ///   Return the Geodesic distance (shortest distance along the Earth surface) in meters,
     pub fn geodesic_distance(&self, other: &ITRFCoord) -> (f64, f64, f64) {
         #[allow(non_upper_case_globals)]
         const a: f64 = WGS84_A;
@@ -452,7 +476,7 @@ impl ITRFCoord {
     /// Convert coordinate to a North-East-Down (NED)
     /// coordinate relative to a reference coordinate
     ///
-    /// # Arguemnts
+    /// # Arguments
     ///
     /// * ref_coord - &ITRFCoord representing reference
     ///
@@ -463,7 +487,7 @@ impl ITRFCoord {
     ///
     /// # Examples:
     /// ```
-    /// use astro::itrfcoord::ITRFCoord;
+    /// use satkit::itrfcoord::ITRFCoord;
     /// // Create coord
     /// let itrf1 = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 150.0);
     /// // Crate 2nd coord 100 meters above
@@ -490,7 +514,7 @@ impl ITRFCoord {
     /// Convert coordinate to a East-North-Up (ENU)
     /// coordinate relative to a reference coordinate
     ///
-    /// # Arguemnts
+    /// # Arguments
     ///
     /// * ref_coord - &ITRFCoord representing reference
     ///
@@ -501,7 +525,7 @@ impl ITRFCoord {
     ///
     /// # Examples:
     /// ```
-    /// use astro::itrfcoord::ITRFCoord;
+    /// use satkit::itrfcoord::ITRFCoord;
     /// // Create coord
     /// let itrf1 = ITRFCoord::from_geodetic_deg(42.466, -71.1516, 150.0);
     /// // Crate 2nd coord 100 meters above

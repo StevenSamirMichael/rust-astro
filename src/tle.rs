@@ -23,11 +23,11 @@ use crate::utils::SKResult;
 ///
 ///
 /// ```
-/// use astro::TLE;
-/// use astro::AstroTime;
-/// use astro::sgp4::sgp4;
-/// use astro::frametransform;
-/// use astro::itrfcoord::ITRFCoord;
+/// use satkit::TLE;
+/// use satkit::AstroTime;
+/// use satkit::sgp4::sgp4;
+/// use satkit::frametransform;
+/// use satkit::itrfcoord::ITRFCoord;
 ///
 /// let lines = vec!["0 INTELSAT 902",
 ///     "1 26900U 01039A   06106.74503247  .00000045  00000-0  10000-3 0  8290",
@@ -180,7 +180,7 @@ impl TLE {
     ///
     /// ```
     ///
-    /// use astro::TLE;
+    /// use satkit::TLE;
     /// let line0: &str = "0 INTELSAT 902";
     /// let line1: &str = "1 26900U 01039A   06106.74503247  .00000045  00000-0  10000-3 0  8290";
     /// let line2: &str = "2 26900   0.0164 266.5378 0003319  86.1794 182.2590  1.00273847 16981   9300.";

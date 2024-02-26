@@ -31,8 +31,8 @@ def download_from_json(jval, dname, url):
 
 
 if __name__ == "__main__":
-    baseurl = "https://storage.googleapis.com/satkit-testvecs"
-    basedir = "satkit-testvecs"
+    baseurl = "https://storage.googleapis.com/astrokit-astro-data"
+    basedir = "astro-data"
     fileurl = baseurl + "/files.json"
     headers = {"Accept": "application/json"}
 

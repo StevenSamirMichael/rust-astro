@@ -123,9 +123,9 @@ impl JPLEphem {
     ///
     /// ``
     ///
-    /// use astro::jplephem;
-    /// use astro::SolarSystem;
-    /// use astro::AstroTime;
+    /// use satkit::jplephem;
+    /// use satkit::SolarSystem;
+    /// use satkit::AstroTime;
     ///
     /// // Construct time: March 1 2021 12:00pm UTC
     /// let t = AstroTime::from_datetime(2021, 3, 1, 12, 0, 0.0);

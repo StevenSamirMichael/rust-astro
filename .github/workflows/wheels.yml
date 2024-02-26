@@ -1,13 +1,13 @@
-name: Build
+name: Wheel
 
 on:
   push:
     branches:
-      - satkit
+      - satkitnone
 
 jobs:
-  build:
-    name: build on ${{ matrix.platform || matrix.os }}
+  build_python:
+    name: build python bindings on ${{ matrix.platform || matrix.os }}
 
     strategy:
       fail-fast: false

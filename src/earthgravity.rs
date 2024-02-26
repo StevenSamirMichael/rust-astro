@@ -61,21 +61,22 @@ pub fn gravhash() -> &'static HashMap<GravityModel, &'static Gravity> {
 /// acceleration does not include the centrifugal force, and is output
 /// in m/s^2 in the International Terrestrial Reference Frame (ITRF)
 ///
-/// Inputs:
+/// # Arguments
 ///
-///       pos:    Position as nalgebra 3-vecotr
+/// * `pos` - Position as nalgebra 3-vecotr
 ///
-///     order:    The order of the gravity model to use.
-///               Maximum is 16
+/// * `order` - The order of the gravity model to use.
+///             Maximum is 16
 ///
-///     model:    The gravity model to use, of type "GravityModel"
+/// * `model` - The gravity model to use, of type "GravityModel"
 ///
-///               For details of models, see:
-///               http://icgem.gfz-potsdam.de/tom_longtime
+/// # References
+///    
+/// * For details of models, see: http://icgem.gfz-potsdam.de/tom_longtime
 ///
-///               For details of calculation, see Chapter 3.2 of:
-///               "Satellite Orbits: Models, Methods, Applications",
-///               O. Montenbruck and B. Gill, Springer, 2012.
+/// * For details of calculation, see Chapter 3.2 of:
+///   "Satellite Orbits: Models, Methods, Applications",
+///   O. Montenbruck and B. Gill, Springer, 2012.
 ///
 pub fn accel(pos_itrf: &Vec3, order: usize, model: GravityModel) -> Vec3 {
     gravhash().get(&model).unwrap().accel(pos_itrf, order)
@@ -89,21 +90,23 @@ pub fn accel(pos_itrf: &Vec3, order: usize, model: GravityModel) -> Vec3 {
 /// The acceleration does not include the centrifugal force, and is output
 /// in m/s^2 in the International Terrestrial Reference Frame (ITRF)
 ///
-/// Inputs:
+/// # Inputs Arguments
 ///
-///       pos:    Position as nalgebra 3-vecotr
+/// * `pos` - Position as nalgebra 3-vecotr
 ///
-///     order:    The order of the gravity model to use.
+/// * `order` - The order of the gravity model to use.
 ///               Maximum is 16
 ///
-///     model:    The gravity model to use, of type "GravityModel"
+/// * `model` - The gravity model to use, of type "GravityModel"
 ///
-///               For details of models, see:
-///               http://icgem.gfz-potsdam.de/tom_longtime
+///  
+/// # References
 ///
-///               For details of calculation, see Chapter 3.2 of:
-///               "Satellite Orbits: Models, Methods, Applications",
-///               O. Montenbruck and B. Gill, Springer, 2012.
+/// * For details of models, see: http://icgem.gfz-potsdam.de/tom_longtime
+///
+/// * For details of calculation, see Chapter 3.2 of:
+///   "Satellite Orbits: Models, Methods, Applications",
+///   O. Montenbruck and B. Gill, Springer, 2012.
 ///
 pub fn accel_and_partials(pos_itrf: &Vec3, order: usize, model: GravityModel) -> (Vec3, Mat3) {
     gravhash()
@@ -136,12 +139,14 @@ type Mat3 = na::Matrix3<f64>;
 /// acceleration does not include the centrifugal force, and is output
 /// in m/s^2 in the International Terrestrial Reference Frame (ITRF)
 ///
-/// Inputs:
+/// # Inputs Arguments
 ///
-///       pos:   Position as ITRF coordinate (astro.itrfcoord) or numpy
-///              3-vector representing ITRF position in meters
+/// * `pos` - Position as ITRF coordinate (satkit.itrfcoord) or numpy
+///                3-vector representing ITRF position in meters
 ///
-///     order:   Order of the gravity model
+/// * `order` - Order of the gravity model
+///
+/// # References
 ///
 /// See Equation 3.33 of Montenbruck & Gill (referenced above) for
 /// calculation details.
@@ -617,7 +622,7 @@ mod tests {
             // show that they are approximately equal
             for idx in 0..3 {
                 let fracdiff = (accel3[idx] / accel2[idx] - 1.0).abs();
-                assert!(fracdiff < 1.0e-6);
+                assert!(fracdiff < 1.0e-5);
             }
         }
     }

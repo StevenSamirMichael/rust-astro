@@ -7,7 +7,7 @@ edition = "2021"
 # https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "satkit"
-crate-type = ["cdylib"]
+
 
 [dependencies]
 nalgebra = "0.32.3"
@@ -35,7 +35,6 @@ rand = "0.8.5"
 approx = "0.5.1"
 
 [features]
-default = ["pybindings"]
 pybindings = ["pyo3", "numpy", "pyo3-build-config"]
 
 [profile.test]

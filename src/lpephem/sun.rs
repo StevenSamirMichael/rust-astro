@@ -103,35 +103,37 @@ pub fn shadowfunc(psun: &Vec3, psat: &Vec3) -> f64 {
 }
 
 ///
+/// # Description
+///
 /// Sunrise and sunset times on the day given by input time
 /// and at the given location.  
 ///
 /// Time is at location, and should have hours, minutes, and seconds
 /// set to zero
 ///
-/// Vallado Algorithm 30
 ///
-/// Inputs:
+/// # Input Arguments
 ///
-///      Time:   AstroTime representing date for which to compute
-///              sunrise & sunset
+/// * `time`  - Date at which to compute sunrise & sunset
 ///
-///     coord:   ITRFCoord representing location for which to compute
-///              sunrise & sunset
+/// * `coord`` - ITRFCoord representing location for which to compute
+///                 sunrise & sunset
 ///
-///     sigma:   Option<f64> Angle in degrees between noon & rise/set:
-///              Common Values:
+/// * `sigma` - Angle in degrees between noon & rise/set
+///                     Common Values:
 ///                           "Standard": 90 deg, 50 arcmin (90.0+50.0/60.0)
 ///                     "Civil Twilight": 96 deg
 ///                  "Nautical Twilight": 102 deg
 ///              "Astronomical Twilight": 108 deg
-///
 ///              If None is passed in, "Standard" is used (90.0 + 50.0/60.0)
 ///
-/// Returns:
+/// # Output
 ///
-///    SKResult<(sunrise: AstroTime, sunset: AstroTime)>
+/// * SKResult<(sunrise: AstroTime, sunset: AstroTime)>
 ///
+/// # References
+///
+/// * Vallado Algorithm 30
 ///
 pub fn riseset(
     time: &AstroTime,
