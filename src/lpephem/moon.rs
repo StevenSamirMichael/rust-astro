@@ -9,16 +9,18 @@ use nalgebra as na;
 ///
 /// From Vallado Algorithm 31
 ///
-/// Input:
+/// # Arguments
 ///
-///    time:  AstroTime object for which to compute position
+/// * `time` - Instant at which to compute moon position
 ///
 /// Output:
 ///
-///    nalagebra::Vector3<f64> representing moon position in GCRF frame
+///  * Vector representing moon position in GCRF frame
 ///    at given time.  Units are meters
 ///
-/// Accurate to 0.3 degree in ecliptic longitude, 0.2 degree in ecliptic latitude,
+/// # Notes
+///
+/// * Accurate to 0.3 degree in ecliptic longitude, 0.2 degree in ecliptic latitude,
 /// and 1275 km in range
 ///
 pub fn pos_gcrf(time: &AstroTime) -> na::Vector3<f64> {

@@ -16,15 +16,15 @@ pub mod types;
 // NAlgebera bindings for ODE state
 mod nalgebra;
 
-// ndarray bindings for ODE state
-//mod ndarray;
-
 pub use rk_adaptive::RKAdaptive;
 pub use rk_adaptive_settings::RKAdaptiveSettings;
 
 pub mod solvers {
+    #[allow(unused)]
     pub use super::rkts54::RKTS54;
+    #[allow(unused)]
     pub use super::rkv65::RKV65;
+    #[allow(unused)]
     pub use super::rkv87::RKV87;
     pub use super::rkv98::RKV98;
     pub use super::rkv98_nointerp::RKV98NoInterp;

@@ -26,7 +26,7 @@ pub struct SpaceWeatherRecord {
     pub ap_avg: i32,
     /// Planetary daily character figure
     pub cp: f64,
-    /// Scale cp to [0,9]
+    /// Scale cp to \[0, 9\]
     pub c9: i32,
     /// International Sunspot Number
     pub isn: i32,

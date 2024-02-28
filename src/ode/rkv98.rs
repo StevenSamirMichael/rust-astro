@@ -2,7 +2,7 @@ use super::rk_adaptive::RKAdaptive;
 
 // File below is auto-generated via python script that parses
 // data available on web at:
-// https://www.sfu.ca/~jverner/RKV98.IIa.Robust.000000351.081209.CoeffsOnlyFLOAT6040
+// <https://www.sfu.ca/~jverner/RKV98.IIa.Robust.000000351.081209.CoeffsOnlyFLOAT6040>
 
 use super::rkv98_table as bt;
 const N: usize = 21;

@@ -12,17 +12,19 @@ type Vec3 = na::Vector3<f64>;
 ///
 /// Sun position in the Geocentric Celestial Reference Frame (GCRF)
 ///
-/// Algorithm 29 from Vallado for sun in Mean of Date (MOD), then rotated
-/// from MOD to GCRF via Equations 3-88 and 3-89 in Vallado
+/// # Arguments
 ///
-/// Input:
+///    `time` - Instant at which to compute position
 ///
-///    time:  AstroTime object for which to compute position
+/// # Returns
 ///
-/// Output:
+/// * Vector representing sun position in GCRF frame
+///   at given time.  Units are meters
 ///
-///    nalagebra::Vector3<f64> representing sun position in GCRF frame
-///    at given time.  Units are meters
+/// # Notes
+///
+/// * Algorithm 29 from Vallado for sun in Mean of Date (MOD), then rotated
+///   from MOD to GCRF via Equations 3-88 and 3-89 in Vallado
 ///
 #[inline]
 pub fn pos_gcrf(time: &AstroTime) -> na::Vector3<f64> {
@@ -30,20 +32,21 @@ pub fn pos_gcrf(time: &AstroTime) -> na::Vector3<f64> {
 }
 
 ///
-/// Sun position in the Mean-of-Date Frame
+/// Sun position in the Mean-of-Date (MOD) Frame
 ///
-/// Algorithm 29 from Vallado for sun in Mean of Date (MOD)
+/// # Arguments
 ///
-/// Input:
+/// * `time` - Instant at which to compute position
 ///
-///    time:  AstroTime object for which to compute position
+/// # Returns
 ///
-/// Output:
-///
-///    nalagebra::Vector3<f64> representing sun position in MOD frame
+/// * Vector representing sun position in MOD frame
 ///    at given time.  Units are meters
 ///
-/// From Vallado: Valid with accuracy of .01 degrees from 1950 to 2050
+/// # Notes:
+///
+/// * Algorithm 29 from Vallado for sun in Mean of Date (MOD)
+/// * Valid with accuracy of .01 degrees from 1950 to 2050
 ///
 pub fn pos_mod(time: &AstroTime) -> na::Vector3<f64> {
     let t: f64 = (time.to_jd(TimeScale::TDB) - 2451545.0) / 36525.0;
@@ -77,12 +80,22 @@ pub fn pos_mod(time: &AstroTime) -> na::Vector3<f64> {
 
 ///
 /// Fraction of sunlight shadowed by Earth
-/// in range [0,1]
+/// in range \[0, 1\]
 ///
-/// 0 = full occlusion
-/// 1 = full sunlight
+/// # Arguments:
 ///
-/// See algorithm in Section 3.4.2 of Montenbruck and Gill for calculation
+/// * `psun` - Position of sun, meters
+/// * `psat` - Position of satellite in same frame as sun position, meters
+///
+/// # Returns:
+///
+/// * Fractional amount of sunlight hitting satellite:
+///   * 0 = full occlusion
+///   * 1 = full sunlight
+///
+/// # Reference
+///
+/// * See algorithm in Section 3.4.2 of Montenbruck and Gill for calculation
 ///
 ///
 pub fn shadowfunc(psun: &Vec3, psat: &Vec3) -> f64 {
@@ -103,7 +116,7 @@ pub fn shadowfunc(psun: &Vec3, psat: &Vec3) -> f64 {
 }
 
 ///
-/// # Description
+/// # Compute sunrise and sunset
 ///
 /// Sunrise and sunset times on the day given by input time
 /// and at the given location.  
@@ -116,18 +129,19 @@ pub fn shadowfunc(psun: &Vec3, psat: &Vec3) -> f64 {
 ///
 /// * `time`  - Date at which to compute sunrise & sunset
 ///
-/// * `coord`` - ITRFCoord representing location for which to compute
-///                 sunrise & sunset
+/// * `coord` - ITRFCoord representing location for which to compute
+///             sunrise & sunset
 ///
 /// * `sigma` - Angle in degrees between noon & rise/set
-///                     Common Values:
-///                           "Standard": 90 deg, 50 arcmin (90.0+50.0/60.0)
-///                     "Civil Twilight": 96 deg
-///                  "Nautical Twilight": 102 deg
-///              "Astronomical Twilight": 108 deg
-///              If None is passed in, "Standard" is used (90.0 + 50.0/60.0)
+///    Common Values:
+///    * "Standard": 90 deg, 50 arcmin (90.0+50.0/60.0)
+///    * "Civil Twilight": 96 deg
+///    * "Nautical Twilight": 102 deg
+///    * "Astronomical Twilight": 108 deg
+///      
+/// If None is passed in, "Standard" is used (90.0 + 50.0/60.0)
 ///
-/// # Output
+/// # Returns
 ///
 /// * SKResult<(sunrise: AstroTime, sunset: AstroTime)>
 ///

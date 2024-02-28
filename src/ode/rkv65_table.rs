@@ -1,6 +1,6 @@
 //! Auto-generated via python script that parses
 //! Runge-Kutta coefficients available on web at:
-//! https://www.sfu.ca/~jverner/RKV65.IIIXb.Efficient.00000144617.081204.CoeffsOnlyFLOAT
+//! <https://www.sfu.ca/~jverner/RKV65.IIIXb.Efficient.00000144617.081204.CoeffsOnlyFLOAT>
 
 pub const BI: [[f64; 6]; 10] = [
     [

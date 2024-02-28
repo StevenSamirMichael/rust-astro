@@ -43,11 +43,11 @@ pub(crate) fn qrot_zcoord(theta: f64) -> Quat {
 ///
 /// # Arguments
 ///
-/// * tm: AstroTime object representing input time
+/// * `tm` - AstroTime object representing input time
 ///
 /// # Returns
 ///
-/// * gmst in radians
+/// * `gmst` - in radians
 ///
 pub fn gmst(tm: &AstroTime) -> f64 {
     let tut1: f64 = (tm.to_mjd(Scale::UT1) - 51544.5) / 36525.0;
@@ -86,7 +86,7 @@ pub fn gast(tm: &AstroTime) -> f64 {
 ///
 /// # Arguments:
 ///
-///   * tm: AstroTime struct representing input time
+///   * `tm` - Instant at which to compute earth rotation angle
 ///
 /// # Returns:
 ///
@@ -106,11 +106,11 @@ pub fn earth_rotation_angle(tm: &AstroTime) -> f64 {
 }
 
 ///
-/// Rotation from International Terrestrial Reference Frame
+/// Rotation from International Terrestrial Reference Frame (ITRF)
 /// to the Terrestrial Intermediate Reference System (TIRS)
 ///
 /// # Arguments:
-///  * tm: Time at which to compute rotation
+///  * `tm` - Time instant at which to compute rotation
 ///
 /// # Return:
 ///
@@ -132,7 +132,7 @@ pub fn qitrf2tirs(tm: &AstroTime) -> Quat {
 ///
 /// # Arguments
 ///
-/// * tm: Time at which to compute rotation
+/// * `tm` -  Time at which to compute rotation
 ///
 /// # Returns
 ///
@@ -154,14 +154,15 @@ pub fn qteme2itrf(tm: &AstroTime) -> Quat {
 ///
 /// # Arguments
 ///
-/// * tm: Time at which to compute rotation
+/// * `tm` - Time at which to compute rotation
 ///
 /// # Returns
 ///
 /// * Quaternion representing rotation from MOD to GCRF
 ///  
+/// # Notes
 ///
-/// Equations 3-88 and 3-89 in Vallado
+/// * Equations 3-88 and 3-89 in Vallado
 ///
 pub fn qmod2gcrf(tm: &AstroTime) -> Quat {
     const ASEC2RAD: f64 = PI / 180.0 / 3600.0;
@@ -232,9 +233,11 @@ pub fn qtod2mod_approx(tm: &AstroTime) -> Quat {
 /// International Terrestrial Reference Frame (ITRF)
 /// to the Geocentric Celestial Reference Frame (GCRF)
 ///
+/// Performs full IAU-2006 reduction
+///
 /// # Arguments
 ///
-/// * tm: Time at which to compute rotation
+/// * `tm` - Time instant at which to compute rotation
 ///
 /// # Returns
 ///
@@ -243,13 +246,13 @@ pub fn qtod2mod_approx(tm: &AstroTime) -> Quat {
 /// # Notes:
 ///
 ///  * Uses the full IAU2006 reduction, see
-/// [IERS Technical Note 36, Chapter 5](https://www.iers.org/SharedDocs/Publikationen/EN/IERS/Publications/tn/TechnNote36/tn36_043.pdf?__blob=publicationFile&v=1)
+/// [IERS Technical Note 36, Chapter 5](https://www.iers.org/SharedDocs/Publikationen/EN/IERS/Publications/tn/TechnNote36/tn36_043.pdf)
 /// Equation 5.1
 ///
 ///  * This is **very** computationally expensive; for most
 /// applications, the approximate rotation will work just fine
 ///
-/// Note: this computatation does not include impact of the
+/// * **Note** this computatation **does not** include impact of the
 ///       Earth solid tides, but it does include polar motion,
 ///       precession, and nutation
 ///
@@ -281,7 +284,7 @@ pub fn qitrf2gcrf(tm: &AstroTime) -> Quat {
 ///
 /// # Arguments
 ///
-/// * tm: Time at which to compute rotation
+/// * `tm` - Time instanc at which to compute rotation
 ///
 /// # Returns
 ///
@@ -293,7 +296,7 @@ pub fn qitrf2gcrf(tm: &AstroTime) -> Quat {
 /// [IERS Technical Note 36, Chapter 5](https://www.iers.org/SharedDocs/Publikationen/EN/IERS/Publications/tn/TechnNote36/tn36_043.pdf?__blob=publicationFile&v=1)
 /// Equation 5.1
 ///
-///  * This is **very** computationally expensive; for most
+///  * **Note** This is **very** computationally expensive; for most
 /// applications, the approximate rotation will work just fine
 ///
 pub fn qgcrf2itrf(tm: &AstroTime) -> Quat {
@@ -307,7 +310,16 @@ pub fn qgcrf2itrf(tm: &AstroTime) -> Quat {
 ///
 /// A rotation about zhat by -Earth Rotation Angle
 ///
-/// See [IERS Technical Note 36, Chapter 5](https://www.iers.org/SharedDocs/Publikationen/EN/IERS/Publications/tn/TechnNote36/tn36_043.pdf?__blob=publicationFile&v=1)
+/// # Arguments
+///
+/// * `tm` - Time instance at which to compute rotation
+///
+/// # Returns
+///
+/// * Quaternion representing rotation from TIRS to CIRS
+///
+///
+/// See [IERS Technical Note 36, Chapter 5](https://www.iers.org/SharedDocs/Publikationen/EN/IERS/Publications/tn/TechnNote36/tn36_043.pdf)
 /// Equation 5.5
 ///
 #[inline]

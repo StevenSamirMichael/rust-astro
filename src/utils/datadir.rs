@@ -80,6 +80,7 @@ pub fn datadir() -> SKResult<PathBuf> {
     let res = INSTANCE.get_or_init(|| {
         for ref dir in testdirs() {
             let p = PathBuf::from(&dir).join("tab5.2a.txt");
+            println!("p = {:?}", p);
             if p.is_file() {
                 return Ok(dir.to_path_buf().clone());
             }
@@ -106,6 +107,7 @@ mod tests {
     fn datadir() {
         use crate::utils::datadir;
         let d = datadir::datadir();
+        println!("d = {:?}", d);
         assert_eq!(d.is_err(), false);
     }
 }

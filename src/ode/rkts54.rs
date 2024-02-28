@@ -1,7 +1,7 @@
 //! Tsitouras Order 5(4) Runge-Kutta integrator
 //!
 //! See:
-//! https://dblp.org/rec/journals/cma/Tsitouras11
+//! <https://dblp.org/rec/journals/cma/Tsitouras11>
 //!
 //! Note: in paper, sign is reversed on Bhat[7] ...
 //! should be -1.0/66.0, not 1.0/66.0

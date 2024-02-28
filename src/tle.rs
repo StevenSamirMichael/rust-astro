@@ -10,7 +10,7 @@ use crate::utils::SKResult;
 /// "Simplified General Perturbations-4" (SGP-4) mathemematical
 /// model that is also included in this package.
 ///
-/// For details, see: https://en.wikipedia.org/wiki/Two-line_element_set
+/// For details, see: <https://en.wikipedia.org/wiki/Two-line_element_set>
 ///
 /// The TLE format is still commonly used to represent satellite
 /// ephemerides, and satellite ephemerides catalogs in this format

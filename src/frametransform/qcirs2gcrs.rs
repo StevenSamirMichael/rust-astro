@@ -116,6 +116,20 @@ pub fn qcirs2gcrs_dxdy(tm: &AstroTime, dxdy: Option<(f64, f64)>) -> Quat {
     qrot_zcoord(-e) * qrot_ycoord(-d) * qrot_zcoord(e + s)
 }
 
+///
+/// Return quatnerion represention rotation
+/// from the CIRS (Celestial Intermediate Reference System) to the
+/// GCRS (Geocentric Celestial Reference Frame) at given instant
+///
+/// # Arguments:
+///
+/// * `time` - The time instance at which to compute the rotation
+///
+/// # Reference:
+///
+/// * See Vallado Ch. 3.7
+/// * Also see [IERS Technical Note 36, Chapter 5](https://www.iers.org/SharedDocs/Publikationen/EN/IERS/Publications/tn/TechnNote36/tn36_043.pdf)
+///    
 pub fn qcirs2gcrs(tm: &AstroTime) -> Quat {
     let dxdy: Option<(f64, f64)> = match crate::earth_orientation_params::get(&tm) {
         None => None,

@@ -316,7 +316,7 @@ impl ITRFCoord {
     ///
     /// # References:
     /// * Uses Vincenty's formula
-    ///   See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    ///   See: <https://en.wikipedia.org/wiki/Vincenty%27s_formulae>
     ///
     /// Inputs:
     ///   1: distance in meters
@@ -397,7 +397,7 @@ impl ITRFCoord {
     //
     /// # References
     //  * Vincenty's formula inverse
-    ///   See: https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    ///   See: <https://en.wikipedia.org/wiki/Vincenty%27s_formulae>
     ///   Return the Geodesic distance (shortest distance along the Earth surface) in meters,
     pub fn geodesic_distance(&self, other: &ITRFCoord) -> (f64, f64, f64) {
         #[allow(non_upper_case_globals)]
@@ -478,11 +478,11 @@ impl ITRFCoord {
     ///
     /// # Arguments
     ///
-    /// * ref_coord - &ITRFCoord representing reference
+    /// * `ref_coord`` - `&ITRFCoord`` representing reference
     ///
     /// # Return
     ///
-    /// * nalgebra::Vector3<f64> representing NED position
+    /// * `nalgebra::Vector3<f64>` representing NED position
     ///   relative to reference.  Units are meters
     ///
     /// # Examples:
@@ -520,7 +520,7 @@ impl ITRFCoord {
     ///
     /// # Return
     ///
-    /// * nalgebra::Vector3<f64> representing ENU position
+    /// * `nalgebra::Vector3<f64>` representing ENU position
     ///   relative to reference.  Units are meters
     ///
     /// # Examples:
@@ -553,7 +553,7 @@ mod tests {
         let dubai = ITRFCoord::from_geodetic_deg(25.207843059422945, 55.27053859644447, 0.0);
         let (dist, h0, h1) = mumbai.geodesic_distance(&dubai);
         // from google maps, distance is 1,926.80 km
-        // From https://geodesyapps.ga.gov.au/vincenty-inverse
+        // From <https://geodesyapps.ga.gov.au/vincenty-inverse>
         // Distance = 1928536.609m
         // Forward azimuth = 293.466588 deg
         // Reverse azimuth = 106.780805 deg

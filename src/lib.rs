@@ -10,7 +10,7 @@ pub mod astrotime;
 pub mod consts;
 /// Earth orientation parameters (polar motion, delta-UT1, lenth of day)
 pub mod earth_orientation_params;
-/// Zonal gravity model
+/// Zonal gravity model for Earth gravity
 pub mod earthgravity;
 /// Conversion between coordinate frames
 pub mod frametransform;
@@ -22,12 +22,13 @@ pub mod jplephem;
 pub mod lpephem;
 /// NRL-MISE00 Density model
 pub mod nrlmsise;
-/// Orbit Propagation
+/// High-Precision Orbit Propagation via Runga-Kutta Integration
 pub mod orbitprop;
 /// SGP-4 Orbit Propagator
 pub mod sgp4;
 /// Solar system bodies
 mod solarsystem;
+/// Space Weather
 pub mod spaceweather;
 /// Two-line Element Set
 pub mod tle;
@@ -35,7 +36,7 @@ pub mod tle;
 pub mod utils;
 
 // Integrate ordinary differential equations
-pub mod ode;
+mod ode;
 
 mod duration;
 

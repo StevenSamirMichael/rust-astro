@@ -14,7 +14,7 @@ use once_cell::sync::OnceCell;
 /// Gravity model enumeration
 ///
 /// For details of models, see:
-/// http://icgem.gfz-potsdam.de/tom_longtime
+/// <http://icgem.gfz-potsdam.de/tom_longtime>
 ///
 #[derive(PartialEq, Eq, Hash)]
 pub enum GravityModel {
@@ -72,7 +72,7 @@ pub fn gravhash() -> &'static HashMap<GravityModel, &'static Gravity> {
 ///
 /// # References
 ///    
-/// * For details of models, see: http://icgem.gfz-potsdam.de/tom_longtime
+/// * For details of models, see: <http://icgem.gfz-potsdam.de/tom_longtime>
 ///
 /// * For details of calculation, see Chapter 3.2 of:
 ///   "Satellite Orbits: Models, Methods, Applications",
@@ -102,7 +102,7 @@ pub fn accel(pos_itrf: &Vec3, order: usize, model: GravityModel) -> Vec3 {
 ///  
 /// # References
 ///
-/// * For details of models, see: http://icgem.gfz-potsdam.de/tom_longtime
+/// * For details of models, see: <http://icgem.gfz-potsdam.de/tom_longtime>
 ///
 /// * For details of calculation, see Chapter 3.2 of:
 ///   "Satellite Orbits: Models, Methods, Applications",
@@ -403,7 +403,7 @@ impl Gravity {
 
     /// Load Gravity model coefficients from file
     /// Files are at:
-    /// http://icgem.gfz-potsdam.de/tom_longtime
+    /// <http://icgem.gfz-potsdam.de/tom_longtime>
     pub fn from_file(filename: &str) -> SKResult<Gravity> {
         let path = datadir().unwrap_or(PathBuf::from(".")).join(filename);
         if !path.is_file() {
