@@ -19,7 +19,7 @@ use crate::utils::SKResult;
 ///
 /// TLEs sometimes have a "line 0" that includes the name of the satellite
 ///
-/// Example Usage:
+/// # Example Usage:
 ///
 ///
 /// ```
@@ -167,10 +167,10 @@ impl TLE {
     ///
     /// # Arguments:
     ///
-    ///   * line0: the "0"th line of the TLE, which sometimes contains
+    ///   * `line0` - the "0"th line of the TLE, which sometimes contains
     ///     the satellite name
-    ///   * line1: the 1st line of TLE
-    ///   * line2: the 2nd line of the TLE
+    ///   * `line1` - the 1st line of TLE
+    ///   * `line2` - the 2nd line of the TLE
     ///
     /// # Returns:
     ///

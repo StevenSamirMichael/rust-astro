@@ -8,23 +8,23 @@
 //!
 //! ## Scales include:
 //!
-//! * **UTC** - Universal Time Coordinate. In common use.  Local times are
+//! * `UTC`` - Universal Time Coordinate. In common use.  Local times are
 //!   generally UTC time with a timezone offset
 //!
-//! * **TAI** - International Atomic Time.  A monotonically increasing epoch
+//! * `TAI` - International Atomic Time.  A monotonically increasing epoch
 //!   that differsfrom UTC in that it does not include leap seconds.
 //!
-//! * **UT1** - Universal Time.  This is defined by the Earth's rotation, with
+//! * `UT1`` - Universal Time.  This is defined by the Earth's rotation, with
 //!   correction for polar wander
 //!
-//! * **TT** - Terrestrial Time.  Defined from 2001 on. Leads TAI by
+//! * `TT` - Terrestrial Time.  Defined from 2001 on. Leads TAI by
 //!    a constant 32.184 seconds.
 //!
-//! * **GPS** - GPS Time.  Defined for global positining system. Trails TAI by a
+//! * `GPS` - GPS Time.  Defined for global positining system. Trails TAI by a
 //!   constant 19 seconds after GPS epoch of Jan 6 1980.  Typically reported in
 //!   weeks since midnight Jan 1 1980 and seconds of week.
 //!
-//! * **TDB** - Barycentric Dynamical time.  Used as time scale when dealing
+//! * `TDB` - Barycentric Dynamical time.  Used as time scale when dealing
 //!     with solar system ephemerides in solar system barycentric coordinate
 //!     system.
 //!
@@ -349,8 +349,8 @@ impl AstroTime {
     /// subtracting 2400000.5 from the Julian day
     /// # Arguments:
     ///
-    /// * mjd - The modified Julian day
-    /// * scale - The time scale of the input date
+    /// * `mjd` - The modified Julian day
+    /// * `scale`` - The time scale of the input date
     ///
     /// # Returns
     ///
@@ -396,9 +396,9 @@ impl AstroTime {
     ///
     /// # Arguments
     ///
-    /// * year - the year
-    /// * month - the month, 1 based (1=January, 2=February, ...)
-    /// * day - Day of month, starting from 1
+    /// * `year` - the year
+    /// * `month` - the month, 1 based (1=January, 2=February, ...)
+    /// * `day` - Day of month, starting from 1
     ///
     /// # Returns
     ///
@@ -423,13 +423,13 @@ impl AstroTime {
     ///
     /// # Returns
     ///
-    /// * Tuple with following values:
-    ///   * year - the year
-    ///   * month - the month, 1 based (1=January, 2=February, ...)
-    ///   * day - Day of month, starting from 1
-    ///   * hour - Hour of day, in range \[0,23\]
-    ///   * min - Minute of hour, in range \[0,59\]
-    ///   * sec - Second of minute, including fractions for subsecond, in range \[0,1)
+    /// * 6-element tuple with following values:
+    ///   * `year` - the year
+    ///   * `month` - the month, 1 based (1=January, 2=February, ...)
+    ///   * `day` - Day of month, starting from 1
+    ///   * `hour` - Hour of day, in range \[0,23\]
+    ///   * `min` - Minute of hour, in range \[0,59\]
+    ///   * `sec` - Second of minute, including fractions for subsecond, in range \[0,1)
     ///
     pub fn to_datetime(&self) -> (u32, u32, u32, u32, u32, f64) {
         let mjd_utc = self.to_mjd(Scale::UTC);
@@ -447,12 +447,12 @@ impl AstroTime {
     ///
     /// # Arguments
     ///
-    /// * year - the year (u32)
-    /// * month - the month, 1 based (1=January, 2=February, ...)
-    /// * day - Day of month, starting from 1
-    /// * hour - Hour of day, in range \[0,23\]
-    /// * min - Minute of hour, in range \[0,59\]
-    /// * sec - Second of minute, including fractions for subsecond, in range \[0,1)
+    /// * `year` - the year (u32)
+    /// * `month` - the month, 1 based (1=January, 2=February, ...)
+    /// * `day` - Day of month, starting from 1
+    /// * `hour` - Hour of day, in range \[0,23\]
+    /// * `min` - Minute of hour, in range \[0,59\]
+    /// * `sec` - Second of minute, including fractions for subsecond, in range \[0,1)
     ///
     /// # Return
     ///

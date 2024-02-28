@@ -11,26 +11,26 @@
 ///    (it will be close to origin)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SolarSystem {
-    // Mercury
+    /// Mercury
     MERCURY = 0,
-    // Venus
+    /// Venus
     VENUS = 1,
-    // Earth-Moon Barycenter
+    /// Earth-Moon Barycenter
     EMB = 2,
-    // Mars
+    /// Mars
     MARS = 3,
-    // Jupiter
+    /// Jupiter
     JUPITER = 4,
-    // Saturn
+    /// Saturn
     SATURN = 5,
-    // Uranus
+    /// Uranus
     URANUS = 6,
-    // Neptune
+    /// Neptune
     NEPTUNE = 7,
-    // Pluto
+    /// Pluto
     PLUTO = 8,
-    // Moon (Geocentric)
+    /// Moon (Geocentric)
     MOON = 9,
-    // Sun
+    /// Sun
     SUN = 10,
 }

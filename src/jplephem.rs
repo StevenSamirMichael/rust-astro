@@ -7,13 +7,13 @@
 //! for bodies in the solar system, calculated from the
 //! Jet Propulsion Laboratory (JPL) ephemeris data files
 //!
-//! ## Links
+//! # Links
 //!
 //! Ephemerides filess can be found at:
 //! <https://ssd.jpl.nasa.gov/ftp/eph/planets//>
 //!
 //!
-//! ### Notes
+//! # Notes
 //!
 //! for little-endian systems, download from the "Linux" subdirectory
 //! For big-endian systems, download from the "SunOS" subdirectory
@@ -121,7 +121,7 @@ impl JPLEphem {
     ///
     /// # Example
     ///
-    /// ``
+    /// ```
     ///
     /// use satkit::jplephem;
     /// use satkit::SolarSystem;
@@ -322,12 +322,12 @@ impl JPLEphem {
     ///
     /// # Inputs
     ///
-    ///  * body - the solar system body for which to return position
-    ///  * tm - The time at which to return position
+    ///  * `body` - the solar system body for which to return position
+    ///  * `tm` - The time at which to return position
     ///
     /// # Return
     ///
-    ///    3-vector of cartesian Heliocentric position in meters
+    ///  * 3-vector of cartesian Heliocentric position in meters
     ///
     ///
     /// # Notes:
@@ -352,14 +352,14 @@ impl JPLEphem {
     /// Return the position & velocity the given body in the barycentric coordinate system
     /// (origin is solar system barycenter)
     ///
-    /// # Inputs
+    /// # Arguments
     ///
-    ///  * body - the solar system body for which to return position
-    ///  * tm - The time at which to return position
+    ///  * `body` - the solar system body for which to return position
+    ///  * `tm` - The time at which to return position
     ///
     /// # Return
     ///
-    ///  * Tuple with following values:
+    ///  * 2-element tuple with following values:
     ///    * 3-vector of cartesian Heliocentric position in meters
     ///    * 3-vector of cartesian Heliocentric velocity in meters / second
     ///
@@ -470,14 +470,14 @@ impl JPLEphem {
     /// Return the position and velocity of the given body in
     ///  Geocentric coordinate system
     ///
-    /// # Inputs
+    /// # Arguments
     ///
-    ///  * body - the solar system body for which to return position
-    ///  * tm - The time at which to return position
+    ///  * `body` - the solar system body for which to return position
+    ///  * `tm` - The time at which to return position
     ///
     /// # Return
     ///
-    ///   * Tuple with following elements:
+    ///   * 2-element tuple with following elements:
     ///     * 3-vector of cartesian Geocentric position in meters
     ///     * 3-vector of cartesian Geocentric velocity in meters / second
     ///       Note: velocity is relative to Earth
@@ -510,8 +510,8 @@ pub fn consts(s: &String) -> Option<&f64> {
 ///
 /// # Inputs
 ///
-///  * body - the solar system body for which to return position
-///  * tm - The time at which to return position
+///  * `body` - the solar system body for which to return position
+///  * `tm` - The time at which to return position
 ///
 /// # Return
 ///
@@ -534,14 +534,14 @@ pub fn barycentric_pos(body: SolarSystem, tm: &AstroTime) -> SKResult<Vec3> {
 /// Return the position and velocity of the given body in
 ///  Geocentric coordinate system
 ///
-/// # Inputs
+/// # Arguments
 ///
-///  * body - the solar system body for which to return position
-///  * tm - The time at which to return position
+///  * `body` - the solar system body for which to return position
+///  * `tm` - The time at which to return position
 ///
 /// # Return
 ///
-///   * Tuple with following elements:
+///   * two-element tuple with following elements:
 ///     * 3-vector of cartesian Geocentric position in meters
 ///     * 3-vector of cartesian Geocentric velocity in meters / second
 ///       Note: velocity is relative to Earth
@@ -556,10 +556,10 @@ pub fn geocentric_state(body: SolarSystem, tm: &AstroTime) -> SKResult<(Vec3, Ve
 /// Return the position of the given body in
 /// Geocentric coordinate system
 ///
-/// # Inputs
+/// # Arguments
 ///
-///  * body - the solar system body for which to return position
-///  * tm - The time at which to return position
+///  * `body` - the solar system body for which to return position
+///  * `tm` - The time at which to return position
 ///
 /// # Return
 ///
@@ -575,14 +575,14 @@ pub fn geocentric_pos(body: SolarSystem, tm: &AstroTime) -> SKResult<Vec3> {
 /// Return the position & velocity the given body in the barycentric coordinate system
 /// (origin is solar system barycenter)
 ///
-/// # Inputs
+/// # Arguments
 ///
-///  * body - the solar system body for which to return position
-///  * tm - The time at which to return position
+///  * `body` - the solar system body for which to return position
+///  * `tm` - The time at which to return position
 ///
 /// # Return
 ///
-///  * Tuple with following values:
+///  * two-element tuple with following values:
 ///    * 3-vector of cartesian Heliocentric position in meters
 ///    * 3-vector of cartesian Heliocentric velocity in meters / second
 ///
