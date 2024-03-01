@@ -1,10 +1,9 @@
-name: BuildTest
+name: Build
 
 on:
   push:
-    branches:
-      - satkit
-      
+    branches: [ "satkit" ]
+
 jobs:
   build:
     name: build and test satkit
