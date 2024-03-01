@@ -51,7 +51,9 @@ before-build = [
     "rustup show",
 ]
 test-requires = "pytest"
-test-command = ["pytest pytest/test.py"]
+test-command = [
+    "ASTRO_DATA={project}/astro-data SATKIT_TESTVEC_ROOT={project}/satkit-testvecs pytest {project}/pytest/test.py",
+]
 
 [tool.cibuildwheel.windows]
 before-build = [
