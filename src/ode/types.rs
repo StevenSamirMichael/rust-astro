@@ -46,10 +46,10 @@ pub trait ODESystem {
 
 #[derive(Debug, Error)]
 pub enum ODEError {
-    #[error("Stopped at x = {x}.  Reached maximum of {steps} steps.")]
-    MaxStepsReached { x: f64, steps: usize },
-    #[error("Step Size is Too Small")]
-    StepSizeTooSmall,
+    //#[error("Stopped at x = {x}.  Reached maximum of {steps} steps.")]
+    //MaxStepsReached { x: f64, steps: usize },
+    //#[error("Step Size is Too Small")]
+    //StepSizeTooSmall,
     #[error("Step error not finite")]
     StepErrorToSmall,
     #[error("Dense output not provided in solution")]

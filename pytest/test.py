@@ -3,6 +3,7 @@ import satkit as sk
 import pytest
 import numpy as np
 import math as m
+import os
 
 
 class TestJPLEphem:
@@ -12,7 +13,8 @@ class TestJPLEphem:
         """
 
         # File contains test calculation vectors provided by NASA
-        fname = "../satkit-testvecs/jplephem/testpo.440"
+        basedir = os.getenv("SATKIT_TESTVEC_ROOT", default="../satkit-testvecs")
+        fname = basedir + "/jplephem/testpo.440"
 
         # Read in the test vectors
         with open(fname, "r") as fd:
@@ -339,7 +341,10 @@ class TestSGP4:
         """
         SGP4 Test Vectors from vallado
         """
-        basedir = "../satkit-testvecs/sgp4"
+
+        basedir = os.getenv("SATKIT_TESTVEC_ROOT", default="../satkit-testvecs/sgp4")
+        fname = basedir + "/jplephem/testpo.440"
+
         tlefile = basedir + "/SGP4-VER.TLE"
         with open(tlefile, "r") as fh:
             lines = fh.readlines()
