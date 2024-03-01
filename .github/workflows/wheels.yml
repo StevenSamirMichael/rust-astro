@@ -18,8 +18,15 @@ jobs:
         include:
           - os: ubuntu
             platform: linux
+            testvec_path: satkit-testvecs
+            data_path: astro-data
           - os: windows
             ls: dir
+            testvec_path: satkit-testvecs
+            data_path: astro-data
+          - os: macos
+            testvec_path: satkit-testvecs
+            data_path: astro-data
 
     runs-on: ${{ format('{0}-latest', matrix.os) }}
     steps:
@@ -27,6 +34,9 @@ jobs:
 
       - name: set up python
         uses: actions/setup-python@v5
+
+      - name: install requests package
+        run: pip install requests
 
       - name: set up rust
         if: matrix.os != 'ubuntu'
