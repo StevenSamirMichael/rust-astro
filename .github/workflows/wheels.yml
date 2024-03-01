@@ -73,6 +73,7 @@ jobs:
       - name: build ${{ matrix.platform || matrix.os }} binaries
         run: cibuildwheel --output-dir wheelhouse
 
+      # Create source distribution within the linux environment
       - name: Create sdist
         if: matrix.os == 'ubuntu'
         run: python -m build --sdist . -o wheelhouse

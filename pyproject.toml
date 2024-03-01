@@ -42,6 +42,7 @@ environment = { PATH = "$PATH:$HOME/.cargo/bin" }
 
 
 [tool.cibuildwheel.linux]
+environment = { PATH = "$PATH:$HOME/.cargo/bin", ASTRO_DATA = "/project/astro-data", SATKIT_TESTVEC_ROOT = "/project/satkit-testvecs" }
 archs = ["x86_64"]
 skip = ["pp*", "*_i686", "*_s390x", "*_aarch64", "*_ppc64le", "*-musllinux*"]
 before-build = [
@@ -49,7 +50,8 @@ before-build = [
     "curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y",
     "rustup show",
 ]
-environment = { PATH = "$PATH:$HOME/.cargo/bin" }
+test-requires = "pytest"
+test-command = ["pytest pytest/test.py"]
 
 [tool.cibuildwheel.windows]
 before-build = [
