@@ -3,7 +3,7 @@ name: Wheel
 on:
   push:
     branches:
-      - satkit_dontrun
+      - satkit_dontrun2
 
 jobs:
   build_python:
