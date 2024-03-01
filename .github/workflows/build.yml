@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ "satkit" ]
+    branches: ["satkit"]
 
 jobs:
   build:
@@ -26,7 +26,6 @@ jobs:
             ls: dir
             testvec_path: satkit-testvecs
             data_path: astro-data
-
 
     runs-on: ${{ format('{0}-latest', matrix.os) }}
 
@@ -55,7 +54,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{matrix.data_path}}
-          key: satkit-data-key
+          enableCrossOsArchive: True
+          key: satkit-data-cache
 
       # Download data if it is not in the cache
       - name: Download Satkit Data
@@ -68,14 +68,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{matrix.testvec_path}}
-          key: satkit-testvec-key
+          enableCrossOsArchive: True
+          key: satkit-testvecs-cache
 
       # Download test vectors if they are not in the cache
       - name: Download Satkit Test Vectors
         if: steps.cache-satkit-testvecs.outputs.cache-hit != 'true'
         run: python pytest/download_testvecs.py ${{matrix.testvec_path}}
 
-          
       # Run cargo tests
       - uses: actions-rs/cargo@v1
         with:
