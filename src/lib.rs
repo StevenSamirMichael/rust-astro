@@ -1,5 +1,31 @@
-//! Is this where to-level documentation goes?
-//! # Introduction
+//! # "SatKit" : Satellite Tool SatKit
+//!
+//!
+//! # Crate Features:
+//! * Timescale transformations (UTC, GPS, UT1, TBD, TT, ...)
+//! * High-precision coordinate transforms between:
+//!   * International Terrestrial Reference Frame (ITRF)
+//!   * Geocentric Celestial Reference Frame (GCRF) using IAU-2000 reduction
+//!   * True-Equinox Mean Equator (TEME) frame used in SGP4 propagation of TLEs
+//!   * Celestial Intermediate Reference Frame (CIRF)
+//!   * Terrestrial Intermediate Reference Frame (TIRF)
+//!   * Terrestrial Geodetic frame (latitude, longitude)
+//! * Two-Line Element Set (TLE) processing, and propagation with SGP4
+//! * Keplerian orbit propagation
+//! * JPL planetary ephemerides
+//! * High-order gravity models
+//! * High-precision, high-speed numerical satellite orbit propagation with high-order (9/8) efficient Runga-Kutta solvers, ability to solve for state transition matrix for covariance propagation, and inclusion following forces:
+//!   * High-order Earth gravity with multiple models
+//!   * Solar gravity
+//!   * Lunar gravity
+//!   * Dra, with NRL MISE-00 density model and inclusion of space weather data
+//!   * Radiation pressure
+//!
+//! # Language Bindings
+//!
+//! * Standalone Rust library available on on <https://crates.io>
+//! * Python bindings availble on PyPi
+//!
 
 // Type definitions
 pub mod types;
