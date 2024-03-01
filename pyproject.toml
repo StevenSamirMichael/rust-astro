@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "satkit"
 version = "0.2"
-dependencies = ["datetime>=3.0", "numpy>=1.20.0"]
+dependencies = ["numpy>=1.20.0"]
 requires-python = ">= 3.8"
 authors = [{ name = "Steven Michael", email = "ssmichael@gmail.com" }]
 maintainers = [{ name = "Steven Michael", email = "ssmichael@gmail.com" }]
 readme = "README.md"
-description = "Satellite dynamics toolkit"
+description = "Satellite Orbitaly Dynamics Toolkit"
 keywords = [
     "satellite",
     "orbit",

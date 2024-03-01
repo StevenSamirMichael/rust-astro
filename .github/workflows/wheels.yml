@@ -2,8 +2,7 @@ name: Wheel
 
 on:
   push:
-    branches:
-      - satkit_dontrun2
+    branches: ["satkit"]
 
 jobs:
   build_python:
@@ -36,6 +35,29 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+
+      # Try to recover satkit data from cache
+      - name: Cache Satkit Data
+        id: cache-satkit-data
+        uses: actions/cache@v4
+        with:
+          path: ${{matrix.data_path}}
+          enableCrossOsArchive: True
+          key: satkit-data-cache
+
+      # Download data if it is not in the cache
+      - name: Download Satkit Data
+        if: steps.cache-satkit-data.outputs.cache-hit != 'true'
+        run: python pytest/download_data.py ${{matrix.data_path}}
+
+      # Try to recover satkit test vectors from cache
+      - name: Cache Satkit Test Vectors
+        id: cache-satkit-testvecs
+        uses: actions/cache@v4
+        with:
+          path: ${{matrix.testvec_path}}
+          enableCrossOsArchive: True
+          key: satkit-testvecs-cache
 
       - name: install python dependencies
         run: pip install -U setuptools wheel cibuildwheel
