@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: ["satdkit"]
+    branches: ["satkit"]
 
 jobs:
   build:
@@ -46,7 +46,7 @@ jobs:
           args: --release
 
       # Download the data and the test vectors
-      - run: pip install requests
+      - run: pipx install requests
 
       # Try to recover satkit data from cache
       - name: Cache Satkit Data
@@ -80,3 +80,8 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+
+      # Run cargo doc
+      - uses: actions-rs/cargo@v1
+      with:
+        command: doc
