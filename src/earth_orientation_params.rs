@@ -43,25 +43,26 @@ fn load_eop_file_csv(filename: Option<PathBuf>) -> SKResult<Vec<EOPEntry>> {
 
     let file = File::open(&path)?;
 
-    let mut eopvec = Vec::<EOPEntry>::new();
-    eopvec.reserve(25000);
-    for rline in io::BufReader::new(file).lines().skip(1) {
-        let line = rline.unwrap();
-        let lvals: Vec<&str> = line.split(",").collect();
-        if lvals.len() < 12 {
-            continue;
-        }
-        eopvec.push(EOPEntry {
-            mjd_utc: lvals[1].parse()?,
-            xp: lvals[2].parse()?,
-            yp: lvals[3].parse()?,
-            dut1: lvals[4].parse()?,
-            lod: lvals[5].parse()?,
-            dX: lvals[8].parse()?,
-            dY: lvals[9].parse()?,
+    io::BufReader::new(file)
+        .lines()
+        .skip(1)
+        .map(|rline| {
+            let line = rline.unwrap();
+            let lvals: Vec<&str> = line.split(",").collect();
+            if lvals.len() < 12 {
+                return skerror!("Invalid entry in EOP file");
+            }
+            Ok(EOPEntry {
+                mjd_utc: lvals[1].parse()?,
+                xp: lvals[2].parse()?,
+                yp: lvals[3].parse()?,
+                dut1: lvals[4].parse()?,
+                lod: lvals[5].parse()?,
+                dX: lvals[8].parse()?,
+                dY: lvals[9].parse()?,
+            })
         })
-    }
-    Ok(eopvec)
+        .collect()
 }
 
 #[allow(dead_code)]
