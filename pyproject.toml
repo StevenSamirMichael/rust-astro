@@ -43,7 +43,7 @@ test-command = [
 
 
 [tool.cibuildwheel.linux]
-environment = { PATH = "$PATH:$HOME/.cargo/bin", ASTRO_DATA = "/project/astro-data", SATKIT_TESTVEC_ROOT = "/project/satkit-testvecs" }
+environment = { PATH = "$PATH:$HOME/.cargo/bin" }
 archs = ["x86_64"]
 skip = ["pp*", "*_i686", "*_s390x", "*_aarch64", "*_ppc64le", "*-musllinux*"]
 before-build = [
@@ -57,6 +57,7 @@ test-command = [
 ]
 
 [tool.cibuildwheel.windows]
+environment = { PATH = '$UserProfile\.cargo\bin;$PATH', ASTRO_DATA = "{package}\\astro-data", SATKIT_TESTVEC_ROOT = "{package}\\satkit-testvecs" }
 before-build = [
     "pip install -U setuptools-rust",
     "rustup toolchain install stable-i686-pc-windows-msvc",
@@ -67,7 +68,7 @@ before-build = [
 ]
 archs = ["AMD64"]
 skip = ["pp*"]
-environment = { PATH = '$UserProfile\.cargo\bin;$PATH' }
+test-command = ["pytest {project}/pytest/test.py"]
 
 
 [[tool.setuptools-rust.ext-modules]]
