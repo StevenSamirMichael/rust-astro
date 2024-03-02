@@ -88,57 +88,57 @@ fn load_space_weather_csv() -> SKResult<Vec<SpaceWeatherRecord>> {
     }
 
     let file = File::open(&path)?;
-    let mut sw = Vec::<SpaceWeatherRecord>::new();
-    for rline in io::BufReader::new(file).lines().skip(1) {
-        let line = rline.unwrap();
-        let lvals: Vec<&str> = line.split(",").collect();
-        if lvals.len() < 31 {
-            continue;
-        }
-        let year: u32 = match str2num(lvals[0], 0, 4) {
-            Some(v) => v,
-            None => continue,
-        };
-        let mon: u32 = match str2num(lvals[0], 5, 7) {
-            Some(v) => v,
-            None => continue,
-        };
-        let day: u32 = match str2num(lvals[0], 8, 10) {
-            Some(v) => v,
-            None => continue,
-        };
-        sw.push(SpaceWeatherRecord {
-            date: (AstroTime::from_date(year, mon, day)),
-            bsrn: lvals[1].parse().unwrap_or(-1),
-            nd: lvals[2].parse().unwrap_or(-1),
-            kp: {
-                let mut kparr: [i32; 8] = [-1, -1, -1, -1, -1, -1, -1, -1];
-                for idx in 0..8 {
-                    kparr[idx] = lvals[idx + 3].parse().unwrap_or(-1);
-                }
-                kparr
-            },
-            kp_sum: lvals[11].parse().unwrap_or(-1),
-            ap: {
-                let mut aparr: [i32; 8] = [-1, -1, -1, -1, -1, -1, -1, -1];
-                for idx in 0..8 {
-                    aparr[idx] = lvals[12 + idx].parse().unwrap_or(-1)
-                }
-                aparr
-            },
-            ap_avg: lvals[20].parse().unwrap_or(-1),
-            cp: lvals[21].parse().unwrap_or(-1.0),
-            c9: lvals[22].parse().unwrap_or(-1),
-            isn: lvals[23].parse().unwrap_or(-1),
-            f10p7_obs: lvals[24].parse().unwrap_or(-1.0),
-            f10p7_adj: lvals[25].parse().unwrap_or(-1.0),
-            f10p7_obs_c81: lvals[27].parse().unwrap_or(-1.0),
-            f10p7_obs_l81: lvals[28].parse().unwrap_or(-1.0),
-            f10p7_adj_c81: lvals[29].parse().unwrap_or(-1.0),
-            f10p7_adj_l81: lvals[30].parse().unwrap_or(-1.0),
-        });
-    }
-    Ok(sw)
+    io::BufReader::new(file)
+        .lines()
+        .skip(1)
+        .map(|rline| {
+            let line = rline.unwrap();
+            let lvals: Vec<&str> = line.split(",").collect();
+
+            let year: u32 = match str2num(lvals[0], 0, 4) {
+                Some(v) => v,
+                None => return skerror!("invalid year in file"),
+            };
+            let mon: u32 = match str2num(lvals[0], 5, 7) {
+                Some(v) => v,
+                None => return skerror!("Invalid month in file"),
+            };
+            let day: u32 = match str2num(lvals[0], 8, 10) {
+                Some(v) => v,
+                None => return skerror!("invalid day in file"),
+            };
+            Ok(SpaceWeatherRecord {
+                date: (AstroTime::from_date(year, mon, day)),
+                bsrn: lvals[1].parse().unwrap_or(-1),
+                nd: lvals[2].parse().unwrap_or(-1),
+                kp: {
+                    let mut kparr: [i32; 8] = [-1, -1, -1, -1, -1, -1, -1, -1];
+                    for idx in 0..8 {
+                        kparr[idx] = lvals[idx + 3].parse().unwrap_or(-1);
+                    }
+                    kparr
+                },
+                kp_sum: lvals[11].parse().unwrap_or(-1),
+                ap: {
+                    let mut aparr: [i32; 8] = [-1, -1, -1, -1, -1, -1, -1, -1];
+                    for idx in 0..8 {
+                        aparr[idx] = lvals[12 + idx].parse().unwrap_or(-1)
+                    }
+                    aparr
+                },
+                ap_avg: lvals[20].parse().unwrap_or(-1),
+                cp: lvals[21].parse().unwrap_or(-1.0),
+                c9: lvals[22].parse().unwrap_or(-1),
+                isn: lvals[23].parse().unwrap_or(-1),
+                f10p7_obs: lvals[24].parse().unwrap_or(-1.0),
+                f10p7_adj: lvals[25].parse().unwrap_or(-1.0),
+                f10p7_obs_c81: lvals[27].parse().unwrap_or(-1.0),
+                f10p7_obs_l81: lvals[28].parse().unwrap_or(-1.0),
+                f10p7_adj_c81: lvals[29].parse().unwrap_or(-1.0),
+                f10p7_adj_l81: lvals[30].parse().unwrap_or(-1.0),
+            })
+        })
+        .collect()
 }
 
 #[allow(dead_code)]
