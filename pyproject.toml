@@ -59,7 +59,7 @@ test-command = [
 ]
 
 [tool.cibuildwheel.windows]
-environment = { PATH = '$UserProfile\.cargo\bin;$PATH', ASTRO_DATA = "{package}\\astro-data", SATKIT_TESTVEC_ROOT = "{package}\\satkit-testvecs" }
+environment = { PATH = '$UserProfile\.cargo\bin;$PATH', ASTRO_DATA = "d:\\a\\rust-astro\\rust-astro\\astro-data", SATKIT_TESTVEC_ROOT = "d:\\a\\rust-astro\\rust-astro\\satkit-testvecs" }
 before-build = [
     "pip install -U setuptools-rust",
     "rustup toolchain install stable-i686-pc-windows-msvc",
