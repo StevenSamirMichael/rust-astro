@@ -342,8 +342,8 @@ class TestSGP4:
         SGP4 Test Vectors from vallado
         """
 
-        basedir = os.getenv("SATKIT_TESTVEC_ROOT", default="../satkit-testvecs/sgp4")
-        fname = basedir + "/jplephem/testpo.440"
+        basedir = os.getenv("SATKIT_TESTVEC_ROOT", default="../satkit-testvecs")
+        basedir = basedir + "/tle"
 
         tlefile = basedir + "/SGP4-VER.TLE"
         with open(tlefile, "r") as fh:
