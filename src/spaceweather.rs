@@ -78,17 +78,7 @@ impl PartialOrd<AstroTime> for SpaceWeatherRecord {
 
 fn load_space_weather_csv() -> SKResult<Vec<SpaceWeatherRecord>> {
     let path = datadir().unwrap_or(PathBuf::from(".")).join("SW-All.csv");
-    download_if_not_exist(&path, None)?;
-    /*
-    if !path.is_file() {
-        path = datadir()
-            .unwrap_or(PathBuf::from("."))
-            .join("SW-Last5Years.csv");
-    }
-    if !path.is_file() {
-        return skerror!("Cannot load space weather data.  File is missing");
-    }
-    */
+    download_if_not_exist(&path, Some("http://celestrak.org/SpaceData/"))?;
 
     let file = File::open(&path)?;
     io::BufReader::new(file)

@@ -35,7 +35,8 @@ fn load_eop_file_csv(filename: Option<PathBuf>) -> SKResult<Vec<EOPEntry>> {
             // }
         }
     };
-    download_if_not_exist(&path, None)?;
+    // Download EOP data from celetrak.org
+    download_if_not_exist(&path, Some("http://celestrak.org/SpaceData/"))?;
 
     let file = File::open(&path)?;
 
