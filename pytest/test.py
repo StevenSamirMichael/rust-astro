@@ -170,7 +170,7 @@ class TestFrameTransform:
         tm2 = sk.time(2004, 4, 6, 0, 0, 0)
         dut1, xp, yp, lod, dX, dY = sk.frametransform.earth_orientation_params(tm2)
         assert dut1 == pytest.approx(-0.4399619, rel=1e-3)
-        assert xp == pytest.approx(-0.140682, rel=1e-3)
+        assert xp == pytest.approx(-0.140857, rel=1e-3)
         assert yp == pytest.approx(0.333309, rel=1e-3)
         jd_tt = tm.to_jd(sk.timescale.TT)
         assert jd_tt == pytest.approx(2453101.828154745)

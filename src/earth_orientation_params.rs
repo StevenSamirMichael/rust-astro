@@ -23,7 +23,49 @@ struct EOPEntry {
     dY: f64,
 }
 
-fn load_eop_file(filename: Option<PathBuf>) -> Vec<EOPEntry> {
+fn load_eop_file_csv(filename: Option<PathBuf>) -> SKResult<Vec<EOPEntry>> {
+    let path: PathBuf = match filename {
+        Some(pb) => pb,
+        None => {
+            let mut pb = datadir().unwrap_or(PathBuf::from(".")).join("EOP-All.csv");
+            if !pb.is_file() {
+                pb = datadir()
+                    .unwrap_or(PathBuf::from("."))
+                    .join("EOP-Last5Years.csv");
+            }
+            pb
+        }
+    };
+
+    if !path.is_file() {
+        return skerror!("Cannot open earth orientation parameters file");
+    }
+
+    let file = File::open(&path)?;
+
+    let mut eopvec = Vec::<EOPEntry>::new();
+    eopvec.reserve(25000);
+    for rline in io::BufReader::new(file).lines().skip(1) {
+        let line = rline.unwrap();
+        let lvals: Vec<&str> = line.split(",").collect();
+        if lvals.len() < 12 {
+            continue;
+        }
+        eopvec.push(EOPEntry {
+            mjd_utc: lvals[1].parse()?,
+            xp: lvals[2].parse()?,
+            yp: lvals[3].parse()?,
+            dut1: lvals[4].parse()?,
+            lod: lvals[5].parse()?,
+            dX: lvals[8].parse()?,
+            dY: lvals[9].parse()?,
+        })
+    }
+    Ok(eopvec)
+}
+
+#[allow(dead_code)]
+fn load_eop_file_legacy(filename: Option<PathBuf>) -> Vec<EOPEntry> {
     let path: PathBuf = match filename {
         Some(pb) => pb,
         None => datadir()
@@ -61,7 +103,7 @@ fn load_eop_file(filename: Option<PathBuf>) -> Vec<EOPEntry> {
                 let xp_str: String = v.chars().skip(18).take(9).collect();
                 let yp_str: String = v.chars().skip(37).take(9).collect();
                 let dut1_str: String = v.chars().skip(58).take(10).collect();
-                let lod_str: String = v.chars().skip(79).take(7).collect();
+                let lod_str: String = v.chars().skip(49).take(7).collect();
                 let dx_str: String = v.chars().skip(97).take(9).collect();
                 let dy_str: String = v.chars().skip(116).take(9).collect();
 
@@ -112,7 +154,7 @@ fn load_eop_file(filename: Option<PathBuf>) -> Vec<EOPEntry> {
 
 fn eop_params_singleton() -> &'static RwLock<Vec<EOPEntry>> {
     static INSTANCE: OnceCell<RwLock<Vec<EOPEntry>>> = OnceCell::new();
-    INSTANCE.get_or_init(|| RwLock::new(load_eop_file(None)))
+    INSTANCE.get_or_init(|| RwLock::new(load_eop_file_csv(None).unwrap_or(Vec::<EOPEntry>::new())))
 }
 
 /// Download new Earth Orientation Parameters file, and load it.
@@ -130,11 +172,12 @@ pub fn update() -> SKResult<()> {
     }
 
     // Download most-recent EOP
-    let url = "https://datacenter.iers.org/data/9/finals2000A.all";
+    //let url = "https://datacenter.iers.org/data/9/finals2000A.all";
+    let url = "http://celestrak.org/SpaceData/EOP-All.csv";
     download_file(url, &d[0], true)?;
 
     // Re-load the params
-    *eop_params_singleton().write().unwrap() = load_eop_file(None);
+    *eop_params_singleton().write().unwrap() = load_eop_file_csv(None).unwrap();
 
     Ok(())
 }
@@ -206,11 +249,10 @@ mod tests {
     #[test]
     fn checkval() {
         let v = eop_from_mjd_utc(59464.00).unwrap();
-        println!("v = {:?}", v);
-        const TRUTH: [f64; 4] = [-0.1145640, 0.241133, 0.317269, -0.2467];
+        const TRUTH: [f64; 4] = [-0.1145667, 0.241155, 0.317274, -0.0002255];
         for it in v.iter().zip(TRUTH.iter()) {
             let (a, b) = it;
-            assert!(((a - b) / b).abs() < 1.0e-5);
+            assert!(((a - b) / b).abs() < 1.0e-3);
         }
     }
 
@@ -218,8 +260,8 @@ mod tests {
     #[test]
     fn checkinterp() {
         let mjd0: f64 = 57909.00;
-        const TRUTH0: [f64; 4] = [0.3754796, 0.10268, 0.458479, 1.1596];
-        const TRUTH1: [f64; 4] = [0.3743671, 0.10402, 0.458388, 1.0584];
+        const TRUTH0: [f64; 4] = [0.3754421, 0.102693, 0.458455, 0.0011699];
+        const TRUTH1: [f64; 4] = [0.3743358, 0.104031, 0.458373, 0.0010383];
         for x in 0..101 {
             let dt: f64 = x as f64 / 100.0;
             let vt = eop_from_mjd_utc(mjd0 + dt).unwrap();

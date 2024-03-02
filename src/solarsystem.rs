@@ -1,9 +1,10 @@
 /// Solar system bodies
 ///
-/// Coordinates origin is the solar system barycenter
+/// Coordinate origin is the solar system barycenter
 ///
-/// ## Notes:
-///  * Positions for all bodies are natively relative to
+/// # Notes:
+///  * For native JPL Ephemerides function calls:
+///    positions for all bodies are natively relative to
 ///    solar system barycenter, with exception of moon,
 ///    which is computed in Geocentric system
 ///  * EMB (2) is the Earth-Moon barycenter
