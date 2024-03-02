@@ -1,4 +1,4 @@
-use crate::utils::{self, SKResult};
+use crate::utils::{self, download_if_not_exist, SKResult};
 use nalgebra as na;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
@@ -22,9 +22,7 @@ impl IERSTable {
         };
 
         let path = utils::datadir().unwrap_or(PathBuf::from(".")).join(fname);
-        if !path.is_file() {
-            return utils::skerror!("Could not open file: {}", fname);
-        }
+        download_if_not_exist(&path, None)?;
 
         let mut tnum: i32 = -1;
         let mut rowcnt: usize = 0;

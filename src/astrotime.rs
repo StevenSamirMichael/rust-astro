@@ -38,7 +38,7 @@ pub struct AstroTime {
     mjd_tai: f64,
 }
 
-use crate::utils::{skerror, SKResult};
+use crate::utils::{download_if_not_exist, skerror, SKResult};
 use crate::Duration;
 
 use super::earth_orientation_params as eop;
@@ -112,8 +112,9 @@ fn deltaat_new() -> &'static Vec<[u64; 2]> {
         let path = datadir()
             .unwrap_or(PathBuf::from("."))
             .join("leap-seconds.list");
-        if !path.is_file() {
-            panic!("Cannot open leap seconds file");
+        match download_if_not_exist(&path, None) {
+            Ok(()) => {}
+            Err(e) => panic!("Could not download {} : {}", path.display(), e),
         }
 
         let file = match File::open(&path) {

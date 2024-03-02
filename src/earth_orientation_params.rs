@@ -4,8 +4,8 @@ use std::path::PathBuf;
 use std::sync::RwLock;
 
 use super::astrotime;
-use crate::utils::download_file;
 use crate::utils::{datadir, testdirs};
+use crate::utils::{download_file, download_if_not_exist};
 
 use crate::{skerror, SKResult};
 
@@ -27,19 +27,15 @@ fn load_eop_file_csv(filename: Option<PathBuf>) -> SKResult<Vec<EOPEntry>> {
     let path: PathBuf = match filename {
         Some(pb) => pb,
         None => {
-            let mut pb = datadir().unwrap_or(PathBuf::from(".")).join("EOP-All.csv");
-            if !pb.is_file() {
-                pb = datadir()
-                    .unwrap_or(PathBuf::from("."))
-                    .join("EOP-Last5Years.csv");
-            }
-            pb
+            datadir().unwrap_or(PathBuf::from(".")).join("EOP-All.csv")
+            //if !pb.is_file() {
+            //    pb = datadir()
+            //        .unwrap_or(PathBuf::from("."))
+            //        .join("EOP-Last5Years.csv");
+            // }
         }
     };
-
-    if !path.is_file() {
-        return skerror!("Cannot open earth orientation parameters file");
-    }
+    download_if_not_exist(&path, None)?;
 
     let file = File::open(&path)?;
 

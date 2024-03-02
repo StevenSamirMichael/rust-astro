@@ -4,7 +4,7 @@ use std::io::{self, BufRead};
 use std::path::PathBuf;
 
 use crate::astrotime::AstroTime;
-use crate::utils::{datadir, download_file, skerror, testdirs, SKResult};
+use crate::utils::{datadir, download_file, download_if_not_exist, skerror, testdirs, SKResult};
 
 use std::sync::RwLock;
 
@@ -77,7 +77,9 @@ impl PartialOrd<AstroTime> for SpaceWeatherRecord {
 }
 
 fn load_space_weather_csv() -> SKResult<Vec<SpaceWeatherRecord>> {
-    let mut path = datadir().unwrap_or(PathBuf::from(".")).join("SW-All.csv");
+    let path = datadir().unwrap_or(PathBuf::from(".")).join("SW-All.csv");
+    download_if_not_exist(&path, None)?;
+    /*
     if !path.is_file() {
         path = datadir()
             .unwrap_or(PathBuf::from("."))
@@ -86,6 +88,7 @@ fn load_space_weather_csv() -> SKResult<Vec<SpaceWeatherRecord>> {
     if !path.is_file() {
         return skerror!("Cannot load space weather data.  File is missing");
     }
+    */
 
     let file = File::open(&path)?;
     io::BufReader::new(file)

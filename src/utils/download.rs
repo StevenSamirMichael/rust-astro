@@ -1,6 +1,29 @@
 use crate::SKResult;
 use std::path::PathBuf;
 
+pub fn download_if_not_exist(fname: &PathBuf, seturl: Option<&str>) -> SKResult<()> {
+    if fname.is_file() {
+        return Ok(());
+    }
+    let baseurl = match seturl {
+        Some(v) => v,
+        None => "https://storage.googleapis.com/astrokit-astro-data/",
+    };
+    let url = format!(
+        "{}{}",
+        baseurl,
+        fname.file_name().unwrap().to_str().unwrap()
+    );
+    // Try to set proxy, if any, from environment variables
+    let agent = ureq::AgentBuilder::new().try_proxy_from_env(true).build();
+
+    let resp = agent.get(url.as_str()).call()?;
+
+    let mut dest = std::fs::File::create(fname)?;
+    std::io::copy(resp.into_reader().as_mut(), &mut dest)?;
+    Ok(())
+}
+
 pub fn download_file(
     url: &str,
     downloaddir: &PathBuf,

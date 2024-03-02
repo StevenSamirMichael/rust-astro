@@ -1,6 +1,7 @@
 use crate::skerror;
 use crate::SKResult;
 use once_cell::sync::OnceCell;
+#[cfg(feature = "pybindings")]
 use process_path::get_dylib_path;
 use std::path::Path;
 use std::path::PathBuf;
@@ -15,9 +16,9 @@ pub fn testdirs() -> Vec<PathBuf> {
     }
 
     // Look for paths in current library directory
+    #[cfg(feature = "pybindings")]
     match get_dylib_path() {
         Some(v) => {
-            #[cfg(feature = "pybindings")]
             testdirs.push(Path::new(&v).parent().unwrap().join("astro-data"));
             testdirs.push(
                 Path::new(&v)
@@ -30,6 +31,7 @@ pub fn testdirs() -> Vec<PathBuf> {
         }
         None => (),
     }
+
     // Look for paths under home directory
     match std::env::var(&"HOME") {
         Ok(val) => {
@@ -72,41 +74,52 @@ pub fn testdirs() -> Vec<PathBuf> {
 ///
 /// Returns:
 ///
-///  * Option<<std::path::PathBuf>> representing directory
+///  * SKResult<<std::path::PathBuf>> representing directory
 ///    where files are stored
 ///
 pub fn datadir() -> SKResult<PathBuf> {
-    static INSTANCE: OnceCell<SKResult<PathBuf>> = OnceCell::new();
+    static INSTANCE: OnceCell<Option<PathBuf>> = OnceCell::new();
     let res = INSTANCE.get_or_init(|| {
+        // Check for already-populated directory
         for ref dir in testdirs() {
             let p = PathBuf::from(&dir).join("tab5.2a.txt");
             if p.is_file() {
-                return Ok(dir.to_path_buf().clone());
+                return Some(dir.to_path_buf().clone());
             }
         }
-        skerror!("Could not find valid data directory.")
+        // Check for directory that we can create that is writable
+        for ref dir in testdirs() {
+            match std::fs::create_dir_all(dir) {
+                Ok(()) => return Some(dir.to_path_buf().clone()),
+                Err(_) => {}
+            }
+        }
+
+        // Check for writeable directory
+        for ref dir in testdirs() {
+            if dir.is_dir() {
+                if !dir.metadata().unwrap().permissions().readonly() {
+                    return Some(dir.to_path_buf().clone());
+                }
+            }
+        }
+
+        None
     });
     match res.as_ref() {
-        Ok(v) => Ok(v.clone()),
-        Err(_e) => skerror!("Could not find valid data directory."),
+        Some(v) => Ok(v.clone()),
+        None => skerror!("Could not find valid writeable data directory"),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
-    fn dylib() {
-        let p = get_dylib_path();
-        println!("p = {:?}", p);
-    }
 
     #[test]
     fn datadir() {
         use crate::utils::datadir;
         let d = datadir::datadir();
-        println!("d = {:?}", d);
+        println!("d = {:?}", d.as_ref().unwrap());
         assert_eq!(d.is_err(), false);
     }
 }

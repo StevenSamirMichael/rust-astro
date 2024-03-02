@@ -27,9 +27,8 @@ use nalgebra as na;
 pub type Vec3 = na::Vector3<f64>;
 pub type Quat = na::UnitQuaternion<f64>;
 
-use crate::skerror;
-use crate::utils::datadir;
 use crate::utils::SKResult;
+use crate::utils::{datadir, download_if_not_exist};
 
 use once_cell::sync::OnceCell;
 
@@ -153,8 +152,9 @@ impl JPLEphem {
         // Open the file
         let path = datadir().unwrap_or(PathBuf::from(".")).join(fname);
         if !path.is_file() {
-            return skerror!("Cannot open JPL Ephemeris file");
+            println!("Downloading JPL Ephemeris file.  File size is approx. 100MB");
         }
+        download_if_not_exist(&path, None)?;
 
         // Read in bytes
         let raw = std::fs::read(path)?;

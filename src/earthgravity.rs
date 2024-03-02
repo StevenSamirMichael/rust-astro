@@ -1,4 +1,4 @@
-use crate::utils::{datadir, skerror, SKResult};
+use crate::utils::{datadir, download_if_not_exist, skerror, SKResult};
 use std::collections::HashMap;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
@@ -406,9 +406,14 @@ impl Gravity {
     /// <http://icgem.gfz-potsdam.de/tom_longtime>
     pub fn from_file(filename: &str) -> SKResult<Gravity> {
         let path = datadir().unwrap_or(PathBuf::from(".")).join(filename);
+        download_if_not_exist(&path, None)?;
+
+        /*
         if !path.is_file() {
             return skerror!("File does not exist");
         }
+        */
+
         let file = std::fs::File::open(&path)?;
 
         let mut name = String::new();
