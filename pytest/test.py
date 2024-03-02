@@ -343,7 +343,7 @@ class TestSGP4:
         """
 
         basedir = os.getenv("SATKIT_TESTVEC_ROOT", default="../satkit-testvecs")
-        basedir = basedir + "/tle"
+        basedir = basedir + "/sgp4"
 
         tlefile = basedir + "/SGP4-VER.TLE"
         with open(tlefile, "r") as fh:

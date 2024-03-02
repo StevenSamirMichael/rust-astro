@@ -38,8 +38,6 @@ before-build = [
 environment = { PATH = "$PATH:$HOME/.cargo/bin" }
 test-requires = "pytest"
 test-command = [
-    "ls -R {package}",
-    "ls -R {project}",
     "ASTRO_DATA={package}/astro-data SATKIT_TESTVEC_ROOT={package}/satkit-testvecs pytest {project}/pytest/test.py",
 ]
 
