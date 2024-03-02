@@ -72,8 +72,8 @@ archs = ["AMD64"]
 skip = ["pp*"]
 test-requires = "pytest"
 before-test = [
-    "set ASTRO_DATA={project}\\astro-data",
-    "set SATKIT_TESTVEC_ROOT={project}\\satkit-testvecs",
+    "set ASTRO_DATA={package}\\astro-data",
+    "set SATKIT_TESTVEC_ROOT={package}\\satkit-testvecs",
 ]
 test-command = ["pytest {project}\\pytest\\test.py"]
 
