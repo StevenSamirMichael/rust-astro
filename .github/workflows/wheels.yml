@@ -18,8 +18,8 @@ jobs:
         include:
           - os: ubuntu
             platform: linux
-            testvec_path: /home/runner/satkit-testvecs
-            data_path: /home/runner/astro-data
+            testvec_path: satkit-testvecs
+            data_path: astro-data
           - os: windows
             ls: dir
             testvec_path: satkit-testvecs
@@ -70,10 +70,13 @@ jobs:
           key: satkit-testvecs-cache
 
       # Details of cibuildwheel are set in pyproject.toml
-      - name: build ${{ matrix.platform || matrix.os }} binaries
-        run: cibuildwheel --output-dir wheelhouse
+      - name: Build ${{ matrix.platform || matrix.os }} wheels
+        uses: pypa/cibuildwheel@v2.16.5
+        with:
+          package-dir: .
+          output-dir: wheelhouse
+          config-file: "{package}/pyproject.toml"
 
-      # Create source distribution within the linux environment
       - name: Create sdist
         if: matrix.os == 'ubuntu'
         run: python -m build --sdist . -o wheelhouse

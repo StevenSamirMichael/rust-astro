@@ -39,6 +39,10 @@ before-build = [
     "rustup show",
 ]
 environment = { PATH = "$PATH:$HOME/.cargo/bin" }
+test-requires = "pytest"
+test-command = [
+    "ASTRO_DATA={package}/astro-data SATKIT_TESTVEC_ROOT={package}/satkit-testvecs pytest {project}/pytest/test.py",
+]
 
 
 [tool.cibuildwheel.linux]
@@ -52,7 +56,7 @@ before-build = [
 ]
 test-requires = "pytest"
 test-command = [
-    "ASTRO_DATA=/host/home/runner/astro-data SATKIT_TESTVEC_ROOT=/host/home/runner/satkit-testvecs pytest {project}/pytest/test.py",
+    "ASTRO_DATA={package}/astro-data SATKIT_TESTVEC_ROOT={package}/satkit-testvecs pytest {project}/pytest/test.py",
 ]
 
 [tool.cibuildwheel.windows]
