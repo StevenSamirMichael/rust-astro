@@ -36,7 +36,7 @@ jobs:
         uses: actions/setup-python@v5
 
       - name: install requests package
-        run: pip install -U setuptools wheel cibuildwheel requests build
+        run: pip install -U setuptools wheel requests build
 
       - name: set up rust
         if: matrix.os != 'ubuntu'

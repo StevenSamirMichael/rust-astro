@@ -27,10 +27,7 @@ find = { where = ["python"] }
 [tool.cibuildwheel]
 build = ["cp312-*", "cp311-*"]
 
-# Only build on CPython 3.12
-container-engine = "docker"
 [tool.cibuildwheel.macos]
-container-engine = "docker"
 archs = ["x86_64", "arm64"]
 before-build = [
     "pip install -U setuptools-rust",
@@ -41,6 +38,8 @@ before-build = [
 environment = { PATH = "$PATH:$HOME/.cargo/bin" }
 test-requires = "pytest"
 test-command = [
+    "ls -R {package}",
+    "ls -R {project}",
     "ASTRO_DATA={package}/astro-data SATKIT_TESTVEC_ROOT={package}/satkit-testvecs pytest {project}/pytest/test.py",
 ]
 
