@@ -70,7 +70,8 @@ before-build = [
 ]
 archs = ["AMD64"]
 skip = ["pp*"]
-test-command = ["pytest {project}/pytest/test.py"]
+test-requires = "pytest"
+test-command = ["pytest {project}\\pytest\\test.py"]
 
 
 [[tool.setuptools-rust.ext-modules]]
