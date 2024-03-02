@@ -57,6 +57,18 @@ test-command = [
 ]
 
 [tool.cibuildwheel.windows]
+environment = { PATH = '$UserProfile\.cargo\bin;$PATH', ASTRO_DATA = '{package}\astro-data', SATKIT_TESTVEC_ROOT = '{package}\satkit-testvecs' }
+test-requires = "pytest"
+test-command = ["pytest {project}/pytest/test.py"]
+
+
+[[tool.setuptools-rust.ext-modules]]
+features = ["pybindings"]
+args = ["--crate-type", "cdylib"]
+target = "satkit/satkit"
+path = "Cargo.toml"
+binding = "PyO3"
+py-limited-api = "auto"
 before-build = [
     "pip install -U setuptools-rust",
     "rustup toolchain install stable-i686-pc-windows-msvc",
@@ -67,13 +79,3 @@ before-build = [
 ]
 archs = ["AMD64"]
 skip = ["pp*"]
-environment = { PATH = '$UserProfile\.cargo\bin;$PATH' }
-
-
-[[tool.setuptools-rust.ext-modules]]
-features = ["pybindings"]
-args = ["--crate-type", "cdylib"]
-target = "satkit/satkit"
-path = "Cargo.toml"
-binding = "PyO3"
-py-limited-api = "auto"

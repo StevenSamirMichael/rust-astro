@@ -13,8 +13,10 @@ class TestJPLEphem:
         """
 
         # File contains test calculation vectors provided by NASA
-        basedir = os.getenv("SATKIT_TESTVEC_ROOT", default="../satkit-testvecs")
-        fname = basedir + "/jplephem/testpo.440"
+        basedir = os.getenv(
+            "SATKIT_TESTVEC_ROOT", default=".." + os.path.sep + "satkit-testvecs"
+        )
+        fname = basedir + os.path.sep + "jplephem" + os.path.sep + "testpo.440"
 
         # Read in the test vectors
         with open(fname, "r") as fd:
@@ -342,10 +344,12 @@ class TestSGP4:
         SGP4 Test Vectors from vallado
         """
 
-        basedir = os.getenv("SATKIT_TESTVEC_ROOT", default="../satkit-testvecs")
-        basedir = basedir + "/sgp4"
+        basedir = os.getenv(
+            "SATKIT_TESTVEC_ROOT", default=".." + os.path.sep + "satkit-testvecs"
+        )
+        basedir = basedir + os.path.sep + "sgp4"
 
-        tlefile = basedir + "/SGP4-VER.TLE"
+        tlefile = basedir + os.path.sep + "SGP4-VER.TLE"
         with open(tlefile, "r") as fh:
             lines = fh.readlines()
 
@@ -353,7 +357,7 @@ class TestSGP4:
 
         tles = sk.TLE.from_lines(lines)
         for tle in tles:
-            fname = f"{basedir}/{tle.satnum:05}.e"
+            fname = f"{basedir}{os.path.sep}{tle.satnum:05}.e"
             with open(fname, "r") as fh:
                 testvecs = fh.readlines()
             for testvec in testvecs:
