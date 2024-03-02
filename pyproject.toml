@@ -62,7 +62,6 @@ test-command = [
 environment = { PATH = '$UserProfile\.cargo\bin;$PATH' }
 before-build = [
     "pip install -U setuptools-rust",
-    "rustup toolchain install stable-i686-pc-windows-msvc",
     "rustup toolchain install stable-x86_64-pc-windows-msvc",
     "rustup default stable-x86_64-pc-windows-msvc",
     "rustup override set stable-x86_64-pc-windows-msvc",
@@ -75,7 +74,9 @@ before-test = [
     "set ASTRO_DATA={package}\\astro-data",
     "set SATKIT_TESTVEC_ROOT={package}\\satkit-testvecs",
 ]
-test-command = ["pytest {project}\\pytest\\test.py"]
+test-command = [
+    "set ASTRO_DATA={package}\\astro-data && set SATKIT_TESTVEC_ROOT={package}\\satkit-testvecs && pytest {project}\\pytest\\test.py",
+]
 
 
 [[tool.setuptools-rust.ext-modules]]
