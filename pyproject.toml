@@ -36,6 +36,8 @@ before-build = [
     "rustup show",
 ]
 environment = { PATH = "$PATH:$HOME/.cargo/bin" }
+# Skip trying to test arm64 builds on Intel Macs
+test-skip = "*-macosx_arm64 *-macosx_universal2:arm64"
 test-requires = "pytest"
 test-command = [
     "ASTRO_DATA={package}/astro-data SATKIT_TESTVEC_ROOT={package}/satkit-testvecs pytest {project}/pytest/test.py",
