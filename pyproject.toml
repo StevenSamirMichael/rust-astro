@@ -75,7 +75,7 @@ before-test = [
     "set SATKIT_TESTVEC_ROOT={package}\\satkit-testvecs",
 ]
 test-command = [
-    "set ASTRO_DATA={package}\\astro-data && set SATKIT_TESTVEC_ROOT={package}\\satkit-testvecs && pytest {project}\\pytest\\test.py",
+    'set ASTRO_DATA="{package}\\astro-data" && set SATKIT_TESTVEC_ROOT="{package}\\satkit-testvecs" && pytest {project}\\pytest\\test.py',
 ]
 
 
