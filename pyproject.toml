@@ -52,7 +52,7 @@ before-build = [
 ]
 test-requires = "pytest"
 test-command = [
-    "ASTRO_DATA=/host/astro-data SATKIT_TESTVEC_ROOT=/host/satkit-testvecs pytest {project}/pytest/test.py",
+    "ASTRO_DATA=/host/home/runner/astro-data SATKIT_TESTVEC_ROOT=/host/home/runner/satkit-testvecs pytest {project}/pytest/test.py",
 ]
 
 [tool.cibuildwheel.windows]

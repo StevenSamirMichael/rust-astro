@@ -18,8 +18,8 @@ jobs:
         include:
           - os: ubuntu
             platform: linux
-            testvec_path: /satkit-testvecs
-            data_path: /astro-data
+            testvec_path: /home/runner/satkit-testvecs
+            data_path: /home/runner/astro-data
           - os: windows
             ls: dir
             testvec_path: satkit-testvecs
