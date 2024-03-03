@@ -26,14 +26,7 @@ struct EOPEntry {
 fn load_eop_file_csv(filename: Option<PathBuf>) -> SKResult<Vec<EOPEntry>> {
     let path: PathBuf = match filename {
         Some(pb) => pb,
-        None => {
-            datadir().unwrap_or(PathBuf::from(".")).join("EOP-All.csv")
-            //if !pb.is_file() {
-            //    pb = datadir()
-            //        .unwrap_or(PathBuf::from("."))
-            //        .join("EOP-Last5Years.csv");
-            // }
-        }
+        None => datadir().unwrap_or(PathBuf::from(".")).join("EOP-All.csv"),
     };
     // Download EOP data from celetrak.org
     download_if_not_exist(&path, Some("http://celestrak.org/SpaceData/"))?;
