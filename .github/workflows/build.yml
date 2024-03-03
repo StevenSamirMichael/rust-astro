@@ -46,7 +46,7 @@ jobs:
           args: --release
 
       # Download the data and the test vectors
-      - run: pipx install requests
+      - run: pip install requests
 
       # Try to recover satkit data from cache
       - name: Cache Satkit Data
